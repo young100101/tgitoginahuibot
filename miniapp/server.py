@@ -68,8 +68,9 @@ async def me(authorization: str = Header()):
             off = r.get("next_offset")
             if not off: break
         chat = await tg(c, "getChat", chat_id=uid) or {}
-        lvl = (chat.get("rating") or {}).get("level", 0)  # проверь имя поля в актуальной доке Bot API
-    return {"id": uid, "days": days_in_tg(uid), "lvl": lvl, "pct": pct(lvl),
+        rt = chat.get("rating") or {}  # UserRating: level, rating (число на основе потраченных звёзд)
+        lvl, stars = rt.get("level", 0), rt.get("rating", 0)
+    return {"id": uid, "days": days_in_tg(uid), "lvl": lvl, "stars": stars, "pct": pct(lvl),
             "prem": int(bool(u.get("is_premium"))), "gifts": gifts, "nft": uniq, "value": value}
 
 @app.post("/api/share")
