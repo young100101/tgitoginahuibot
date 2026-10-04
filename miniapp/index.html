@@ -6,7 +6,7 @@
 <style>
 *{box-sizing:border-box;margin:0;font-family:-apple-system,"Segoe UI",Roboto,sans-serif}
 html,body{height:100dvh;background:#111;color:#fff;overflow:hidden}
-#app{height:100%;max-width:480px;margin:auto;position:relative;transition:background .4s;display:flex;flex-direction:column;align-items:center;text-align:center;padding:calc(env(safe-area-inset-top,0px) + 18px) 20px calc(env(safe-area-inset-bottom,0px) + 16px)}
+#app{height:100%;max-width:480px;margin:auto;position:relative;transition:background .4s;display:flex;flex-direction:column;align-items:center;text-align:center;padding:calc(var(--tg-safe-area-inset-top,env(safe-area-inset-top,0px)) + var(--tg-content-safe-area-inset-top,0px) + 14px) 20px calc(var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom,0px)) + 16px)}
 .snow{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .snow i{position:absolute;top:-10px;width:4px;height:4px;border-radius:50%;background:#fff;opacity:.7;animation:f linear infinite}
 @keyframes f{to{transform:translateY(110vh)}}
@@ -59,14 +59,16 @@ button:active{transform:scale(.94);transition:transform .1s}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01s!important;animation-delay:0s!important}}
 </style></head><body><div id="app"></div>
 <script>
-const tg=window.Telegram&&Telegram.WebApp;if(tg){tg.ready();tg.expand()}
-const BOT="https://t.me/tgitoginahuibot/app";
+const tg=window.Telegram&&Telegram.WebApp;if(tg){tg.ready();tg.expand();
+ try{if(tg.disableVerticalSwipes)tg.disableVerticalSwipes()}catch(e){}   // свайп вниз не закрывает приложение
+ try{if(tg.isVersionAtLeast&&tg.isVersionAtLeast("8.0"))tg.requestFullscreen()}catch(e){}}  // во весь экран
+const BOT="https://t.me/YOUR_BOT/app";
 const T=(a,b,c)=>v=>v<a?0:v<b?1:2;
 const S=[
 {k:"days",t:"Твой стаж",s:"Сколько дней ты в Telegram?",u:"дней",f:T(500,1000),
  c:[["#2e9e4f","#1d6b35"],["#2f7cf6","#1747c9"],["#8a3ee0","#52209e"]],
- d:[["🐣","Новичок"],["😎","Среднячок"],["👑","Сын Дурова"]]},
-{k:"pct",t:"Рейтинг в Telegram",s:"траты звёёёёёёзд",u:"",f:v=>v>=50?0:v>=10?1:2,
+ d:[["🐣","Новичок"],["😎","Середнячок"],["👑","Сын Дурова"]]},
+{k:"pct",t:"Рейтинг в Telegram",s:"траты звёёёёёёз",u:"",f:v=>v>=50?0:v>=10?1:2,
  c:[["#e0832e","#a8501a"],["#18a8c9","#0d6f8f"],["#e0b72e","#a8741a"]],
  d:[["👥","Один из многих"],["🚀","Выше большинства"],["💎","Элита"]]},
 {k:"prem",t:"Telegram Premium",s:"",u:"",f:v=>+v,
@@ -107,7 +109,8 @@ function fx(n,all){
  if(tg&&tg.HapticFeedback)tg.HapticFeedback.impactOccurred(n==2?"heavy":"light")}
 function snow(){let h="";for(let n=0;n<28;n++)h+=`<i style="left:${Math.random()*100}%;animation-duration:${4+Math.random()*6}s;animation-delay:-${Math.random()*8}s"></i>`;return`<div class="bgl" style="background:${nb}"></div><div class="snow">${h}</div>`}
 let cur="#5b6cf0",nb=cur,dir="fwd";
-function bg(c){app.style.background=cur;nb=`linear-gradient(160deg,${c[0]},${c[1]})`;setTimeout(()=>{cur=nb;app.style.background=cur},500)}
+function bg(c){try{if(tg){tg.setHeaderColor(c[0]);tg.setBackgroundColor(c[1])}}catch(e){}
+ app.style.background=cur;nb=`linear-gradient(160deg,${c[0]},${c[1]})`;setTimeout(()=>{cur=nb;app.style.background=cur},500)}
 const N=x=>`<span class="cnt" data-to="${x}">0</span>`;
 function val(s){const v=D[s.k];if(RND.includes(s.k))return`<span style="font-size:38px">${v}</span>`;if(s.k=="prem")return"";if(s.k=="pct")return`Рейтинг ${N(D.lvl)}<br><span style="font-size:24px;font-weight:600">Ты в топ ${N(v)}% пользователей</span>`;return N(v)+(s.u?`<br><span style="font-size:20px;font-weight:600">${s.u}</span>`:"")}
 function show(){
