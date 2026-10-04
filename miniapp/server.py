@@ -1,10 +1,10 @@
 # pip install fastapi uvicorn httpx   |  запуск: uvicorn server:app --host 0.0.0.0 --port $PORT
-import os, hmac, hashlib, json, time, bisect
+import gzip, os, hmac, hashlib, json, time, bisect
 from urllib.parse import parse_qsl
 import httpx
 import asyncio
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -49,6 +49,30 @@ async def tg(client, method, **p):
     r = await client.post(f"{API}/{method}", json=p); j = r.json()
     if not j.get("ok"): print("TG ERROR", method, j)
     return j.get("result") if j.get("ok") else None
+
+# Премиум-эмодзи: достаём файл у Telegram и отдаём приложению (TGS -> JSON для lottie)
+EMOJI_IDS = {"5283228279988309088", "5280598054901145762", "5280651583078556009", "5280922999241859582", "5406812184359507637"}
+EMOJI_CACHE: dict = {}
+
+@app.get("/api/emoji/{eid}")
+async def emoji(eid: str):
+    if eid not in EMOJI_IDS: raise HTTPException(404)
+    if eid not in EMOJI_CACHE:
+      try:
+        async with httpx.AsyncClient(timeout=25) as c:
+            st = await tg(c, "getCustomEmojiStickers", custom_emoji_ids=[eid])
+            f = await tg(c, "getFile", file_id=st[0]["file_id"]) if st else None
+            if not f: raise HTTPException(404)
+            r = await c.get(f"https://api.telegram.org/file/bot{TOKEN}/{f['file_path']}")
+        body, path = r.content, f["file_path"]
+        if path.endswith(".tgs"): EMOJI_CACHE[eid] = (gzip.decompress(body), "application/json")
+        elif path.endswith(".webm"): EMOJI_CACHE[eid] = (body, "video/webm")
+        else: EMOJI_CACHE[eid] = (body, "image/webp")
+      except HTTPException: raise
+      except Exception as e:
+        print("EMOJI ERROR", eid, repr(e)); raise HTTPException(502)
+    body, mime = EMOJI_CACHE[eid]
+    return Response(content=body, media_type=mime, headers={"Cache-Control": "public, max-age=86400"})
 
 @app.get("/")
 async def index(): return FileResponse(os.path.join(os.path.dirname(__file__), "index.html"))
