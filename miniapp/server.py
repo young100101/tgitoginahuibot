@@ -13,6 +13,10 @@ STATIC = os.environ.get("CARDS_URL", os.environ.get("PUBLIC_URL", "https://examp
 APP_URL = os.environ.get("APP_URL", "https://t.me/YOUR_BOT/app")
 API = f"https://api.telegram.org/bot{TOKEN}"
 app = FastAPI()
+if os.environ.get("DATABASE_URL"):  # бот включается, только если подключена база
+    import bot; bot.register(app)
+else:
+    print("DATABASE_URL не задан: бот выключен, работает только мини-апп")
 
 FLOORS: dict = {}  # маркет не используется
 app.mount("/cards", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "cards")), name="cards")
