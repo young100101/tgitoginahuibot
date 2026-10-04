@@ -60,7 +60,7 @@ button:active{transform:scale(.94);transition:transform .1s}
 </style></head><body><div id="app"></div>
 <script>
 const tg=window.Telegram&&Telegram.WebApp;if(tg){tg.ready();tg.expand()}
-const BOT="https://t.me/tgitoginahuibot/app";
+const BOT="https://t.me/YOUR_BOT/app";
 const T=(a,b,c)=>v=>v<a?0:v<b?1:2;
 const S=[
 {k:"days",t:"Твой стаж",s:"Сколько дней ты в Telegram?",u:"дней",f:T(500,1000),
@@ -77,15 +77,27 @@ const S=[
  d:[["🎁","Скромная полка"],["🎀","Неплохая коллекция"],["🏆","Подарочный магнат"]]},
 {k:"nft",t:"NFT-подарки",s:"Улучшенные подарки в профиле",u:"шт.",f:v=>v<=3?0:v<=10?1:2,
  c:[["#00c2d1","#0a5fb0"],["#7b5cff","#d13fc1"],["#f7b733","#fc4a1a"]],
- d:[["🧸","Начинающий коллекционер"],["💠","Серьёзный коллекционер"],["🐉","Легенда рынка"]]}
+ d:[["🧸","Начинающий коллекционер"],["💠","Серьёзный коллекционер"],["🐉","Легенда рынка"]]},
+{k:"fast",t:"Самый быстрый ответ",s:"Ты что 24/7 в телеграмме?",f:()=>0,c:[["#2e9e4f","#1d6b35"]],d:[["⚡",""]]},
+{k:"slow",t:"Самый долгий ответ",s:"Как же долго он ждал ответа....",f:()=>0,c:[["#2f7cf6","#1747c9"]],d:[["🐌",""]]},
+{k:"online",t:"Постоянный онлайн",s:"В этот день ты сидел больше всего в телеграмме!",f:()=>0,c:[["#8a3ee0","#52209e"]],d:[["😈",""]]}
 ];
+const RND=["fast","slow","online"];
+function rng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function rolls(){ // случайные значения, но у одного человека всегда одни и те же (зависят от его ID)
+ const u=tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user,id=D.id||(u&&u.id)||1,r=rng(id*7919+13);
+ D.fast="&lt; "+(0.1+Math.floor(r()*7)/10).toFixed(1)+" секунд";
+ D.slow=(10+Math.floor(r()*61))+" ч.";
+ const m=[["июня",30],["июля",31],["августа",31]][Math.floor(r()*3)];
+ D.online=(1+Math.floor(r()*m[1]))+" "+m[0]+", 2026"}
 const API=""; // бэкенд на том же адресе
 const DEMO={days:640,pct:12,lvl:7,prem:1,gifts:5,nft:2,value:1200,id:0};
 const D={};let i=0;const app=document.getElementById("app");
 async function load(){
  app.innerHTML=snow()+'<div class="mid"><div class="emo">⏳</div><div class="lbl">Считаем твою статистику…</div></div>';bg(["#5b6cf0","#3a3fb5"]);
  try{const r=await fetch(API+"/api/me",{headers:{Authorization:"tma "+(tg?tg.initData:"")}});if(!r.ok)throw 0;Object.assign(D,await r.json())}
- catch(e){Object.assign(D,DEMO)}  // без бэкенда показываем демо-данные
+ catch(e){Object.assign(D,DEMO)}
+ rolls();  // без бэкенда показываем демо-данные
  i=0;show()}
 function fx(n,all){
  document.querySelectorAll(".cnt").forEach(el=>{const to=+el.dataset.to,t0=performance.now(),D=1300;
@@ -97,26 +109,26 @@ function snow(){let h="";for(let n=0;n<28;n++)h+=`<i style="left:${Math.random()
 let cur="#5b6cf0",nb=cur,dir="fwd";
 function bg(c){app.style.background=cur;nb=`linear-gradient(160deg,${c[0]},${c[1]})`;setTimeout(()=>{cur=nb;app.style.background=cur},500)}
 const N=x=>`<span class="cnt" data-to="${x}">0</span>`;
-function val(s){const v=D[s.k];if(s.k=="prem")return"";if(s.k=="pct")return`Рейтинг ${N(D.lvl)}<br><span style="font-size:24px;font-weight:600">Ты в топ ${N(v)}% пользователей</span>`;return N(v)+(s.u?`<br><span style="font-size:20px;font-weight:600">${s.u}</span>`:"")}
+function val(s){const v=D[s.k];if(RND.includes(s.k))return`<span style="font-size:38px">${v}</span>`;if(s.k=="prem")return"";if(s.k=="pct")return`Рейтинг ${N(D.lvl)}<br><span style="font-size:24px;font-weight:600">Ты в топ ${N(v)}% пользователей</span>`;return N(v)+(s.u?`<br><span style="font-size:20px;font-weight:600">${s.u}</span>`:"")}
 function show(){
  if(i>=S.length){final();return}
  const s=S[i],n=s.f(D[s.k]),[e,name]=s.d[n];bg(s.c[n]);
  app.innerHTML=snow()+`<div class="bars">${S.map((_,j)=>`<b class="${j<i?"on":j==i?"cur":""}"></b>`).join("")}</div>
  <h1>${s.t}</h1><div class="sub">${s.s}</div>
- <div class="mid ${dir}"><div class="emo">${e}</div><div class="val">${val(s)}</div><div class="tier">${name}</div></div>
+ <div class="mid ${dir}"><div class="emo">${e}</div><div class="val">${val(s)}</div>${name?`<div class="tier">${name}</div>`:""}</div>
  <button type="button" class="share" data-a="s">Поделиться ↗</button><div class="btns"><button type="button" class="back" data-a="b">Назад</button><button type="button" class="next" data-a="n">Продолжить</button></div>`;fx(n)}
 function final(){bg(["#2f7cf6","#8a3ee0"]);
  const r=S.map(s=>s.d[s.f(D[s.k])]);
  app.innerHTML=snow()+`<h1>Итоги</h1><div class="sub">Вот кто ты в Telegram</div><div class="mid" style="font-size:18px;gap:8px">`+
- S.map((s,j)=>`<div class="li" style="animation-delay:${j*.12+.2}s">${r[j][0]} <b>${s.t}:</b> ${r[j][1]}</div>`).join("")+
+ S.map((s,j)=>`<div class="li" style="animation-delay:${j*.12+.2}s">${r[j][0]} <b>${s.t}:</b> ${r[j][1]||D[s.k]}</div>`).join("")+
  `</div><button type="button" class="share" data-a="s">Поделиться ↗</button><div class="btns"><button type="button" class="back" data-a="b">Назад</button></div>`;fx(2,1)}
 dir="fwd";
 function go(d){dir=d>0?"fwd":"bk";i=Math.min(S.length,Math.max(0,i+d));show();if(tg)i>0?tg.BackButton.show():tg.BackButton.hide()}
 async function share(){
  const s=S[Math.min(i,S.length-1)],n=s.f(D[s.k]);
- try{const r=await fetch(API+"/api/share",{method:"POST",headers:{Authorization:"tma "+tg.initData,"Content-Type":"application/json"},body:JSON.stringify({slide:s.k,tier:n,title:s.t+": "+s.d[n][1]})});
+ try{const r=await fetch(API+"/api/share",{method:"POST",headers:{Authorization:"tma "+tg.initData,"Content-Type":"application/json"},body:JSON.stringify({slide:s.k,tier:n,title:s.t+": "+(s.d[n][1]||D[s.k].replace("&lt;","<"))})});
   const {id}=await r.json();tg.shareMessage(id)}
- catch(e){const l="https://t.me/share/url?url="+encodeURIComponent(BOT)+"&text="+encodeURIComponent(s.d[n][0]+" "+s.t+": "+s.d[n][1]+"\nПроверь какая у тебя карточка!");tg?tg.openTelegramLink(l):window.open(l)}}
+ catch(e){const l="https://t.me/share/url?url="+encodeURIComponent(BOT)+"&text="+encodeURIComponent(s.d[n][0]+" "+s.t+": "+(s.d[n][1]||s.s)+"\nПроверь какая у тебя карточка!");tg?tg.openTelegramLink(l):window.open(l)}}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a;a=="n"?go(1):a=="b"?go(-1):share()});
 if(tg)tg.BackButton.onClick(()=>go(-1));
 load();
