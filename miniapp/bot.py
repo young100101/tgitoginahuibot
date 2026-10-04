@@ -1,5 +1,5 @@
 """Бот: обязательные задания (подписка / заявка), админ-панель, статистика. Работает через webhook на том же сервере."""
-import os, re, hashlib
+import os, re, time, asyncio, hashlib
 from html import escape as E
 from urllib.parse import urlparse, unquote
 import asyncpg, httpx
@@ -13,11 +13,14 @@ ADMINS = {8008322348, 1237551150}
 SECRET = hashlib.sha256(TOKEN.encode()).hexdigest()[:32]
 pool = http = None
 BOT_ID = 0
+BC = {"run": False, "stop": False}
+BG: set = set()
 STATE: dict = {}   # админ -> шаг добавления задания (хранится в памяти)
 ERR = [""]
 WELCOME = "Привет! 👋 Смотри результаты своего Telegram-аккаунта"
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users(user_id BIGINT PRIMARY KEY, first_seen TIMESTAMPTZ DEFAULT now());
+ALTER TABLE users ADD COLUMN IF NOT EXISTS blocked BOOLEAN DEFAULT FALSE;
 CREATE TABLE IF NOT EXISTS tasks(id SERIAL PRIMARY KEY, chat_id BIGINT, title TEXT, kind TEXT, link TEXT,
   active BOOLEAN DEFAULT TRUE, created TIMESTAMPTZ DEFAULT now());
 CREATE TABLE IF NOT EXISTS events(task_id INT, user_id BIGINT, kind TEXT, ts TIMESTAMPTZ DEFAULT now(),
@@ -53,7 +56,7 @@ async def _startup():
     if not me: raise RuntimeError("getMe не сработал: проверь BOT_TOKEN")
     BOT_ID = me["id"]
     await call("setWebhook", url=PUBLIC + "/webhook", secret_token=SECRET,
-               allowed_updates=["message", "callback_query", "chat_join_request", "chat_member"])
+               allowed_updates=["message", "callback_query", "chat_join_request", "chat_member", "my_chat_member"])
     print("BOT READY", BOT_ID)
 
 async def is_done(t, uid):
@@ -81,7 +84,7 @@ async def gate(uid, cid, mid=None, cbid=None):
     if mid: await call("editMessageText", chat_id=cid, message_id=mid, text=text, reply_markup=kb(*rows))
     else: await send(cid, text, kb(*rows))
 
-PANEL = kb([cb("📊 Статистика", "st")], [cb("➕ Добавить задание", "add")], [cb("🔗 Статистика ссылок", "ls")])
+PANEL = kb([cb("📊 Статистика", "st")], [cb("📢 Рассылка", "bc")], [cb("➕ Добавить задание", "add")], [cb("🔗 Статистика ссылок", "ls")])
 
 async def resolve_chat(msg):
     t = (msg.get("text") or "").strip()
@@ -92,15 +95,84 @@ async def resolve_chat(msg):
     if re.fullmatch(r"-?\d{6,}", t): return await call("getChat", chat_id=int(t))
     return None
 
+def bc_markup(btns):
+    rows = []
+    for b in btns:
+        x = {"text": b["text"], "url": b["url"]}
+        if b["style"]: x["style"] = b["style"]   # danger = красная, success = зелёная
+        rows.append([x])
+    return {"inline_keyboard": rows} if rows else None
+
+async def bc_menu(cid, st):
+    mk = bc_markup(st["btns"])
+    await call("copyMessage", chat_id=cid, from_chat_id=cid, message_id=st["mid"], **({"reply_markup": mk} if mk else {}))  # предпросмотр
+    await send(cid, f"Так увидят сообщение. Кнопок: {len(st['btns'])}\nДобавить ещё кнопку или запустить рассылку?",
+               kb([cb("➕ Добавить кнопку", "bcadd")], [cb("🚀 Запустить рассылку", "bcgo")], [cb("❌ Отмена", "cancel")]))
+
+async def copy_to(uid, src, mid, mk):
+    for _ in range(3):
+        p = {"chat_id": uid, "from_chat_id": src, "message_id": mid}
+        if mk: p["reply_markup"] = mk
+        j = (await http.post(f"{API}/copyMessage", json=p)).json()
+        if j.get("ok"): return "ok"
+        d, code = j.get("description", ""), j.get("error_code")
+        if code == 429: await asyncio.sleep(j.get("parameters", {}).get("retry_after", 1) + 1); continue
+        if code == 403 or "deactivated" in d or "chat not found" in d: return "blocked"
+        return "fail"
+    return "fail"
+
+async def bc_text(sent, total, fail, done):
+    blocked = await pool.fetchval("SELECT count(*) FROM users WHERE blocked")
+    return (("✅ Рассылка завершена" if done else "📤 Рассылка идёт…") + f"\n\nОтправлено: <b>{sent}</b> из <b>{total}</b>"
+            f"\n🚫 Заблокировали бота: <b>{blocked}</b>\n⚠️ Ошибок: <b>{fail}</b>")
+
+async def run_bc(cid, mid, mk, smid):
+    BC.update(run=True, stop=False)
+    try:
+        total = await pool.fetchval("SELECT count(*) FROM users")
+        users = [r["user_id"] for r in await pool.fetch("SELECT user_id FROM users WHERE NOT blocked")]
+        sent = fail = 0; last = time.time()
+        stop_kb = kb([cb("⏹ Остановить", "bcstop")])
+        for u in users:
+            if BC["stop"]: break
+            r = await copy_to(u, cid, mid, mk)
+            if r == "ok": sent += 1
+            elif r == "blocked": await pool.execute("UPDATE users SET blocked=TRUE WHERE user_id=$1", u)
+            else: fail += 1
+            if time.time() - last > 3:
+                last = time.time()
+                await call("editMessageText", chat_id=cid, message_id=smid, parse_mode="HTML", text=await bc_text(sent, total, fail, False), reply_markup=stop_kb)
+            await asyncio.sleep(0.05)   # ~20 сообщений в секунду, в рамках лимитов Telegram
+        txt = await bc_text(sent, total, fail, True) + ("\n⏹ Остановлена вручную" if BC["stop"] else "")
+        await call("editMessageText", chat_id=cid, message_id=smid, parse_mode="HTML", text=txt)
+        await send(cid, txt, kb([cb("⬅️ Меню", "adm")]))
+    except Exception as e: print("broadcast error:", repr(e))
+    finally: BC["run"] = False
+
 async def on_message(msg):
     if msg["chat"]["type"] != "private": return
     uid, cid, text = msg["from"]["id"], msg["chat"]["id"], msg.get("text") or ""
     if text.startswith("/start"):
-        await pool.execute("INSERT INTO users(user_id) VALUES($1) ON CONFLICT DO NOTHING", uid)  # считаем уникально
+        await pool.execute("INSERT INTO users(user_id) VALUES($1) ON CONFLICT (user_id) DO UPDATE SET blocked=FALSE", uid)  # считаем уникально
         await gate(uid, cid)
         if uid in ADMINS: await send(cid, "⚙️ Админ-панель", PANEL)
     elif uid in ADMINS and text == "/admin":
         STATE.pop(uid, None); await send(cid, "⚙️ Админ-панель", PANEL)
+    elif uid in ADMINS and STATE.get(uid, {}).get("step") == "bc_msg" and not text.startswith("/"):
+        if msg.get("media_group_id"):
+            if not STATE[uid].get("warned"): STATE[uid]["warned"] = 1; await send(cid, "Альбомы не поддерживаются. Пришли одно сообщение (фото, GIF, видео или текст).")
+            return
+        STATE[uid] = {"step": "bc_menu", "mid": msg["message_id"], "btns": []}
+        await bc_menu(cid, STATE[uid])
+    elif uid in ADMINS and STATE.get(uid, {}).get("step") == "bc_url":
+        url = text.strip()
+        if url.startswith(("t.me/", "telegram.me/")): url = "https://" + url
+        if not re.fullmatch(r"(https?|tg)://\S+", url): await send(cid, "Это не ссылка. Пришли ссылку вида https://… или t.me/…"); return
+        STATE[uid].update(step="bc_name", url=url)
+        await send(cid, "Теперь пришли название кнопки (до 60 символов).")
+    elif uid in ADMINS and STATE.get(uid, {}).get("step") == "bc_name":
+        STATE[uid].update(step="bc_color", name=text.strip()[:60])
+        await send(cid, "Выбери цвет кнопки:", kb([cb("Обычный", "col:"), cb("🔴 Красный", "col:danger"), cb("🟢 Зелёный", "col:success")]))
     elif uid in ADMINS and STATE.get(uid, {}).get("step") == "link":
         if "t.me/+" in text or "joinchat" in text:
             await send(cid, "По приватной ссылке канал не определить. Перешли мне любое сообщение из него или пришли ID (вида -100123…)."); return
@@ -120,10 +192,26 @@ async def on_cb(q):
         await gate(uid, cid, mid, q["id"]); return
     await call("answerCallbackQuery", callback_query_id=q["id"])
     if uid not in ADMINS: return
-    if data == "adm": await send(cid, "⚙️ Админ-панель", PANEL)
+    st = STATE.get(uid, {})
+    if data == "cancel": STATE.pop(uid, None); await send(cid, "Отменено.", PANEL)
+    elif data == "bc":
+        STATE[uid] = {"step": "bc_msg"}
+        await send(cid, "📢 Пришли сообщение для рассылки: текст, фото, GIF или видео, можно с форматированием (жирный, курсив, ссылки и т.д.). Одним сообщением.", kb([cb("❌ Отмена", "cancel")]))
+    elif data == "bcadd" and st.get("step") == "bc_menu":
+        st["step"] = "bc_url"; await send(cid, "Пришли ссылку, куда будет вести кнопка.")
+    elif data.startswith("col:") and st.get("step") == "bc_color":
+        st["btns"].append({"text": st["name"], "url": st["url"], "style": data[4:]})
+        st["step"] = "bc_menu"; await bc_menu(cid, st)
+    elif data == "bcstop": BC["stop"] = True
+    elif data == "bcgo" and st.get("step") == "bc_menu":
+        if BC["run"]: await send(cid, "Рассылка уже идёт."); return
+        m = await send(cid, "📤 Запускаю рассылку…", kb([cb("⏹ Остановить", "bcstop")]))
+        STATE.pop(uid, None)
+        t = asyncio.create_task(run_bc(cid, st["mid"], bc_markup(st["btns"]), m["message_id"])); BG.add(t); t.add_done_callback(BG.discard)
+    elif data == "adm": await send(cid, "⚙️ Админ-панель", PANEL)
     elif data == "st":
-        n = await pool.fetchval("SELECT count(*) FROM users")
-        await send(cid, f"📊 Уникальных стартов: <b>{n}</b>", kb([cb("⬅️ Меню", "adm")]))
+        n = await pool.fetchval("SELECT count(*) FROM users"); b = await pool.fetchval("SELECT count(*) FROM users WHERE blocked")
+        await send(cid, f"📊 Статистика\n\n👥 Уникальных стартов: <b>{n}</b>\n🚫 Заблокировали бота: <b>{b}</b>\n✅ Активных: <b>{n-b}</b>", kb([cb("⬅️ Меню", "adm")]))
     elif data == "add":
         STATE[uid] = {"step": "link"}
         await send(cid, "Пришли ссылку на канал или чат (https://t.me/название или @название). Для приватного — перешли любое сообщение из него. Я должен быть там администратором.")
@@ -160,9 +248,14 @@ async def on_member(m):  # кто-то вступил в канал/чат, гд
         await pool.execute("""INSERT INTO events(task_id,user_id,kind) SELECT id,$2,'join' FROM tasks
             WHERE chat_id=$1 AND active ON CONFLICT DO NOTHING""", m["chat"]["id"], new["user"]["id"])
 
+async def on_block(m):  # человек заблокировал или разблокировал бота
+    if m["chat"]["type"] == "private":
+        await pool.execute("UPDATE users SET blocked=$2 WHERE user_id=$1", m["chat"]["id"], m["new_chat_member"]["status"] == "kicked")
+
 async def handle(u):
     if "message" in u: await on_message(u["message"])
     elif "callback_query" in u: await on_cb(u["callback_query"])
+    elif "my_chat_member" in u: await on_block(u["my_chat_member"])
     elif "chat_member" in u: await on_member(u["chat_member"])
     elif "chat_join_request" in u: await on_join(u["chat_join_request"])
 
