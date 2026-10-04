@@ -53,7 +53,7 @@ async def _startup():
     if not me: raise RuntimeError("getMe не сработал: проверь BOT_TOKEN")
     BOT_ID = me["id"]
     await call("setWebhook", url=PUBLIC + "/webhook", secret_token=SECRET,
-               allowed_updates=["message", "callback_query", "chat_join_request"])
+               allowed_updates=["message", "callback_query", "chat_join_request", "chat_member"])
     print("BOT READY", BOT_ID)
 
 async def is_done(t, uid):
@@ -74,7 +74,7 @@ async def gate(uid, cid, mid=None, cbid=None):
         if cbid: await call("answerCallbackQuery", callback_query_id=cbid)
         await send(cid, WELCOME, kb([{"text": "📱 Открыть результаты", "web_app": {"url": PUBLIC}}])); return
     rows = [[{"text": ("📢 Подписаться: " if t["kind"] == "link" else "✉️ Подать заявку: ") + t["title"][:40],
-              "url": f"{PUBLIC}/go/{t['id']}?u={uid}"}] for t in todo]
+              "url": t["link"]}] for t in todo]
     rows.append([cb("✅ Проверить", "chk")])
     text = "Чтобы открыть результаты, выполни задания и нажми «Проверить»:"
     if cbid: await call("answerCallbackQuery", callback_query_id=cbid, text="Не все задания выполнены", show_alert=True)
@@ -129,8 +129,8 @@ async def on_cb(q):
         await send(cid, "Пришли ссылку на канал или чат (https://t.me/название или @название). Для приватного — перешли любое сообщение из него. Я должен быть там администратором.")
     elif data.startswith("kind:") and STATE.get(uid, {}).get("step") == "kind":
         c, req = STATE[uid]["chat"], data == "kind:req"
-        inv = await call("createChatInviteLink", chat_id=c["id"], name="mini-app", creates_join_request=req)
-        link = inv["invite_link"] if inv else (None if req or not c["username"] else "https://t.me/" + c["username"])
+        inv = None if (not req and c["username"]) else await call("createChatInviteLink", chat_id=c["id"], name="mini-app", creates_join_request=req)
+        link = ("https://t.me/" + c["username"]) if (not req and c["username"]) else (inv["invite_link"] if inv else None)
         if not link:
             await send(cid, f"Не получилось создать ссылку: {E(ERR[0])}\nПроверь, что у меня есть право приглашать пользователей."); return
         tid = await pool.fetchval("INSERT INTO tasks(chat_id,title,kind,link) VALUES($1,$2,$3,$4) RETURNING id", c["id"], c["title"], "request" if req else "link", link)
@@ -138,12 +138,12 @@ async def on_cb(q):
         await send(cid, f"✅ Задание #{tid} добавлено: <b>{E(c['title'])}</b> ({'заявки' if req else 'обычная ссылка'})", kb([cb("⬅️ Меню", "adm")]))
     elif data == "ls":
         rows = await pool.fetch("""SELECT t.id,t.title,t.kind,
-          count(*) FILTER (WHERE e.kind='click') clicks, count(*) FILTER (WHERE e.kind='request') reqs,
+          count(*) FILTER (WHERE e.kind='join') joins, count(*) FILTER (WHERE e.kind='request') reqs,
           count(*) FILTER (WHERE e.kind='done') done
           FROM tasks t LEFT JOIN events e ON e.task_id=t.id WHERE t.active GROUP BY t.id ORDER BY t.id""")
         if not rows: await send(cid, "Заданий пока нет.", kb([cb("⬅️ Меню", "adm")])); return
         txt = "\n\n".join(f"<b>#{r['id']} {E(r['title'])}</b> ({'заявки' if r['kind']=='request' else 'ссылка'})\n"
-            f"👆 Переходов: {r['clicks']}\n✉️ Заявок: {r['reqs']}\n✅ Выполнили: {r['done']}" for r in rows)
+            f"👥 Вступили: {r['joins']}\n✉️ Заявок: {r['reqs']}\n✅ Выполнили: {r['done']}" for r in rows)
         await send(cid, "🔗 Статистика ссылок\n\n" + txt, kb(*[[cb(f"🗑 Удалить #{r['id']}", f"del:{r['id']}")] for r in rows], [cb("⬅️ Меню", "adm")]))
     elif data.startswith("del:"):
         await pool.execute("UPDATE tasks SET active=FALSE WHERE id=$1", int(data[4:]))
@@ -153,9 +153,17 @@ async def on_join(r):  # человек подал заявку в канал/ч
     await pool.execute("""INSERT INTO events(task_id,user_id,kind) SELECT id,$2,'request' FROM tasks
         WHERE chat_id=$1 AND kind='request' AND active ON CONFLICT DO NOTHING""", r["chat"]["id"], r["from"]["id"])
 
+async def on_member(m):  # кто-то вступил в канал/чат, где есть задание
+    new, old = m["new_chat_member"], m["old_chat_member"]
+    ok = lambda x: x["status"] in ("member", "administrator", "creator") or (x["status"] == "restricted" and x.get("is_member"))
+    if ok(new) and not ok(old):
+        await pool.execute("""INSERT INTO events(task_id,user_id,kind) SELECT id,$2,'join' FROM tasks
+            WHERE chat_id=$1 AND active ON CONFLICT DO NOTHING""", m["chat"]["id"], new["user"]["id"])
+
 async def handle(u):
     if "message" in u: await on_message(u["message"])
     elif "callback_query" in u: await on_cb(u["callback_query"])
+    elif "chat_member" in u: await on_member(u["chat_member"])
     elif "chat_join_request" in u: await on_join(u["chat_join_request"])
 
 def register(app):
