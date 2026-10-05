@@ -113,15 +113,17 @@ async def me(authorization: str = Header()):
     return {"id": uid, "days": days_in_tg(uid), "lvl": lvl, "stars": stars, "pct": pct(lvl),
             "prem": int(bool(u.get("is_premium"))), "gifts": gifts, "nft": uniq, "value": value}
 
+BOT_LINK = os.environ.get("BOT_LINK") or "https://t.me/" + APP_URL.split("/")[3] + "?start=share"  # кнопка ведёт на /start бота
+
 @app.post("/api/share")
 async def share(req: Request, authorization: str = Header()):
     u = auth(authorization); b = await req.json()
-    res = {"type": "photo", "id": f"{b['slide']}{b['tier']}",
-           "photo_url": f"{STATIC}/{b['slide']}_{b['tier']}.jpg", "thumbnail_url": f"{STATIC}/{b['slide']}_{b['tier']}.jpg",
-           "caption": b["title"],
-           "reply_markup": {"inline_keyboard": [[{"text": "Проверь какая у тебя карточка!", "url": APP_URL}]]}}
+    text = str(b.get("text") or b.get("title") or "Мои итоги в Telegram")[:4000]
+    res = {"type": "article", "id": f"{b.get('slide', 's')}{b.get('tier', 0)}", "title": "Мои итоги в Telegram",
+           "input_message_content": {"message_text": text, "link_preview_options": {"is_disabled": True}},
+           "reply_markup": {"inline_keyboard": [[{"text": "Проверь какая у тебя карточка!", "url": BOT_LINK}]]}}
     async with httpx.AsyncClient(timeout=20) as c:
         r = await tg(c, "savePreparedInlineMessage", user_id=u["id"], result=res,
                      allow_user_chats=True, allow_group_chats=True, allow_channel_chats=True)
-    if not r: raise HTTPException(502)
+    if not r: raise HTTPException(502, "Telegram не принял сообщение, смотри логи (TG ERROR savePreparedInlineMessage)")
     return {"id": r["id"]}
