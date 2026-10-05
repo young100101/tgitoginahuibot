@@ -65,14 +65,15 @@ button:active{transform:scale(.94);transition:transform .1s}
 .tot{font-size:46px;font-weight:800;margin:4px 0 12px;animation:pop .8s .3s cubic-bezier(.3,1.6,.5,1) both}
 .ce{display:inline-block;width:1.1em;height:1.1em;vertical-align:-.15em;line-height:1}
 .ce svg,.ce img,.ce video{width:100%;height:100%;display:block}
-.fp{position:absolute;top:-60px;z-index:1;pointer-events:none;animation:fallp linear infinite}
+.fp{position:absolute;top:-60px;z-index:1;pointer-events:none;animation:fallp linear both;will-change:transform}
+.fp img{width:100%;height:100%;display:block}
 @keyframes fallp{to{transform:translateY(112vh) rotate(300deg)}}
 </style></head><body><div id="app"></div>
 <script>
 const tg=window.Telegram&&Telegram.WebApp;if(tg){tg.ready();tg.expand();
  try{if(tg.disableVerticalSwipes)tg.disableVerticalSwipes()}catch(e){}   // свайп вниз не закрывает приложение
  try{if(tg.isVersionAtLeast&&tg.isVersionAtLeast("8.0"))tg.requestFullscreen()}catch(e){}}  // во весь экран
-const BOT="https://t.me/@gitoginahuibot/app";
+const BOT="https://t.me/YOUR_BOT/app";
 const T=(a,b,c)=>v=>v<a?0:v<b?1:2;
 const S=[
 {k:"days",p:v=>Math.floor(v/10),pr:"1 балл за каждые 10 дней",t:"Твой стаж",s:"Сколько дней ты в Telegram?",u:"дней",f:T(500,1000),
@@ -110,12 +111,32 @@ function put(el,e){ // вставить эмодзи в элемент
  else if(e.k=="v"){const v=document.createElement("video");v.src=e.u;v.autoplay=v.loop=v.muted=v.playsInline=true;el.appendChild(v)}
  else if(e.k=="i"){const m=document.createElement("img");m.src=e.u;el.appendChild(m)}}
 function hydrate(){document.querySelectorAll(".ce:not(.ok)").forEach(el=>{el.classList.add("ok");loadEmoji(el.dataset.ce).then(e=>put(el,e))})}
+const ST={};
+function still(id){ // неподвижная картинка эмодзи (один кадр) — чтобы падающие не нагружали экран
+ return ST[id]||(ST[id]=loadEmoji(id).then(e=>new Promise(res=>{
+  if(!e)return res(null);
+  if(e.k=="i")return res(e.u);
+  if(e.k!="l"||!window.lottie)return res(null);
+  try{const cv=document.createElement("canvas");cv.width=cv.height=128;const cx=cv.getContext("2d");
+   const an=lottie.loadAnimation({renderer:"canvas",loop:false,autoplay:false,animationData:JSON.parse(JSON.stringify(e.d)),rendererSettings:{context:cx,clearCanvas:true}});
+   an.addEventListener("DOMLoaded",()=>{
+    const tf=an.totalFrames||1;let url=null;
+    for(const p of[0,.1,.25,.5]){ // первый кадр; если он пустой — ближайший непустой
+     an.goToAndStop(Math.floor(tf*p),true);
+     const d=cx.getImageData(0,0,128,128).data;let sum=0;for(let k=3;k<d.length;k+=4)sum+=d[k];
+     if(sum>0){url=cv.toDataURL("image/png");break}}
+    try{an.destroy()}catch(x){}res(url)})
+  }catch(x){res(null)}})).catch(()=>null))}
+function fall(){ // эмодзи сыплются один раз в начале слайда, сами не анимированы
+ const my=i;
+ Promise.all(EM.fall.map(still)).then(us=>{
+  if(i!=my||S[i].k!="gifts")return;
+  for(let k=0;k<12;k++){
+   const c=document.createElement("span"),u=us[k%4];c.className="fp";
+   c.style.cssText=`left:${Math.random()*92}%;animation-delay:${Math.random()*1.3}s;animation-duration:${2.3+Math.random()*1.2}s;width:${30+Math.random()*16}px;height:${30+Math.random()*16}px`;
+   if(u){const m=document.createElement("img");m.src=u;c.appendChild(m)}else{c.textContent=FB[k%4];c.style.fontSize="30px"}
+   app.appendChild(c);setTimeout(()=>c.remove(),5500)}})}
 const FB=["🎁","🎀","✨","🎊"];
-function fall(){ // падающие премиум-эмодзи на слайде «Обычные подарки»
- Promise.all(EM.fall.map(loadEmoji)).then(es=>{for(let k=0;k<10;k++){
-  const c=document.createElement("span"),e=es[k%4];c.className="fp";
-  c.style.cssText=`left:${Math.random()*92}%;animation-delay:-${Math.random()*6}s;animation-duration:${4.5+Math.random()*3}s;width:${30+Math.random()*16}px;height:${30+Math.random()*16}px`;
-  e?put(c,e):(c.textContent=FB[k%4],c.style.fontSize="30px");app.appendChild(c)}})}
 const pts=s=>s.p?s.p(D[s.k]):0, total=()=>S.reduce((a,s)=>a+pts(s),0);
 const pl=n=>n%10==1&&n%100!=11?"балл":(n%10>=2&&n%10<=4&&(n%100<12||n%100>14))?"балла":"баллов";
 const RND=["fast","slow","online"];
