@@ -55,28 +55,43 @@ EMOJI_IDS = {"5283228279988309088", "5280598054901145762", "5280651583078556009"
     "5456299600702889290", "5454039464357682228", "5456504676801338603", "5456461744308249091", "5456147077824274112", "5456140674028019486", "5368469400695351161", "5373098778439982772", "5357107601584693888", "5445284980978621387", "5280769763398671636"}
 EMOJI_CACHE: dict = {}
 
-@app.get("/api/emoji/{eid}")
-async def emoji(eid: str):
-    if eid not in EMOJI_IDS: raise HTTPException(404)
-    if eid not in EMOJI_CACHE:
-      try:
+async def get_emoji(eid: str, thumb: bool = False):
+    key = (eid, thumb)
+    if key not in EMOJI_CACHE:
         async with httpx.AsyncClient(timeout=25) as c:
             st = await tg(c, "getCustomEmojiStickers", custom_emoji_ids=[eid])
-            f = await tg(c, "getFile", file_id=st[0]["file_id"]) if st else None
-            if not f: raise HTTPException(404)
+            if not st: raise RuntimeError("Telegram не вернул эмодзи (getCustomEmojiStickers)")
+            fid = st[0]["thumbnail"]["file_id"] if thumb and st[0].get("thumbnail") else st[0]["file_id"]
+            f = await tg(c, "getFile", file_id=fid)
+            if not f: raise RuntimeError("getFile не сработал")
             r = await c.get(f"https://api.telegram.org/file/bot{TOKEN}/{f['file_path']}")
         body, path = r.content, f["file_path"]
-        if path.endswith(".tgs"): EMOJI_CACHE[eid] = (gzip.decompress(body), "application/json")
-        elif path.endswith(".webm"): EMOJI_CACHE[eid] = (body, "video/webm")
-        else: EMOJI_CACHE[eid] = (body, "image/webp")
-      except HTTPException: raise
-      except Exception as e:
-        print("EMOJI ERROR", eid, repr(e)); raise HTTPException(502)
-    body, mime = EMOJI_CACHE[eid]
+        if path.endswith(".tgs"): EMOJI_CACHE[key] = (gzip.decompress(body), "application/json")
+        elif path.endswith(".webm"): EMOJI_CACHE[key] = (body, "video/webm")
+        elif path.endswith((".jpg", ".jpeg")): EMOJI_CACHE[key] = (body, "image/jpeg")
+        else: EMOJI_CACHE[key] = (body, "image/webp")
+    return EMOJI_CACHE[key]
+
+@app.get("/api/emoji/{eid}")
+async def emoji(eid: str, thumb: int = 0):  # thumb=1 -> неподвижная картинка (для iPhone и падающих эмодзи)
+    if eid not in EMOJI_IDS: raise HTTPException(404)
+    try: body, mime = await get_emoji(eid, bool(thumb))
+    except Exception as e:
+        print("EMOJI ERROR", eid, repr(e)); raise HTTPException(502, str(e))
     return Response(content=body, media_type=mime, headers={"Cache-Control": "public, max-age=86400"})
 
+@app.get("/api/emoji-test")
+async def emoji_test():  # диагностика: открой в браузере, чтобы увидеть, какие эмодзи грузятся
+    out = {}
+    for eid in sorted(EMOJI_IDS):
+        try:
+            b, m = await get_emoji(eid); t, tm = await get_emoji(eid, True)
+            out[eid] = f"OK: {m}, {len(b)} байт; картинка: {tm}, {len(t)} байт"
+        except Exception as e: out[eid] = "ОШИБКА: " + repr(e)
+    return out
+
 @app.get("/")
-async def index(): return FileResponse(os.path.join(os.path.dirname(__file__), "index.html"))
+async def index(): return FileResponse(os.path.join(os.path.dirname(__file__), "index.html"), headers={"Cache-Control": "no-store"})
 
 @app.get("/api/me")
 async def me(authorization: str = Header()):
