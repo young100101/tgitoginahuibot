@@ -73,7 +73,7 @@ button:active{transform:scale(.94);transition:transform .1s}
 const tg=window.Telegram&&Telegram.WebApp;if(tg){tg.ready();tg.expand();
  try{if(tg.disableVerticalSwipes)tg.disableVerticalSwipes()}catch(e){}   // свайп вниз не закрывает приложение
  try{if(tg.isVersionAtLeast&&tg.isVersionAtLeast("8.0"))tg.requestFullscreen()}catch(e){}}  // во весь экран
-const BOT="https://t.me/YOUR_BOT/app";
+const BOT="https://t.me/tgitoginahuibot/app";
 const T=(a,b,c)=>v=>v<a?0:v<b?1:2;
 const S=[
 {k:"days",p:v=>Math.floor(v/10),pr:"1 балл за каждые 10 дней",t:"Твой стаж",s:"Сколько дней ты в Telegram?",u:"дней",f:T(500,1000),
