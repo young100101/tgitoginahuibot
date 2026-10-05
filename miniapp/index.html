@@ -73,7 +73,7 @@ button:active{transform:scale(.94);transition:transform .1s}
 const tg=window.Telegram&&Telegram.WebApp;if(tg){tg.ready();tg.expand();
  try{if(tg.disableVerticalSwipes)tg.disableVerticalSwipes()}catch(e){}   // свайп вниз не закрывает приложение
  try{if(tg.isVersionAtLeast&&tg.isVersionAtLeast("8.0"))tg.requestFullscreen()}catch(e){}}  // во весь экран
-const BOT="https://t.me/tgitoginahuibot/app";
+const BOT="https://t.me/YOUR_BOT/app";
 const T=(a,b,c)=>v=>v<a?0:v<b?1:2;
 const S=[
 {k:"days",p:v=>Math.floor(v/10),pr:"1 балл за каждые 10 дней",t:"Твой стаж",s:"Сколько дней ты в Telegram?",u:"дней",f:T(500,1000),
@@ -87,7 +87,7 @@ const S=[
  d:[["🔒","У тебя нет Telegram Premium"],["⭐","У тебя есть Telegram Premium"]]},
 {k:"gifts",p:v=>Math.floor(v/5),pr:"1 балл за каждые 5 подарков",t:"Обычные подарки",s:"Сколько их в твоём профиле?",u:"шт.",f:v=>v<=3?0:v<=10?1:2,
  c:[["#6a7a8c","#3c4a5a"],["#e0832e","#b8461a"],["#e0457b","#a3194f"]],
- d:[["{g}","Скромная полка"],["{g}","Неплохая коллекция"],["{g}","Подарочный магнат"]]},
+ d:[["🎁","Скромная полка"],["{g}","Неплохая коллекция"],["🏆","Подарочный магнат"]]},
 {k:"nft",p:v=>v,pr:"1 балл за каждый NFT-подарок",t:"NFT-подарки",s:"Улучшенные подарки в профиле",u:"шт.",f:v=>v<=3?0:v<=10?1:2,
  c:[["#00c2d1","#0a5fb0"],["#7b5cff","#d13fc1"],["#f7b733","#fc4a1a"]],
  d:[["🧸","Начинающий коллекционер"],["💠","Серьёзный коллекционер"],["🐉","Легенда рынка"]]},
@@ -95,9 +95,10 @@ const S=[
 {k:"slow",t:"Самый долгий ответ",s:"Как же долго он ждал ответа....",f:()=>0,c:[["#2f7cf6","#1747c9"]],d:[["🐌",""]]},
 {k:"online",t:"Постоянный онлайн",s:"В этот день ты сидел больше всего в телеграмме!",f:()=>0,c:[["#8a3ee0","#52209e"]],d:[["😈",""]]}
 ];
-const EM={star:"5406812184359507637",gift:"5280598054901145762",fall:["5283228279988309088","5280598054901145762","5280651583078556009","5280922999241859582"]};
+const EM={star:"5406812184359507637",gift:"5280598054901145762",fall:["5283228279988309088","5280598054901145762","5280651583078556009","5280922999241859582"],nft:["5456299600702889290","5454039464357682228","5456504676801338603","5456461744308249091","5456147077824274112"]};
 const CE=(id,fb)=>`<span class="ce" data-ce="${id}">${fb}</span>`;
-const rich=t=>String(t).replace(/⭐/g,CE(EM.star,"⭐")).replace(/\{g\}/g,CE(EM.gift,"🎁"));
+const MAP={"⭐":"5406812184359507637","⚡":"5456140674028019486","🐌":"5368469400695351161","😈":"5373098778439982772","👑":"5357107601584693888","🚀":"5445284980978621387","🏆":"5280769763398671636"};
+const rich=t=>String(t).replace(/⭐|⚡|🐌|😈|👑|🚀|🏆/g,m=>CE(MAP[m],m)).replace(/\{g\}/g,CE(EM.gift,"🎁"));
 const plain=t=>String(t).replace(/\{g\}/g,"🎁");
 const EC={};
 function loadEmoji(id){ // премиум-эмодзи берём у бота; если не вышло — остаётся обычный
@@ -127,16 +128,15 @@ function still(id){ // неподвижная картинка эмодзи (о�
      if(sum>0){url=cv.toDataURL("image/png");break}}
     try{an.destroy()}catch(x){}res(url)})
   }catch(x){res(null)}})).catch(()=>null))}
-function fall(){ // эмодзи сыплются один раз в начале слайда, сами не анимированы
+function fall(key,ids,n,delay,d0,dv,ttl){ // эмодзи сыплются один раз, сами не анимированы
  const my=i;
- Promise.all(EM.fall.map(still)).then(us=>{
-  if(i!=my||S[i].k!="gifts")return;
-  for(let k=0;k<12;k++){
-   const c=document.createElement("span"),u=us[k%4];c.className="fp";
-   c.style.cssText=`left:${Math.random()*92}%;animation-delay:${Math.random()*1.3}s;animation-duration:${2.3+Math.random()*1.2}s;width:${30+Math.random()*16}px;height:${30+Math.random()*16}px`;
+ Promise.all(ids.map(still)).then(us=>{
+  if(i!=my||S[i].k!=key)return;
+  for(let k=0;k<n;k++){
+   const c=document.createElement("span"),u=us[k%ids.length];c.className="fp";
+   c.style.cssText=`left:${Math.random()*92}%;animation-delay:${Math.random()*delay}s;animation-duration:${d0+Math.random()*dv}s;width:${30+Math.random()*16}px;height:${30+Math.random()*16}px`;
    if(u){const m=document.createElement("img");m.src=u;c.appendChild(m)}else{c.textContent=FB[k%4];c.style.fontSize="30px"}
-   app.appendChild(c);setTimeout(()=>c.remove(),5500)}})}
-const FB=["🎁","🎀","✨","🎊"];
+   app.appendChild(c);setTimeout(()=>c.remove(),ttl)}})}
 const pts=s=>s.p?s.p(D[s.k]):0, total=()=>S.reduce((a,s)=>a+pts(s),0);
 const pl=n=>n%10==1&&n%100!=11?"балл":(n%10>=2&&n%10<=4&&(n%100<12||n%100>14))?"балла":"баллов";
 const RND=["fast","slow","online"];
@@ -159,8 +159,9 @@ async function load(){
 function fx(n,all,key){
  document.querySelectorAll(".cnt").forEach(el=>{const to=+el.dataset.to,t0=performance.now(),D=1300;
   (function f(t){const p=Math.min(1,(t-t0)/D),e=1-Math.pow(1-p,3);el.textContent=Math.round(to*e).toLocaleString("ru");if(p<1)requestAnimationFrame(f)})(t0)});
- if(key=="gifts")fall();
- if(n==2&&key!="days"&&key!="gifts"){const E=["🎉","✨","⭐","🎊","💫"];for(let k=0;k<26;k++){const c=document.createElement("span");c.className="cf";if(E[k%5]=="⭐")c.innerHTML=CE(EM.star,"⭐");else c.textContent=E[k%5];
+ if(key=="gifts")fall("gifts",EM.fall,12,1.3,2.3,1.2,5500);
+ if(key=="nft")fall("nft",EM.nft,14,.7,1.8,.6,3600); // 2–3 секунды
+ if(n==2&&key!="days"&&key!="gifts"&&key!="nft"){const E=["🎉","✨","⭐","🎊","💫"];for(let k=0;k<26;k++){const c=document.createElement("span");c.className="cf";if(E[k%5]=="⭐")c.innerHTML=CE(EM.star,"⭐");else c.textContent=E[k%5];
   c.style.cssText=`left:${Math.random()*100}%;animation-delay:${Math.random()*.8}s;animation-duration:${2+Math.random()*2}s;font-size:${16+Math.random()*18}px`;app.appendChild(c);setTimeout(()=>c.remove(),5000)}}
  hydrate();
  if(tg&&tg.HapticFeedback)tg.HapticFeedback.impactOccurred(n==2?"heavy":"light")}
@@ -181,7 +182,7 @@ function show(){
 function final(){bg(["#2f7cf6","#8a3ee0"]);
  if(window.lottie)lottie.destroy();
  const r=S.map(s=>s.d[s.f(D[s.k])]);
- app.innerHTML=snow()+`<h1>Итоги</h1><div class="sub">Вот кто ты в Telegram</div><div class="mid" style="font-size:18px;gap:8px"><div class="lbl" style="margin:0">Сумма баллов</div><div class="tot">🏆 ${N(total())} ${pl(total())}</div>`+
+ app.innerHTML=snow()+`<h1>Итоги</h1><div class="sub">Вот кто ты в Telegram</div><div class="mid" style="font-size:18px;gap:8px"><div class="lbl" style="margin:0">Сумма баллов</div><div class="tot">${rich("🏆")} ${N(total())} ${pl(total())}</div>`+
  S.map((s,j)=>`<div class="li" style="animation-delay:${j*.12+.2}s">${rich(r[j][0])} <b>${s.t}:</b> ${r[j][1]||D[s.k]}${s.p?` · <b>+${pts(s)}</b>`:""}</div>`).join("")+
  `</div><button type="button" class="share" data-a="s">Поделиться ↗</button><div class="btns"><button type="button" class="back" data-a="b">Назад</button></div>`;fx(2,1,"final")}
 dir="fwd";
