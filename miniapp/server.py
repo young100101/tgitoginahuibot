@@ -113,9 +113,8 @@ async def me(authorization: str = Header()):
     return {"id": uid, "days": days_in_tg(uid), "lvl": lvl, "stars": stars, "pct": pct(lvl),
             "prem": int(bool(u.get("is_premium"))), "gifts": gifts, "nft": uniq, "value": value}
 
-import re
-_m = re.search(r"t\.me/([A-Za-z0-9_]+)", APP_URL)
-BOT_LINK = os.environ.get("BOT_LINK") or ("https://t.me/" + _m.group(1) + "?start=share" if _m else "https://t.me/")  # кнопка ведёт на /start бота
+BOT_USERNAME = os.environ.get("BOT_USERNAME", "tgitoginahuibot").lstrip("@")
+BOT_LINK = os.environ.get("BOT_LINK") or f"https://t.me/{BOT_USERNAME}?start=share"  # кнопка ведёт на /start бота
 
 @app.post("/api/share")
 async def share(req: Request, authorization: str = Header()):

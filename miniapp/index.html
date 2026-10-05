@@ -190,11 +190,26 @@ function final(){bg(["#2f7cf6","#8a3ee0"]);
  `</div><button type="button" class="share" data-a="s">Поделиться ↗</button><div class="btns"><button type="button" class="back" data-a="b">Назад</button></div>`;fx(2,1,"final")}
 dir="fwd";
 function go(d){dir=d>0?"fwd":"bk";i=Math.min(S.length,Math.max(0,i+d));show();if(tg)i>0?tg.BackButton.show():tg.BackButton.hide()}
+const BOTSTART=BOT.replace(/\/[^\/]*$/,"")+"?start=share";   // ссылка на /start бота
+function caption(s,n){ // текст под карточкой — про тот слайд, где нажали «Поделиться»
+ const nm=s.d[n][1],v=D[s.k],em=plain(s.d[n][0]),h=x=>String(x).replace("&lt;","<"),end="\n\nУзнай свои результаты 👇";
+ switch(s.k){
+  case"days":return`${em} Я в Telegram уже ${v} дн. — ${nm}! А ты как давно?`+end;
+  case"pct":return`${em} Мой рейтинг в Telegram — ${D.lvl}, я в топ ${v}% пользователей!\n⭐ Потрачено звёзд: ${D.stars||0}`+end;
+  case"prem":return`${em} ${nm.replace("У тебя","У меня")}! А у тебя?`+end;
+  case"gifts":return`${em} Обычных подарков в моём профиле: ${v} — ${nm}!`+end;
+  case"nft":return`${em} NFT-подарков в моём профиле: ${v} — ${nm}!`+end;
+  case"fast":return`⚡ Мой самый быстрый ответ — ${h(v)}! Ты что 24/7 в телеграмме?`+end;
+  case"slow":return`🐌 Самый долгий ответ — ${v}... Как же долго он ждал ответа 😅`+end;
+  case"online":return`😈 В этот день я сидел больше всего в телеграмме: ${v}!`+end}
+ return`${em} ${s.t}: ${nm}`+end}
 async function share(){
- const s=S[Math.min(i,S.length-1)],n=s.f(D[s.k]);
- try{const r=await fetch(API+"/api/share",{method:"POST",headers:{Authorization:"tma "+tg.initData,"Content-Type":"application/json"},body:JSON.stringify({slide:s.k,tier:n,title:s.t+": "+(s.d[n][1]||D[s.k].replace("&lt;","<"))})});
-  const {id}=await r.json();tg.shareMessage(id)}
- catch(e){const l="https://t.me/share/url?url="+encodeURIComponent(BOT)+"&text="+encodeURIComponent(plain(s.d[n][0])+" "+s.t+": "+(s.d[n][1]||s.s)+"\nПроверь какая у тебя карточка!");tg?tg.openTelegramLink(l):window.open(l)}}
+ const fin=i>=S.length,s=fin?null:S[i],n=fin?0:s.f(D[s.k]);
+ const text=fin?`🏆 Мои итоги в Telegram — ${total()} ${pl(total())}!\nУзнай свои результаты 👇`:caption(s,n);
+ try{if(!tg||!tg.shareMessage||!tg.isVersionAtLeast("8.0"))throw 0;
+  const r=await fetch(API+"/api/share",{method:"POST",headers:{Authorization:"tma "+tg.initData,"Content-Type":"application/json"},body:JSON.stringify({slide:fin?"final":s.k,tier:n,text})});
+  if(!r.ok)throw 0;const {id}=await r.json();tg.shareMessage(id)}
+ catch(e){const l="https://t.me/share/url?url="+encodeURIComponent(BOTSTART)+"&text="+encodeURIComponent(text);tg?tg.openTelegramLink(l):window.open(l)}}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a;a=="n"?go(1):a=="b"?go(-1):share()});
 if(tg)tg.BackButton.onClick(()=>go(-1));
 load();
