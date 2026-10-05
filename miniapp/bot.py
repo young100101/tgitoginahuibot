@@ -3,7 +3,7 @@ import os, re, time, asyncio, hashlib
 from html import escape as E
 from urllib.parse import urlparse, unquote
 import asyncpg, httpx
-from fastapi import Request, HTTPException
+from fastapi import Request, HTTPException, Header
 from fastapi.responses import RedirectResponse
 
 TOKEN = os.environ["BOT_TOKEN"]
@@ -25,7 +25,39 @@ CREATE TABLE IF NOT EXISTS tasks(id SERIAL PRIMARY KEY, chat_id BIGINT, title TE
   active BOOLEAN DEFAULT TRUE, created TIMESTAMPTZ DEFAULT now());
 CREATE TABLE IF NOT EXISTS events(task_id INT, user_id BIGINT, kind TEXT, ts TIMESTAMPTZ DEFAULT now(),
   PRIMARY KEY(task_id, user_id, kind));
+CREATE TABLE IF NOT EXISTS profiles(user_id BIGINT PRIMARY KEY, name TEXT, username TEXT, photo TEXT,
+  points INT DEFAULT 0, created TIMESTAMPTZ DEFAULT now());
+CREATE TABLE IF NOT EXISTS referrals(invitee BIGINT PRIMARY KEY, inviter BIGINT, qualified BOOLEAN DEFAULT FALSE, created TIMESTAMPTZ DEFAULT now());
+CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT);
 """
+
+BOT_USERNAME = os.environ.get("BOT_USERNAME", "tgitoginahuibot").lstrip("@")
+def ref_link(uid): return f"https://t.me/{BOT_USERNAME}?start=ref_{uid}"
+
+def auth_user(h: str) -> dict:  # проверка подписи Telegram (initData)
+    import hmac, json
+    from urllib.parse import parse_qsl
+    data = dict(parse_qsl(h.removeprefix("tma "), keep_blank_values=True)); got = data.pop("hash", "")
+    chk = "\n".join(f"{k}={v}" for k, v in sorted(data.items()))
+    key = hmac.new(b"WebAppData", TOKEN.encode(), hashlib.sha256).digest()
+    if not hmac.compare_digest(hmac.new(key, chk.encode(), hashlib.sha256).hexdigest(), got): raise HTTPException(401)
+    return json.loads(data["user"])
+
+async def get_need() -> int:
+    v = await pool.fetchval("SELECT value FROM settings WHERE key='ref_need'")
+    return int(v) if v is not None else 2   # по умолчанию нужно пригласить 2 человек
+
+async def save_profile(u, points):  # профиль для таблицы лидеров (вызывает мини-апп)
+    name = ((u.get("first_name") or "") + " " + (u.get("last_name") or "")).strip() or u.get("username") or "Без имени"
+    await pool.execute("""INSERT INTO profiles(user_id,name,username,photo,points) VALUES($1,$2,$3,$4,$5)
+        ON CONFLICT (user_id) DO UPDATE SET name=$2, username=$3, photo=$4, points=$5""",
+        u["id"], name, u.get("username") or "", u.get("photo_url") or "", int(points))
+
+async def qualify(uid):  # приглашённый выполнил условия -> засчитываем реферала
+    inv = await pool.fetchval("UPDATE referrals SET qualified=TRUE WHERE invitee=$1 AND NOT qualified RETURNING inviter", uid)
+    if inv:
+        n = await pool.fetchval("SELECT count(*) FROM referrals WHERE inviter=$1 AND qualified", inv); need = await get_need()
+        await send(inv, f"🎉 Друг присоединился по твоей ссылке! Приглашено: <b>{n}</b> из <b>{need}</b>" + ("\n✅ Дополнительная информация открыта!" if n >= need else ""))
 
 async def call(method, **p):
     r = await http.post(f"{API}/{method}", json=p); j = r.json()
@@ -75,6 +107,7 @@ async def gate(uid, cid, mid=None, cbid=None):
         else: todo.append(t)
     if not todo:
         if cbid: await call("answerCallbackQuery", callback_query_id=cbid)
+        await qualify(uid)
         await send(cid, WELCOME, kb([{"text": "📱 Открыть результаты", "web_app": {"url": PUBLIC}}])); return
     rows = [[{"text": ("📢 Подписаться: " if t["kind"] == "link" else "✉️ Подать заявку: ") + t["title"][:40],
               "url": t["link"]}] for t in todo]
@@ -84,7 +117,7 @@ async def gate(uid, cid, mid=None, cbid=None):
     if mid: await call("editMessageText", chat_id=cid, message_id=mid, text=text, reply_markup=kb(*rows))
     else: await send(cid, text, kb(*rows))
 
-PANEL = kb([cb("📊 Статистика", "st")], [cb("📢 Рассылка", "bc")], [cb("➕ Добавить задание", "add")], [cb("🔗 Статистика ссылок", "ls")])
+PANEL = kb([cb("📊 Статистика", "st")], [cb("📢 Рассылка", "bc")], [cb("👥 Рефералы за доп. инфо", "refs")], [cb("➕ Добавить задание", "add")], [cb("🔗 Статистика ссылок", "ls")])
 
 async def resolve_chat(msg):
     t = (msg.get("text") or "").strip()
@@ -153,11 +186,20 @@ async def on_message(msg):
     if msg["chat"]["type"] != "private": return
     uid, cid, text = msg["from"]["id"], msg["chat"]["id"], msg.get("text") or ""
     if text.startswith("/start"):
-        await pool.execute("INSERT INTO users(user_id) VALUES($1) ON CONFLICT (user_id) DO UPDATE SET blocked=FALSE", uid)  # считаем уникально
+        new = await pool.fetchval("INSERT INTO users(user_id) VALUES($1) ON CONFLICT (user_id) DO UPDATE SET blocked=FALSE RETURNING (xmax = 0)", uid)  # считаем уникально
+        payload = text.split(maxsplit=1)[1] if " " in text else ""
+        if new and payload.startswith("ref_") and payload[4:].isdigit() and int(payload[4:]) != uid:  # реферал только за нового пользователя
+            await pool.execute("INSERT INTO referrals(invitee,inviter) VALUES($1,$2) ON CONFLICT DO NOTHING", uid, int(payload[4:]))
         await gate(uid, cid)
         if uid in ADMINS: await send(cid, "⚙️ Админ-панель", PANEL)
     elif uid in ADMINS and text == "/admin":
         STATE.pop(uid, None); await send(cid, "⚙️ Админ-панель", PANEL)
+    elif uid in ADMINS and STATE.get(uid, {}).get("step") == "refneed":
+        if text.strip().isdigit() and int(text) <= 1000:
+            await pool.execute("INSERT INTO settings(key,value) VALUES('ref_need',$1) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value", text.strip())
+            STATE.pop(uid, None); n = int(text)
+            await send(cid, f"✅ Теперь для доп. информации нужно пригласить: <b>{n}</b>" if n else "✅ Доп. информация теперь доступна без приглашений", PANEL)
+        else: await send(cid, "Пришли число от 0 до 1000.")
     elif uid in ADMINS and STATE.get(uid, {}).get("step") == "bc_msg" and not text.startswith("/"):
         if msg.get("media_group_id"):
             if not STATE[uid].get("warned"): STATE[uid]["warned"] = 1; await send(cid, "Альбомы не поддерживаются. Пришли одно сообщение (фото, GIF, видео или текст).")
@@ -208,6 +250,9 @@ async def on_cb(q):
         m = await send(cid, "📤 Запускаю рассылку…", kb([cb("⏹ Остановить", "bcstop")]))
         STATE.pop(uid, None)
         t = asyncio.create_task(run_bc(cid, st["mid"], bc_markup(st["btns"]), m["message_id"])); BG.add(t); t.add_done_callback(BG.discard)
+    elif data == "refs":
+        STATE[uid] = {"step": "refneed"}; ok = await pool.fetchval("SELECT count(*) FROM referrals WHERE qualified")
+        await send(cid, f"👥 Рефералы за доп. информацию\n\nСейчас нужно пригласить: <b>{await get_need()}</b>\nЗасчитано приглашений всего: <b>{ok}</b>\n\nПришли новое число (0 — без приглашений).", kb([cb("❌ Отмена", "cancel")]))
     elif data == "adm": await send(cid, "⚙️ Админ-панель", PANEL)
     elif data == "st":
         n = await pool.fetchval("SELECT count(*) FROM users"); b = await pool.fetchval("SELECT count(*) FROM users WHERE blocked")
@@ -259,8 +304,34 @@ async def handle(u):
     elif "chat_member" in u: await on_member(u["chat_member"])
     elif "chat_join_request" in u: await on_join(u["chat_join_request"])
 
+async def more_data(uid):
+    need = await get_need(); cnt = await pool.fetchval("SELECT count(*) FROM referrals WHERE inviter=$1 AND qualified", uid)
+    me = await pool.fetchrow("""SELECT points, (SELECT rn FROM (SELECT user_id, row_number() OVER (ORDER BY points DESC, created, user_id) rn FROM profiles) t WHERE t.user_id=$1) rank
+        FROM profiles WHERE user_id=$1""", uid)
+    return {"need": need, "count": cnt, "unlocked": cnt >= need, "link": ref_link(uid),
+            "rank": me["rank"] if me else None, "points": me["points"] if me else 0}
+
 def register(app):
     app.on_event("startup")(startup)
+    @app.get("/api/more")
+    async def more(authorization: str = Header()):
+        return await more_data(auth_user(authorization)["id"])
+    @app.get("/api/top")
+    async def top(authorization: str = Header()):
+        uid = auth_user(authorization)["id"]; m = await more_data(uid)
+        if not m["unlocked"]: raise HTTPException(403, "нужно пригласить друзей")
+        rows = await pool.fetch("""SELECT name, username, photo, points, row_number() OVER (ORDER BY points DESC, created, user_id) rank
+            FROM profiles ORDER BY points DESC, created, user_id LIMIT 100""")
+        return {"top": [dict(r) for r in rows], "me": {"rank": m["rank"], "points": m["points"]}}
+    @app.post("/api/invite")
+    async def invite(authorization: str = Header()):
+        uid = auth_user(authorization)["id"]
+        res = {"type": "article", "id": f"inv{uid}", "title": "Приглашение",
+               "input_message_content": {"message_text": "👋 Смотри результаты своего Telegram-аккаунта!\nУзнай свой стаж, подарки и баллы и сравни себя с топ-100 👇", "link_preview_options": {"is_disabled": True}},
+               "reply_markup": {"inline_keyboard": [[{"text": "Узнать мои результаты", "url": ref_link(uid)}]]}}
+        r = await call("savePreparedInlineMessage", user_id=uid, result=res, allow_user_chats=True, allow_group_chats=True, allow_channel_chats=True)
+        if not r: raise HTTPException(502, "Telegram не принял сообщение")
+        return {"id": r["id"]}
     @app.post("/webhook")
     async def webhook(req: Request):
         if req.headers.get("x-telegram-bot-api-secret-token") != SECRET: raise HTTPException(403)

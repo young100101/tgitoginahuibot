@@ -110,8 +110,13 @@ async def me(authorization: str = Header()):
         chat = await tg(c, "getChat", chat_id=uid) or {}
         rt = chat.get("rating") or {}  # UserRating: level, rating (число на основе потраченных звёзд)
         lvl, stars = rt.get("level", 0), rt.get("rating", 0)
-    return {"id": uid, "days": days_in_tg(uid), "lvl": lvl, "stars": stars, "pct": pct(lvl),
-            "prem": int(bool(u.get("is_premium"))), "gifts": gifts, "nft": uniq, "value": value}
+    days = days_in_tg(uid); points = days // 10 + gifts // 5 + uniq   # 1 балл за 10 дней, 5 обычных подарков, каждый NFT
+    b = globals().get("bot")
+    if b and b.pool:
+        try: await b.save_profile(u, points)
+        except Exception as e: print("PROFILE ERROR", repr(e))
+    return {"id": uid, "days": days, "lvl": lvl, "stars": stars, "pct": pct(lvl),
+            "prem": int(bool(u.get("is_premium"))), "gifts": gifts, "nft": uniq, "value": value, "points": points}
 
 BOT_USERNAME = os.environ.get("BOT_USERNAME", "tgitoginahuibot").lstrip("@")
 BOT_LINK = os.environ.get("BOT_LINK") or f"https://t.me/{BOT_USERNAME}?start=share"  # кнопка ведёт на /start бота
@@ -122,7 +127,7 @@ async def share(req: Request, authorization: str = Header()):
     text = str(b.get("text") or b.get("title") or "Мои итоги в Telegram")[:4000]
     res = {"type": "article", "id": f"{b.get('slide', 's')}{b.get('tier', 0)}", "title": "Мои итоги в Telegram",
            "input_message_content": {"message_text": text, "link_preview_options": {"is_disabled": True}},
-           "reply_markup": {"inline_keyboard": [[{"text": "Проверь какая у тебя карточка!", "url": BOT_LINK}]]}}
+           "reply_markup": {"inline_keyboard": [[{"text": "Проверь какая у тебя карточка!", "url": f"https://t.me/{BOT_USERNAME}?start=ref_{u['id']}"}]]}}
     async with httpx.AsyncClient(timeout=20) as c:
         r = await tg(c, "savePreparedInlineMessage", user_id=u["id"], result=res,
                      allow_user_chats=True, allow_group_chats=True, allow_channel_chats=True)

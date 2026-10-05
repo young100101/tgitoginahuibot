@@ -68,6 +68,44 @@ button:active{transform:scale(.94);transition:transform .1s}
 .fp{position:absolute;top:-60px;z-index:1;pointer-events:none;animation:fallp linear both;will-change:transform}
 .fp img{width:100%;height:100%;display:block}
 @keyframes fallp{to{transform:translateY(112vh) rotate(300deg)}}
+
+.ov{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,0);pointer-events:none;transition:background .3s;--bg:#fff;--tx:#0d0d12;--mut:#8b8b96;--row:#f2f3f8;--ln:#dcdde6}
+.ov[data-th=dark]{--bg:#1b1b20;--tx:#fff;--mut:#9b9ba6;--row:#2a2a31;--ln:#3a3a43}
+.ov.on{background:rgba(0,0,0,.52);pointer-events:auto;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.sh{position:absolute;left:50%;bottom:0;width:100%;max-width:480px;max-height:92%;overflow:auto;background:var(--bg);color:var(--tx);border-radius:30px 30px 0 0;padding:10px 18px calc(var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom,0px)) + 18px);transform:translate(-50%,105%);transition:transform .45s cubic-bezier(.2,.9,.25,1);box-shadow:0 -12px 44px rgba(0,0,0,.28);text-align:center}
+.ov.on .sh{transform:translate(-50%,0)}
+.grab{width:42px;height:5px;border-radius:3px;background:var(--ln);margin:2px auto 16px}
+.sh h2{font-size:23px;font-weight:800;margin:0 0 6px}
+.mut{color:var(--mut);font-size:15px;line-height:1.35;margin:0 0 4px}
+.rows{display:flex;flex-direction:column;gap:10px;margin:16px 0}
+.row{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:12px 14px;background:var(--row);color:var(--tx);border-radius:20px;animation:up .45s both}
+.ic{position:relative;flex:none;width:48px;height:48px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff;box-shadow:0 6px 14px rgba(0,0,0,.14)}
+.lk{position:absolute;right:-5px;bottom:-5px;font-style:normal;font-size:13px;background:var(--bg);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+.rt{flex:1;min-width:0;display:flex;flex-direction:column}.rt b{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rt small,.br small,.mecard small{color:var(--mut);font-size:13px;font-weight:500}
+.chev{color:var(--mut);font-size:26px;line-height:1}
+.pc{background:var(--row);border-radius:18px;padding:12px 14px;margin:14px 0 0;text-align:left}
+.pr2{display:flex;justify-content:space-between;font-size:14px;color:var(--mut);margin-bottom:9px}.pr2 b{color:var(--tx)}
+.pb{height:10px;border-radius:6px;background:var(--ln);overflow:hidden}.pb i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#34c759,#2f7cf6);transition:width .7s}
+.bt{display:flex;gap:10px;margin-top:6px}.bt.col{flex-direction:column}
+.b1,.b2{flex:1;padding:16px 12px;border-radius:18px;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px}
+.b1{background:linear-gradient(90deg,#2f7cf6,#7b5cff);color:#fff;box-shadow:0 8px 20px rgba(47,124,246,.35)}
+.b2{background:var(--row);color:var(--tx)}
+.pill{background:rgba(255,255,255,.28);border-radius:12px;padding:3px 9px;font-size:13px}
+.big{font-size:64px;line-height:1.1;margin:6px 0 8px;animation:pop .6s cubic-bezier(.3,1.6,.5,1) both}
+.lst{max-height:44vh;overflow:auto;margin:14px -6px 10px;padding:0 6px;text-align:left}
+.lr{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:16px}
+.lr.me{background:linear-gradient(90deg,rgba(47,124,246,.18),rgba(123,92,255,.18))}
+.rk{flex:none;width:30px;text-align:center;font-weight:800;color:var(--mut);font-size:15px}.rk.md{font-size:22px}
+.av{flex:none;width:42px;height:42px;border-radius:50%;object-fit:cover;display:block}
+.av.ini{display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:18px}
+.pt{font-weight:800;font-size:17px;white-space:nowrap}
+.mecard{display:flex;align-items:center;justify-content:space-between;text-align:left;padding:14px 16px;border-radius:20px;color:#fff;background:linear-gradient(120deg,#2f7cf6,#7b5cff);margin-bottom:12px;box-shadow:0 8px 20px rgba(47,124,246,.3)}
+.mecard div{display:flex;flex-direction:column}.mecard small{color:rgba(255,255,255,.8)}.mecard b{font-size:20px}.mecard .pt{font-size:24px}
+.br{display:flex;align-items:center;justify-content:space-between;padding:12px 10px;border-bottom:1px solid var(--ln)}.br>span{display:flex;flex-direction:column}
+.ld{padding:30px 0;display:flex;flex-direction:column;align-items:center}
+.spin{width:34px;height:34px;border-radius:50%;border:4px solid var(--ln);border-top-color:#2f7cf6;animation:rot .8s linear infinite;margin-bottom:12px}
+@keyframes rot{to{transform:rotate(360deg)}}
 </style></head><body><div id="app"></div>
 <script>
 const tg=window.Telegram&&Telegram.WebApp;if(tg){tg.ready();tg.expand();
@@ -187,7 +225,7 @@ function final(){bg(["#2f7cf6","#8a3ee0"]);
  const r=S.map(s=>s.d[s.f(D[s.k])]);
  app.innerHTML=snow()+`<h1>Итоги</h1><div class="sub">Вот кто ты в Telegram</div><div class="mid" style="font-size:18px;gap:8px"><div class="lbl" style="margin:0">Сумма баллов</div><div class="tot">${rich("🏆")} ${N(total())} ${pl(total())}</div>`+
  S.map((s,j)=>`<div class="li" style="animation-delay:${j*.12+.2}s">${rich(r[j][0])} <b>${s.t}:</b> ${r[j][1]||D[s.k]}${s.p?` · <b>+${pts(s)}</b>`:""}</div>`).join("")+
- `</div><button type="button" class="share" data-a="s">Поделиться ↗</button><div class="btns"><button type="button" class="back" data-a="b">Назад</button></div>`;fx(2,1,"final")}
+ `</div><button type="button" class="share" data-a="s">Поделиться ↗</button><div class="btns"><button type="button" class="back" data-a="b">Назад</button><button type="button" class="next" data-a="m">Продолжить</button></div>`;fx(2,1,"final")}
 dir="fwd";
 function go(d){dir=d>0?"fwd":"bk";i=Math.min(S.length,Math.max(0,i+d));show();if(tg)i>0?tg.BackButton.show():tg.BackButton.hide()}
 const BOTSTART=BOT.replace(/\/[^\/]*$/,"")+"?start=share";   // ссылка на /start бота
@@ -210,7 +248,68 @@ async function share(){
   const r=await fetch(API+"/api/share",{method:"POST",headers:{Authorization:"tma "+tg.initData,"Content-Type":"application/json"},body:JSON.stringify({slide:fin?"final":s.k,tier:n,text})});
   if(!r.ok)throw 0;const {id}=await r.json();tg.shareMessage(id)}
  catch(e){const l="https://t.me/share/url?url="+encodeURIComponent(BOTSTART)+"&text="+encodeURIComponent(text);tg?tg.openTelegramLink(l):window.open(l)}}
-document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a;a=="n"?go(1):a=="b"?go(-1):share()});
-if(tg)tg.BackButton.onClick(()=>go(-1));
+
+// ===== Плашка «Хочешь узнать больше?» =====
+const OV=document.createElement("div");OV.id="ov";OV.className="ov";OV.innerHTML='<div class="sh" id="sh"></div>';document.body.appendChild(OV);
+if(tg&&tg.colorScheme=="dark")OV.dataset.th="dark";
+const SH=document.getElementById("sh"),live=!!(tg&&tg.initData);
+let VIEW="menu",MORE=null,TOP=null,FAIL=false,COPIED=false;
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt=n=>Number(n).toLocaleString("ru");
+const fr=n=>n==1?"друга":"друзей";
+async function api(path,opt){opt=opt||{};opt.headers=Object.assign({Authorization:"tma "+(tg?tg.initData:"")},opt.headers||{});const r=await fetch(API+path,opt);if(!r.ok)throw r.status;return r.json()}
+// демо-данные только для просмотра вне Telegram
+const DM={need:3,count:1,unlocked:false,link:BOTSTART.replace("start=share","start=ref_0"),rank:200,points:0};
+const demoTop=()=>{const n=["Алексей","Мария","Дмитрий","Анна","Иван","Ольга","Сергей","Елена","Никита","Юля"];return{top:Array.from({length:100},(_,k)=>({rank:k+1,name:n[k%10]+" "+String.fromCharCode(1040+k%26)+".",username:k%3?"user"+(k+1):"",photo:"",points:Math.max(5,Math.round(900/(1+k*.35)))})),me:{rank:200,points:total()}}};
+const avatar=p=>{const nm=(p.name||"?").trim(),ini=esc([...nm][0]||"?").toUpperCase(),h=[...nm].reduce((a,c)=>a+c.charCodeAt(0),0)%360;
+ return p.photo?`<img class="av" src="${esc(p.photo)}" data-ini="${ini}" data-h="${h}" alt="">`:`<div class="av ini" style="background:hsl(${h} 62% 52%)">${ini}</div>`};
+document.addEventListener("error",e=>{const t=e.target;if(t&&t.classList&&t.classList.contains("av")){const d=document.createElement("div");d.className="av ini";d.style.background=`hsl(${t.dataset.h} 62% 52%)`;d.textContent=t.dataset.ini;t.replaceWith(d)}},true);
+const prog=m=>`<div class="pc"><div class="pr2"><span>Приглашено</span><b>${m.count} из ${m.need}</b></div><div class="pb"><i style="width:${m.need?Math.min(100,m.count/m.need*100):100}%"></i></div></div>`;
+const ITEMS=[{k:"top",ic:"🏆",c:["#ffb347","#ff6b6b"],t:"Таблица лидеров",s:"Топ-100 по баллам за аккаунт"},{k:"pts",ic:"📊",c:["#4facfe","#7b5cff"],t:"Разбор баллов",s:"Откуда взялись твои баллы"}];
+const loading=()=>`<div class="ld"><div class="spin"></div><p class="mut">Загружаем…</p></div>`;
+function vMenu(){const m=MORE,lock=!m.unlocked,left=Math.max(0,m.need-m.count);
+ return `<h2>Хочешь узнать больше?</h2><p class="mut">${lock?`Пригласи ${m.need} ${fr(m.need)} — и всё откроется бесплатно`:"Всё открыто — выбирай!"}</p>${lock?prog(m):""}
+ <div class="rows">${ITEMS.map((x,j)=>`<button type="button" class="row" style="animation-delay:${j*.08}s" data-s="${lock?"inv":x.k}"><span class="ic" style="background:linear-gradient(135deg,${x.c[0]},${x.c[1]})">${rich(x.ic)}${lock?'<i class="lk">🔒</i>':""}</span><span class="rt"><b>${x.t}</b><small>${x.s}</small></span><span class="chev">›</span></button>`).join("")}</div>
+ <div class="bt">${lock?`<button type="button" class="b2" data-s="x">Нет, спасибо</button><button type="button" class="b1" data-s="inv">Узнать больше информации<span class="pill">ещё ${left}</span></button>`:`<button type="button" class="b2" data-s="x">Назад</button>`}</div>`}
+function vInv(){const m=MORE,left=Math.max(0,m.need-m.count);
+ return `<div class="big">💌</div><h2>${left?`Пригласи ещё ${left} ${fr(left)}`:"Ты пригласил всех!"}</h2>
+ <p class="mut">${left?"Друг должен перейти по твоей ссылке, нажать «Начать» и выполнить задания бота (если они есть).":"Дополнительная информация открыта."}</p>${prog(m)}
+ <div class="bt col">${left?`<button type="button" class="b1" data-s="send">📤 Переслать приглашение</button><button type="button" class="b2" data-s="copy">${COPIED?"✅ Ссылка скопирована":"🔗 Скопировать ссылку"}</button>`:""}<button type="button" class="b2" data-s="menu">Назад</button></div>`}
+const medal=r=>r==1?"🥇":r==2?"🥈":r==3?"🥉":r;
+function vTop(){if(!TOP)return loading()+`<div class="bt col"><button type="button" class="b2" data-s="menu">Назад</button></div>`;
+ const me=TOP.me,last=TOP.top[TOP.top.length-1],out=me.rank&&me.rank>TOP.top.length;
+ return `<h2>🏆 Таблица лидеров</h2><p class="mut">Топ-100 по баллам за аккаунт</p>
+ <div class="lst">${TOP.top.map(p=>`<div class="lr${me.rank==p.rank?" me":""}"><span class="rk${p.rank<=3?" md":""}">${medal(p.rank)}</span>${avatar(p)}<span class="rt"><b>${esc(p.name)}</b>${p.username?`<small>@${esc(p.username)}</small>`:""}</span><span class="pt">${fmt(p.points)}</span></div>`).join("")}</div>
+ <div class="mecard"><div><small>Твоё место</small><b>${me.rank?me.rank+"-е место":"пока нет"}</b>${out&&last?`<small>До топ-100 ещё ${fmt(Math.max(1,last.points-me.points+1))} ${pl(Math.max(1,last.points-me.points+1))}</small>`:""}</div><span class="pt">${fmt(me.points)}</span></div>
+ <div class="bt col"><button type="button" class="b2" data-s="menu">Назад</button></div>`}
+function vPts(){const rows=S.filter(s=>s.p).map(s=>`<div class="br"><span>${rich(s.d[s.f(D[s.k])][0])} <b>${s.t}</b><small>${s.pr}</small></span><b class="pt">+${pts(s)}</b></div>`).join("");
+ return `<h2>📊 Разбор баллов</h2><p class="mut">Откуда взялись твои баллы</p><div class="lst">${rows}</div><div class="mecard"><div><small>Всего</small><b>${total()} ${pl(total())}</b></div><span class="pt">${fmt(total())}</span></div><div class="bt col"><button type="button" class="b2" data-s="menu">Назад</button></div>`}
+function renderSheet(){
+ let h=loading();
+ if(FAIL)h=`<div class="ld"><div class="big">😕</div><p class="mut">Не получилось загрузить. Попробуй позже.</p></div><div class="bt col"><button type="button" class="b2" data-s="x">Закрыть</button></div>`;
+ else if(MORE)h=VIEW=="inv"?vInv():VIEW=="top"?vTop():VIEW=="pts"?vPts():vMenu();
+ SH.innerHTML='<div class="grab"></div>'+h;hydrate()}
+async function refreshMore(){try{MORE=live?await api("/api/more"):Object.assign({},DM,{points:total(),count:MORE?MORE.count:DM.count});FAIL=false}catch(e){FAIL=!MORE}if(OV.classList.contains("on"))renderSheet()}
+function openSheet(){VIEW="menu";OV.classList.add("on");renderSheet();if(tg)tg.BackButton.show();refreshMore()}
+function closeSheet(){OV.classList.remove("on");if(tg&&i==0)tg.BackButton.hide()}
+function sheetBack(){if(VIEW!="menu"){VIEW="menu";renderSheet()}else closeSheet()}
+async function openTop(){VIEW="top";TOP=null;renderSheet();
+ try{TOP=live?await api("/api/top"):demoTop();renderSheet()}
+ catch(e){if(e==403){await refreshMore();VIEW="inv"}else FAIL=true;renderSheet()}}
+async function sendInvite(){
+ try{if(!live||!tg.shareMessage||!tg.isVersionAtLeast("8.0"))throw 0;const {id}=await api("/api/invite",{method:"POST"});tg.shareMessage(id)}
+ catch(e){const l="https://t.me/share/url?url="+encodeURIComponent(MORE.link)+"&text="+encodeURIComponent("👋 Смотри результаты своего Telegram-аккаунта!");tg?tg.openTelegramLink(l):window.open(l)}}
+async function copyLink(){const t=MORE.link;
+ try{await navigator.clipboard.writeText(t)}catch(e){const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();try{document.execCommand("copy")}catch(x){}a.remove()}
+ COPIED=true;renderSheet();if(tg&&tg.HapticFeedback)tg.HapticFeedback.notificationOccurred("success");setTimeout(()=>{COPIED=false;if(VIEW=="inv"&&OV.classList.contains("on"))renderSheet()},2200)}
+OV.addEventListener("click",e=>{
+ if(e.target===OV){closeSheet();return}
+ const b=e.target.closest("[data-s]");if(!b)return;const a=b.dataset.s;
+ if(a=="x")closeSheet();else if(a=="menu"){VIEW="menu";renderSheet()}
+ else if(a=="inv"){VIEW="inv";renderSheet()}else if(a=="top")openTop();
+ else if(a=="pts"){VIEW="pts";renderSheet()}else if(a=="send")sendInvite();else if(a=="copy")copyLink()});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&OV.classList.contains("on")&&live)refreshMore()});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a;a=="n"?go(1):a=="b"?go(-1):a=="m"?openSheet():share()});
+if(tg)tg.BackButton.onClick(()=>{if(OV.classList.contains("on"))sheetBack();else go(-1)});
 load();
 </script></body></html>
