@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS profiles(user_id BIGINT PRIMARY KEY, name TEXT, usern
   points INT DEFAULT 0, created TIMESTAMPTZ DEFAULT now());
 CREATE TABLE IF NOT EXISTS referrals(invitee BIGINT PRIMARY KEY, inviter BIGINT, qualified BOOLEAN DEFAULT FALSE, created TIMESTAMPTZ DEFAULT now());
 CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT);
+CREATE TABLE IF NOT EXISTS purchases(charge_id TEXT PRIMARY KEY, user_id BIGINT, stars INT, ts TIMESTAMPTZ DEFAULT now());
 """
 
 BOT_USERNAME = os.environ.get("BOT_USERNAME", "tgitoginahuibot").lstrip("@")
@@ -46,6 +47,10 @@ def auth_user(h: str) -> dict:  # проверка подписи Telegram (init
 async def get_need() -> int:
     v = await pool.fetchval("SELECT value FROM settings WHERE key='ref_need'")
     return int(v) if v is not None else 2   # по умолчанию нужно пригласить 2 человек
+
+async def get_price() -> int:  # цена доп. информации в звёздах (0 = платный вариант выключен)
+    v = await pool.fetchval("SELECT value FROM settings WHERE key='ref_price'")
+    return int(v) if v is not None else 0
 
 async def save_profile(u, points):  # профиль для таблицы лидеров (вызывает мини-апп)
     name = ((u.get("first_name") or "") + " " + (u.get("last_name") or "")).strip() or u.get("username") or "Без имени"
@@ -88,7 +93,7 @@ async def _startup():
     if not me: raise RuntimeError("getMe не сработал: проверь BOT_TOKEN")
     BOT_ID = me["id"]
     await call("setWebhook", url=PUBLIC + "/webhook", secret_token=SECRET,
-               allowed_updates=["message", "callback_query", "chat_join_request", "chat_member", "my_chat_member"])
+               allowed_updates=["message", "callback_query", "chat_join_request", "chat_member", "my_chat_member", "pre_checkout_query"])
     print("BOT READY", BOT_ID)
 
 async def is_done(t, uid):
@@ -185,6 +190,16 @@ async def run_bc(cid, mid, mk, smid):
 async def on_message(msg):
     if msg["chat"]["type"] != "private": return
     uid, cid, text = msg["from"]["id"], msg["chat"]["id"], msg.get("text") or ""
+    sp = msg.get("successful_payment")
+    if sp:  # оплата звёздами прошла
+        new = await pool.fetchval("INSERT INTO purchases(charge_id,user_id,stars) VALUES($1,$2,$3) ON CONFLICT DO NOTHING RETURNING 1", sp["telegram_payment_charge_id"], uid, sp["total_amount"])
+        if new:
+            f = msg["from"]; name = ((f.get("first_name") or "") + " " + (f.get("last_name") or "")).strip() or "Без имени"
+            note = (f"🛒 <b>Новая покупка доп. информации</b>\n\nСумма: <b>{sp['total_amount']} ⭐</b>\n"
+                    f"Ник: <a href=\"tg://user?id={uid}\">{E(name)}</a>\nUsername: {'@' + E(f['username']) if f.get('username') else '—'}\nID: <code>{uid}</code>")
+            for a in ADMINS: await send(a, note)
+            await send(cid, "✅ Спасибо за оплату! Дополнительная информация открыта — вернись в приложение.")
+        return
     if text.startswith("/start"):
         new = await pool.fetchval("INSERT INTO users(user_id) VALUES($1) ON CONFLICT (user_id) DO UPDATE SET blocked=FALSE RETURNING (xmax = 0)", uid)  # считаем уникально
         payload = text.split(maxsplit=1)[1] if " " in text else ""
@@ -194,6 +209,12 @@ async def on_message(msg):
         if uid in ADMINS: await send(cid, "⚙️ Админ-панель", PANEL)
     elif uid in ADMINS and text == "/admin":
         STATE.pop(uid, None); await send(cid, "⚙️ Админ-панель", PANEL)
+    elif uid in ADMINS and STATE.get(uid, {}).get("step") == "refprice":
+        if text.strip().isdigit() and int(text) <= 10000:
+            await pool.execute("INSERT INTO settings(key,value) VALUES('ref_price',$1) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value", text.strip())
+            STATE.pop(uid, None); n = int(text)
+            await send(cid, f"✅ Цена доп. информации: <b>{n} ⭐</b>" if n else "✅ Платный вариант выключен", PANEL)
+        else: await send(cid, "Пришли число от 0 до 10000.")
     elif uid in ADMINS and STATE.get(uid, {}).get("step") == "refneed":
         if text.strip().isdigit() and int(text) <= 1000:
             await pool.execute("INSERT INTO settings(key,value) VALUES('ref_need',$1) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value", text.strip())
@@ -251,8 +272,16 @@ async def on_cb(q):
         STATE.pop(uid, None)
         t = asyncio.create_task(run_bc(cid, st["mid"], bc_markup(st["btns"]), m["message_id"])); BG.add(t); t.add_done_callback(BG.discard)
     elif data == "refs":
-        STATE[uid] = {"step": "refneed"}; ok = await pool.fetchval("SELECT count(*) FROM referrals WHERE qualified")
-        await send(cid, f"👥 Рефералы за доп. информацию\n\nСейчас нужно пригласить: <b>{await get_need()}</b>\nЗасчитано приглашений всего: <b>{ok}</b>\n\nПришли новое число (0 — без приглашений).", kb([cb("❌ Отмена", "cancel")]))
+        ok = await pool.fetchval("SELECT count(*) FROM referrals WHERE qualified"); pc, ps = await pool.fetchrow("SELECT count(*), coalesce(sum(stars),0) FROM purchases")
+        price = await get_price()
+        await send(cid, f"👥 Доступ к доп. информации\n\n🆓 Бесплатно: пригласить <b>{await get_need()}</b> (засчитано приглашений: {ok})\n⭐ Платно: <b>{str(price) + ' ⭐' if price else 'выключено'}</b> (покупок: {pc}, на {ps} ⭐)",
+                   kb([cb("🆓 Бесплатно — число рефералов", "refs_free")], [cb("⭐ Платная — сумма в звёздах", "refs_paid")], [cb("⬅️ Меню", "adm")]))
+    elif data == "refs_free":
+        STATE[uid] = {"step": "refneed"}
+        await send(cid, f"Сейчас нужно пригласить: <b>{await get_need()}</b>\nПришли новое число (0 — доступ без приглашений).", kb([cb("❌ Отмена", "cancel")]))
+    elif data == "refs_paid":
+        STATE[uid] = {"step": "refprice"}
+        await send(cid, f"Сейчас цена: <b>{await get_price() or 'выключено'}</b>\nПришли сумму в звёздах (от 1 до 10000) или 0, чтобы выключить платный вариант.", kb([cb("❌ Отмена", "cancel")]))
     elif data == "adm": await send(cid, "⚙️ Админ-панель", PANEL)
     elif data == "st":
         n = await pool.fetchval("SELECT count(*) FROM users"); b = await pool.fetchval("SELECT count(*) FROM users WHERE blocked")
@@ -298,6 +327,7 @@ async def on_block(m):  # человек заблокировал или раз�
         await pool.execute("UPDATE users SET blocked=$2 WHERE user_id=$1", m["chat"]["id"], m["new_chat_member"]["status"] == "kicked")
 
 async def handle(u):
+    if "pre_checkout_query" in u: await call("answerPreCheckoutQuery", pre_checkout_query_id=u["pre_checkout_query"]["id"], ok=True); return
     if "message" in u: await on_message(u["message"])
     elif "callback_query" in u: await on_cb(u["callback_query"])
     elif "my_chat_member" in u: await on_block(u["my_chat_member"])
@@ -305,10 +335,12 @@ async def handle(u):
     elif "chat_join_request" in u: await on_join(u["chat_join_request"])
 
 async def more_data(uid):
-    need = await get_need(); cnt = await pool.fetchval("SELECT count(*) FROM referrals WHERE inviter=$1 AND qualified", uid)
-    me = await pool.fetchrow("""SELECT points, (SELECT rn FROM (SELECT user_id, row_number() OVER (ORDER BY points DESC, created, user_id) rn FROM profiles) t WHERE t.user_id=$1) rank
-        FROM profiles WHERE user_id=$1""", uid)
-    return {"need": need, "count": cnt, "unlocked": cnt >= need, "link": ref_link(uid),
+    need = await get_need(); price = await get_price()
+    cnt = await pool.fetchval("SELECT count(*) FROM referrals WHERE inviter=$1 AND qualified", uid)
+    paid = bool(await pool.fetchval("SELECT 1 FROM purchases WHERE user_id=$1 LIMIT 1", uid))
+    me = await pool.fetchrow("""SELECT p.points, (SELECT rn FROM (SELECT p2.user_id, row_number() OVER (ORDER BY p2.points DESC, p2.created, p2.user_id) rn
+        FROM profiles p2 JOIN users u2 ON u2.user_id=p2.user_id) t WHERE t.user_id=$1) rank FROM profiles p WHERE p.user_id=$1""", uid)
+    return {"need": need, "count": cnt, "price": price, "paid": paid, "unlocked": paid or cnt >= need, "link": ref_link(uid),
             "rank": me["rank"] if me else None, "points": me["points"] if me else 0}
 
 def register(app):
@@ -319,10 +351,18 @@ def register(app):
     @app.get("/api/top")
     async def top(authorization: str = Header()):
         uid = auth_user(authorization)["id"]; m = await more_data(uid)
-        if not m["unlocked"]: raise HTTPException(403, "нужно пригласить друзей")
-        rows = await pool.fetch("""SELECT name, username, photo, points, row_number() OVER (ORDER BY points DESC, created, user_id) rank
-            FROM profiles ORDER BY points DESC, created, user_id LIMIT 100""")
+        if not m["unlocked"]: raise HTTPException(403, "нужно пригласить друзей или оплатить")
+        rows = await pool.fetch("""SELECT p.name, p.photo, p.points, row_number() OVER (ORDER BY p.points DESC, p.created, p.user_id) rank
+            FROM profiles p JOIN users u ON u.user_id=p.user_id ORDER BY p.points DESC, p.created, p.user_id LIMIT 100""")  # только те, кто запускал бота
         return {"top": [dict(r) for r in rows], "me": {"rank": m["rank"], "points": m["points"]}}
+    @app.post("/api/pay")
+    async def pay(authorization: str = Header()):
+        uid = auth_user(authorization)["id"]; price = await get_price()
+        if price <= 0: raise HTTPException(400, "платный вариант выключен")
+        link = await call("createInvoiceLink", title="Дополнительная информация", description="Таблица лидеров и другие данные", payload=f"more:{uid}",
+                          provider_token="", currency="XTR", prices=[{"label": "Доп. информация", "amount": price}])
+        if not link: raise HTTPException(502, "Telegram не создал счёт")
+        return {"url": link}
     @app.post("/api/invite")
     async def invite(authorization: str = Header()):
         uid = auth_user(authorization)["id"]
