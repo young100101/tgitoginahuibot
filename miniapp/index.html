@@ -270,7 +270,7 @@ const prog=m=>`<div class="pc"><div class="pr2"><span>Приглашено</span
 const ITEMS=[{k:"top",ic:"🏆",c:["#ffb347","#ff6b6b"],t:"Таблица лидеров",s:"Топ-100 по баллам за аккаунт"}];
 const loading=()=>`<div class="ld"><div class="spin"></div><p class="mut">Загружаем…</p></div>`;
 function vMenu(){const m=MORE,lock=!m.unlocked,left=Math.max(0,m.need-m.count);
- return `<h2>Хочешь узнать больше?</h2><p class="mut">${lock?`Пригласи ${m.need} ${fr(m.need)} — и всё откроется бесплатно`:"Всё открыто — выбирай!"}</p>${lock?prog(m):""}
+ return `<h2>Хочешь узнать больше?</h2><p class="mut">${lock?`Пригласи ${m.need} ${fr(m.need)} — и всё откроется бесплатно`:"Всё открыто — выбирай!"}</p>
  <div class="rows">${ITEMS.map((x,j)=>`<button type="button" class="row" style="animation-delay:${j*.08}s" data-s="${lock?"more":x.k}"><span class="ic" style="background:linear-gradient(135deg,${x.c[0]},${x.c[1]})">${rich(x.ic)}${lock?'<i class="lk">🔒</i>':""}</span><span class="rt"><b>${x.t}</b><small>${x.s}</small></span><span class="chev">›</span></button>`).join("")}</div>
  <div class="bt">${lock?`<button type="button" class="b2" data-s="x">Нет, спасибо</button><button type="button" class="b1" data-s="more">Узнать больше информации<span class="pill">ещё ${left}</span></button>`:`<button type="button" class="b2" data-s="x">Назад</button>`}</div>`}
 function vInv(){const m=MORE,left=Math.max(0,m.need-m.count);
@@ -278,7 +278,7 @@ function vInv(){const m=MORE,left=Math.max(0,m.need-m.count);
  <p class="mut">${left?"Друг должен перейти по твоей ссылке, нажать «Начать» и выполнить задания бота (если они есть).":"Дополнительная информация открыта."}</p>${prog(m)}
  <div class="bt col">${left?`<button type="button" class="b1" data-s="send">📤 Переслать приглашение</button><button type="button" class="b2" data-s="copy">${COPIED?"✅ Ссылка скопирована":"🔗 Скопировать ссылку"}</button>`:""}<button type="button" class="b2" data-s="back">Назад</button></div>`}
 function vOpt(){const m=MORE,left=Math.max(0,m.need-m.count);
- return `<div class="big">🔓</div><h2>Как открыть?</h2><p class="mut">Выбери удобный способ</p>
+ return `<div class="big">🔓</div><h2>Как открыть?</h2><p class="mut">Выбери удобный способ</p>${prog(m)}
  <div class="rows"><button type="button" class="row" data-s="inv"><span class="ic" style="background:linear-gradient(135deg,#34c759,#1f9d6a)">👥</span><span class="rt"><b>Пригласить друзей</b><small>Бесплатно · ещё ${left} из ${m.need}</small></span><span class="chev">›</span></button>
  <button type="button" class="row" style="animation-delay:.08s" data-s="pay"><span class="ic" style="background:linear-gradient(135deg,#ffb347,#ff7a18)">${rich("⭐")}</span><span class="rt"><b>Оплатить ${fmt(m.price)} ${rich("⭐")}</b><small>Откроется сразу, без приглашений</small></span><span class="chev">›</span></button></div>
  ${NOTE?`<p class="note">${NOTE}</p>`:""}<div class="bt col"><button type="button" class="b2" data-s="menu">Назад</button></div>`}

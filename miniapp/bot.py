@@ -186,8 +186,8 @@ async def gate(uid, cid, mid=None, cbid=None):
     if mid: await edit(cid, mid, text, kb(*rows), ents)
     else: await send(cid, text, kb(*rows), ents)
 
-PANEL = kb([cb("📊 Статистика", "st"), cb("📢 Рассылка", "bc")], [cb("📋 Задания", "tk"), cb("➕ Добавить задание", "add")],
-           [cb("🔗 Статистика ссылок", "ls"), cb("👥 Доступ к доп. инфо", "refs")], [cb("✏️ Тексты", "tt"), cb("📬 Отчёт", "rp")])
+PANEL = kb([cb("📢 Рассылка", "bc"), cb("📋 Задания", "tk")], [cb("➕ Добавить задание", "add"), cb("🔗 Статистика ссылок", "ls")],
+           [cb("👥 Доступ к доп. инфо", "refs"), cb("📬 Отчёт", "rp")], [cb("📊 Статистика", "st")])
 
 async def resolve_chat(msg):
     t = (msg.get("text") or "").strip()
@@ -203,7 +203,8 @@ def bc_markup(btns):
     for b in btns:
         x = {"text": b["text"], "url": b["url"]}
         if b["style"]: x["style"] = b["style"]   # danger = красная, success = зелёная
-        rows.append([x])
+        if rows and not b.get("new_row", True) and len(rows[-1]) < 8: rows[-1].append(x)   # рядом с предыдущей
+        else: rows.append([x])
     return {"inline_keyboard": rows} if rows else None
 
 async def bc_menu(cid, st):
@@ -277,7 +278,7 @@ async def stats_text():
             f"🔻 <b>Воронка</b>\n1️⃣ Нажали «Начать»: <b>{n}</b> (100%)\n2️⃣ Выполнили задания: <b>{passed}</b> ({pct(passed)})\n"
             f"3️⃣ Открыли приложение: <b>{app}</b> ({pct(app)})\n4️⃣ Открыли доп. информацию: <b>{opened}</b> ({pct(opened)})\n"
             f"      └ купили: {buyers} · пригласили: {inviters}\n\n"
-            f"⭐ <b>Звёзды</b>: всего <b>{ps}</b> ({pc} покупок)\nсегодня {st[0]} · 7 дней {st[1]} · 30 дней {st[2]}\n\n"
+            f"⭐ <b>Звёзды</b>\n💰 Заработано всего: <b>{ps}</b> ⭐\n🛒 Потрачено на доп. информацию: <b>{ps}</b> ⭐ ({pc} покупок)\nсегодня {st[0]} · 7 дней {st[1]} · 30 дней {st[2]}\n\n"
             f"📤 <b>Пересылки</b> за 7 дней: слайды <b>{sh.get('slide', 0)}</b> · приглашения <b>{sh.get('invite', 0)}</b>\n\n"
             f"<i>Этап «выполнили задания» считается с момента этого обновления.</i>")
 
@@ -364,6 +365,8 @@ async def on_message(msg):
             await pool.execute("INSERT INTO referrals(invitee,inviter) VALUES($1,$2) ON CONFLICT DO NOTHING", uid, int(payload[4:]))
         await gate(uid, cid)
         if uid in ADMINS: await send(cid, "⚙️ Админ-панель", PANEL)
+    elif uid in ADMINS and text == "/texts":
+        await on_cb({"id": "x", "data": "tt", "from": msg["from"], "message": {"chat": msg["chat"], "message_id": 0}})
     elif uid in ADMINS and text == "/admin":
         STATE.pop(uid, None); await send(cid, "⚙️ Админ-панель", PANEL)
     elif uid in ADMINS and STATE.get(uid, {}).get("step") == "tedit":
@@ -447,8 +450,13 @@ async def on_cb(q):
     elif data == "bcadd" and st.get("step") == "bc_menu":
         st["step"] = "bc_url"; await send(cid, "Пришли ссылку, куда будет вести кнопка.")
     elif data.startswith("col:") and st.get("step") == "bc_color":
-        st["btns"].append({"text": st["name"], "url": st["url"], "style": data[4:]})
-        st["step"] = "bc_menu"; await bc_menu(cid, st)
+        b = {"text": st["name"], "url": st["url"], "style": data[4:], "new_row": True}
+        if st["btns"]:  # вторая и следующие кнопки: спрашиваем, куда поставить
+            st["pending"] = b; st["step"] = "bc_place"
+            await send(cid, "Куда поставить эту кнопку?", kb([cb("⬇️ Новым рядом", "pl:row")], [cb("➡️ Рядом с предыдущей", "pl:side")]))
+        else: st["btns"].append(b); st["step"] = "bc_menu"; await bc_menu(cid, st)
+    elif data in ("pl:row", "pl:side") and st.get("step") == "bc_place":
+        b = st.pop("pending"); b["new_row"] = data == "pl:row"; st["btns"].append(b); st["step"] = "bc_menu"; await bc_menu(cid, st)
     elif data == "bcstop": BC["stop"] = True
     elif data == "bcgo" and st.get("step") == "bc_menu":
         if BC["run"]: await send(cid, "Рассылка уже идёт."); return
@@ -523,8 +531,8 @@ async def on_cb(q):
           count(*) FILTER (WHERE e.kind='done') done
           FROM tasks t LEFT JOIN events e ON e.task_id=t.id WHERE NOT t.deleted GROUP BY t.id ORDER BY t.id""")
         if not rows: await send(cid, "Заданий пока нет.", kb([cb("⬅️ Меню", "adm")])); return
-        txt = "\n\n".join(f"<b>#{r['id']} {E(r['title'])}</b> ({'заявки' if r['kind']=='request' else 'ссылка'})\n"
-            f"👥 Вступили: {r['joins']}\n✉️ Заявок: {r['reqs']}\n✅ Выполнили: {r['done']}" for r in rows)
+        txt = "\n\n".join(f"<b>#{r['id']} {E(r['title'])}</b> ({'заявки' if r['kind']=='request' else 'ссылка'})\n" +
+            (f"✉️ Новых заявок: {r['reqs']}" if r['kind'] == 'request' else f"👥 Уникальных заходов: {r['joins']}\n✅ Выполнили: {r['done']}") for r in rows)
         await send(cid, "🔗 Статистика ссылок\n\n" + txt, kb([cb("📋 Задания", "tk")], [cb("⬅️ Меню", "adm")]))
 
 async def on_join(r):  # человек подал заявку в канал/чат, где у нас есть задание типа «заявки»
