@@ -125,11 +125,16 @@ BOT_LINK = os.environ.get("BOT_LINK") or f"https://t.me/{BOT_USERNAME}?start=sha
 async def share(req: Request, authorization: str = Header()):
     u = auth(authorization); b = await req.json()
     text = str(b.get("text") or b.get("title") or "Мои итоги в Telegram")[:4000]
+    bt = globals().get("bot")
+    label = (await bt.get_text("share_btn"))[0] if bt and bt.pool else "Проверь какая у тебя карточка!"   # текст кнопки редактируется в админке
     res = {"type": "article", "id": f"{b.get('slide', 's')}{b.get('tier', 0)}", "title": "Мои итоги в Telegram",
            "input_message_content": {"message_text": text, "link_preview_options": {"is_disabled": True}},
-           "reply_markup": {"inline_keyboard": [[{"text": "Проверь какая у тебя карточка!", "url": f"https://t.me/{BOT_USERNAME}?start=ref_{u['id']}"}]]}}
+           "reply_markup": {"inline_keyboard": [[{"text": label, "url": f"https://t.me/{BOT_USERNAME}?start=ref_{u['id']}"}]]}}
     async with httpx.AsyncClient(timeout=20) as c:
         r = await tg(c, "savePreparedInlineMessage", user_id=u["id"], result=res,
                      allow_user_chats=True, allow_group_chats=True, allow_channel_chats=True)
     if not r: raise HTTPException(502, "Telegram не принял сообщение, смотри логи (TG ERROR savePreparedInlineMessage)")
+    if bt and bt.pool:
+        try: await bt.log_share(u["id"], "slide")
+        except Exception as e: print("SHARE LOG ERROR", repr(e))
     return {"id": r["id"]}

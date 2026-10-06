@@ -1,5 +1,6 @@
 """Бот: обязательные задания (подписка / заявка), админ-панель, статистика. Работает через webhook на том же сервере."""
-import os, re, time, asyncio, hashlib
+import os, re, json, time, asyncio, hashlib
+from datetime import datetime, timedelta, timezone
 from html import escape as E
 from urllib.parse import urlparse, unquote
 import asyncpg, httpx
@@ -30,6 +31,11 @@ CREATE TABLE IF NOT EXISTS profiles(user_id BIGINT PRIMARY KEY, name TEXT, usern
 CREATE TABLE IF NOT EXISTS referrals(invitee BIGINT PRIMARY KEY, inviter BIGINT, qualified BOOLEAN DEFAULT FALSE, created TIMESTAMPTZ DEFAULT now());
 CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT);
 CREATE TABLE IF NOT EXISTS purchases(charge_id TEXT PRIMARY KEY, user_id BIGINT, stars INT, ts TIMESTAMPTZ DEFAULT now());
+CREATE TABLE IF NOT EXISTS shares(id SERIAL PRIMARY KEY, user_id BIGINT, kind TEXT, ts TIMESTAMPTZ DEFAULT now());
+ALTER TABLE users ADD COLUMN IF NOT EXISTS passed_at TIMESTAMPTZ;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS limit_n INT DEFAULT 0;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS sort INT DEFAULT 0;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS deleted BOOLEAN DEFAULT FALSE;
 """
 
 BOT_USERNAME = os.environ.get("BOT_USERNAME", "tgitoginahuibot").lstrip("@")
@@ -43,6 +49,34 @@ def auth_user(h: str) -> dict:  # проверка подписи Telegram (init
     key = hmac.new(b"WebAppData", TOKEN.encode(), hashlib.sha256).digest()
     if not hmac.compare_digest(hmac.new(key, chk.encode(), hashlib.sha256).hexdigest(), got): raise HTTPException(401)
     return json.loads(data["user"])
+
+TZ = timezone(timedelta(hours=int(os.environ.get("REPORT_TZ_OFFSET", "3"))))   # часовой пояс статистики и отчётов (по умолчанию UTC+3)
+
+async def get_setting(key, default=None):
+    v = await pool.fetchval("SELECT value FROM settings WHERE key=$1", key)
+    return default if v is None else v
+
+async def set_setting(key, value):
+    await pool.execute("INSERT INTO settings(key,value) VALUES($1,$2) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value", key, str(value))
+
+# редактируемые тексты: ключ -> (название, значение по умолчанию, поддерживает форматирование и премиум-эмодзи)
+TEXTS = {
+    "welcome": ("Приветствие после проверки", "Привет! 👋 Смотри результаты своего Telegram-аккаунта", True),
+    "gate": ("Текст над заданиями", "Чтобы открыть результаты, выполни задания и нажми «Проверить»:", True),
+    "invite_text": ("Текст приглашения друзьям", "👋 Смотри результаты своего Telegram-аккаунта!\nУзнай свой стаж, подарки и баллы и сравни себя с топ-100 👇", True),
+    "welcome_btn": ("Кнопка под приветствием", "📱 Открыть результаты", False),
+    "invite_btn": ("Кнопка в приглашении друзьям", "Узнать мои результаты", False),
+    "share_btn": ("Кнопка под пересланным слайдом", "Проверь какая у тебя карточка!", False)}
+RICH_OK = {"bold", "italic", "underline", "strikethrough", "spoiler", "code", "pre", "text_link", "custom_emoji", "blockquote"}
+
+async def get_text(key):  # -> (текст, entities или None)
+    raw = await get_setting("txt_" + key)
+    if raw:
+        d = json.loads(raw); return d["t"], d.get("e") or None
+    return TEXTS[key][1], None
+
+async def log_share(uid, kind):  # нажатие «Поделиться» / «Переслать приглашение»
+    await pool.execute("INSERT INTO shares(user_id,kind) VALUES($1,$2)", uid, kind)
 
 async def get_need() -> int:
     v = await pool.fetchval("SELECT value FROM settings WHERE key='ref_need'")
@@ -72,9 +106,27 @@ async def call(method, **p):
 
 def kb(*rows): return {"inline_keyboard": [list(r) for r in rows]}
 def cb(text, data): return {"text": text, "callback_data": data}
-async def send(cid, text, markup=None):
-    return await call("sendMessage", chat_id=cid, text=text, parse_mode="HTML",
-                      disable_web_page_preview=True, **({"reply_markup": markup} if markup else {}))
+def no_ce(ents): return [e for e in ents if e.get("type") != "custom_emoji"]
+
+async def send(cid, text, markup=None, entities=None):
+    p = {"chat_id": cid, "text": text, "disable_web_page_preview": True}
+    if entities: p["entities"] = entities
+    else: p["parse_mode"] = "HTML"
+    if markup: p["reply_markup"] = markup
+    r = await call("sendMessage", **p)
+    if r is None and entities and len(no_ce(entities)) != len(entities):  # премиум-эмодзи не приняты -> отправляем без них
+        p["entities"] = no_ce(entities); r = await call("sendMessage", **p)
+    return r
+
+async def edit(cid, mid, text, markup=None, entities=None):
+    p = {"chat_id": cid, "message_id": mid, "text": text, "disable_web_page_preview": True}
+    if entities: p["entities"] = entities
+    else: p["parse_mode"] = "HTML"
+    if markup: p["reply_markup"] = markup
+    r = await call("editMessageText", **p)
+    if r is None and entities and len(no_ce(entities)) != len(entities):
+        p["entities"] = no_ce(entities); r = await call("editMessageText", **p)
+    return r
 
 async def startup():
     try: await _startup()
@@ -89,11 +141,13 @@ async def _startup():
         password=unquote(u.password or ""), database=u.path.lstrip("/"),
         ssl=None if u.hostname in ("localhost", "127.0.0.1") else "require")
     await pool.execute(SCHEMA)
+    await pool.execute("UPDATE tasks SET sort=id WHERE sort=0")
     me = await call("getMe")
     if not me: raise RuntimeError("getMe не сработал: проверь BOT_TOKEN")
     BOT_ID = me["id"]
     await call("setWebhook", url=PUBLIC + "/webhook", secret_token=SECRET,
                allowed_updates=["message", "callback_query", "chat_join_request", "chat_member", "my_chat_member", "pre_checkout_query"])
+    t = asyncio.create_task(report_loop()); BG.add(t); t.add_done_callback(BG.discard)   # ежедневный отчёт
     print("BOT READY", BOT_ID)
 
 async def is_done(t, uid):
@@ -104,25 +158,36 @@ async def is_done(t, uid):
         return bool(await pool.fetchval("SELECT 1 FROM events WHERE task_id=$1 AND user_id=$2 AND kind='request'", t["id"], uid))
     return False
 
+async def active_tasks():  # включённые задания по порядку; задания с достигнутым лимитом больше не требуются
+    return await pool.fetch("""SELECT t.* FROM tasks t WHERE t.active AND NOT t.deleted AND
+        (t.limit_n = 0 OR (SELECT count(*) FROM events e WHERE e.task_id=t.id AND e.kind='done') < t.limit_n) ORDER BY t.sort, t.id""")
+
 async def gate(uid, cid, mid=None, cbid=None):
     todo = []
-    for t in await pool.fetch("SELECT * FROM tasks WHERE active ORDER BY id"):
+    for t in await active_tasks():
         if await is_done(t, uid):
-            await pool.execute("INSERT INTO events(task_id,user_id,kind) VALUES($1,$2,'done') ON CONFLICT DO NOTHING", t["id"], uid)
+            new = await pool.fetchval("INSERT INTO events(task_id,user_id,kind) VALUES($1,$2,'done') ON CONFLICT DO NOTHING RETURNING 1", t["id"], uid)
+            if new and t["limit_n"]:
+                n = await pool.fetchval("SELECT count(*) FROM events WHERE task_id=$1 AND kind='done'", t["id"])
+                if n >= t["limit_n"] and await pool.fetchval("INSERT INTO settings(key,value) VALUES($1,'1') ON CONFLICT DO NOTHING RETURNING 1", f"limit_{t['id']}"):
+                    for a in ADMINS: await send(a, f"🎯 Задание #{t['id']} «{E(t['title'])}» выполнили {n} человек — лимит достигнут, оно больше не требуется.")
         else: todo.append(t)
     if not todo:
         if cbid: await call("answerCallbackQuery", callback_query_id=cbid)
+        await pool.execute("UPDATE users SET passed_at=now() WHERE user_id=$1 AND passed_at IS NULL", uid)   # для воронки
         await qualify(uid)
-        await send(cid, WELCOME, kb([{"text": "📱 Открыть результаты", "web_app": {"url": PUBLIC}}])); return
+        wt, we = await get_text("welcome"); btn, _ = await get_text("welcome_btn")
+        await send(cid, wt, kb([{"text": btn, "web_app": {"url": PUBLIC}}]), we); return
     rows = [[{"text": ("📢 Подписаться: " if t["kind"] == "link" else "✉️ Подать заявку: ") + t["title"][:40],
               "url": t["link"]}] for t in todo]
     rows.append([cb("✅ Проверить", "chk")])
-    text = "Чтобы открыть результаты, выполни задания и нажми «Проверить»:"
+    text, ents = await get_text("gate")
     if cbid: await call("answerCallbackQuery", callback_query_id=cbid, text="Не все задания выполнены", show_alert=True)
-    if mid: await call("editMessageText", chat_id=cid, message_id=mid, text=text, reply_markup=kb(*rows))
-    else: await send(cid, text, kb(*rows))
+    if mid: await edit(cid, mid, text, kb(*rows), ents)
+    else: await send(cid, text, kb(*rows), ents)
 
-PANEL = kb([cb("📊 Статистика", "st")], [cb("📢 Рассылка", "bc")], [cb("👥 Рефералы за доп. инфо", "refs")], [cb("➕ Добавить задание", "add")], [cb("🔗 Статистика ссылок", "ls")])
+PANEL = kb([cb("📊 Статистика", "st"), cb("📢 Рассылка", "bc")], [cb("📋 Задания", "tk"), cb("➕ Добавить задание", "add")],
+           [cb("🔗 Статистика ссылок", "ls"), cb("👥 Доступ к доп. инфо", "refs")], [cb("✏️ Тексты", "tt"), cb("📬 Отчёт", "rp")])
 
 async def resolve_chat(msg):
     t = (msg.get("text") or "").strip()
@@ -187,6 +252,98 @@ async def run_bc(cid, mid, mk, smid):
     except Exception as e: print("broadcast error:", repr(e))
     finally: BC["run"] = False
 
+
+# ================= Статистика и ежедневный отчёт =================
+async def period_counts(table, col, since, extra=""):
+    return await pool.fetchval(f"SELECT count(*) FROM {table} WHERE {col} >= $1 {extra}", since)
+
+async def stats_text():
+    now = datetime.now(TZ); t0 = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    n = await pool.fetchval("SELECT count(*) FROM users"); b = await pool.fetchval("SELECT count(*) FROM users WHERE blocked")
+    nt, nw, nm = [await period_counts("users", "first_seen", x) for x in (t0, now - timedelta(days=7), now - timedelta(days=30))]
+    passed = await pool.fetchval("SELECT count(*) FROM users WHERE passed_at IS NOT NULL")
+    app = await pool.fetchval("SELECT count(*) FROM profiles p JOIN users u ON u.user_id=p.user_id")
+    need = await get_need()
+    buyers = await pool.fetchval("SELECT count(DISTINCT user_id) FROM purchases")
+    inviters = await pool.fetchval("SELECT count(*) FROM (SELECT inviter FROM referrals WHERE qualified GROUP BY inviter HAVING count(*) >= $1) t", need)
+    opened = await pool.fetchval("""SELECT count(*) FROM (SELECT user_id FROM purchases UNION
+        SELECT inviter FROM referrals WHERE qualified GROUP BY inviter HAVING count(*) >= $1) t""", need)
+    pc, ps = await pool.fetchrow("SELECT count(*), coalesce(sum(stars),0) FROM purchases")
+    st = [await pool.fetchval("SELECT coalesce(sum(stars),0) FROM purchases WHERE ts >= $1", x) for x in (t0, now - timedelta(days=7), now - timedelta(days=30))]
+    sh = {r["kind"]: r["c"] for r in await pool.fetch("SELECT kind, count(*) c FROM shares WHERE ts >= $1 GROUP BY kind", now - timedelta(days=7))}
+    pct = lambda x: f"{x * 100 // n}%" if n else "—"
+    return (f"📊 <b>Статистика</b>\n\n👥 Уникальных стартов: <b>{n}</b>\n🚫 Заблокировали бота: <b>{b}</b> · ✅ Активных: <b>{n - b}</b>\n\n"
+            f"🆕 <b>Новые</b>: сегодня <b>{nt}</b> · 7 дней <b>{nw}</b> · 30 дней <b>{nm}</b>\n\n"
+            f"🔻 <b>Воронка</b>\n1️⃣ Нажали «Начать»: <b>{n}</b> (100%)\n2️⃣ Выполнили задания: <b>{passed}</b> ({pct(passed)})\n"
+            f"3️⃣ Открыли приложение: <b>{app}</b> ({pct(app)})\n4️⃣ Открыли доп. информацию: <b>{opened}</b> ({pct(opened)})\n"
+            f"      └ купили: {buyers} · пригласили: {inviters}\n\n"
+            f"⭐ <b>Звёзды</b>: всего <b>{ps}</b> ({pc} покупок)\nсегодня {st[0]} · 7 дней {st[1]} · 30 дней {st[2]}\n\n"
+            f"📤 <b>Пересылки</b> за 7 дней: слайды <b>{sh.get('slide', 0)}</b> · приглашения <b>{sh.get('invite', 0)}</b>\n\n"
+            f"<i>Этап «выполнили задания» считается с момента этого обновления.</i>")
+
+async def last_purchases_text():
+    rows = await pool.fetch("""SELECT p.user_id, p.stars, p.ts, pr.name, pr.username FROM purchases p
+        LEFT JOIN profiles pr ON pr.user_id=p.user_id ORDER BY p.ts DESC LIMIT 10""")
+    if not rows: return "🧾 Покупок пока нет."
+    return "🧾 <b>Последние покупки</b>\n\n" + "\n".join(
+        f"⭐ <b>{r['stars']}</b> — <a href=\"tg://user?id={r['user_id']}\">{E(r['name'] or 'Без имени')}</a>"
+        f"{' (@' + E(r['username']) + ')' if r['username'] else ''} · {r['ts'].astimezone(TZ):%d.%m %H:%M}" for r in rows)
+
+async def report_text():
+    now = datetime.now(TZ); since = now - timedelta(days=1)
+    new = await period_counts("users", "first_seen", since); refs = await period_counts("referrals", "created", since)
+    pc, ps = await pool.fetchrow("SELECT count(*), coalesce(sum(stars),0) FROM purchases WHERE ts >= $1", since)
+    sh = {r["kind"]: r["c"] for r in await pool.fetch("SELECT kind, count(*) c FROM shares WHERE ts >= $1 GROUP BY kind", since)}
+    a, b2 = sh.get("slide", 0), sh.get("invite", 0)
+    total = await pool.fetchval("SELECT count(*) FROM users"); blocked = await pool.fetchval("SELECT count(*) FROM users WHERE blocked")
+    return (f"📬 <b>Отчёт за сутки</b> · {now:%d.%m.%Y %H:%M}\n\n🆕 Новых пользователей: <b>{new}</b>\n🛒 Покупок: <b>{pc}</b> · ⭐ Звёзд: <b>{ps}</b>\n"
+            f"📤 Пересылок: <b>{a + b2}</b> (слайды: {a}, приглашения: {b2})\n🤝 Пришло по реферальным ссылкам: <b>{refs}</b>\n\n"
+            f"👥 Всего пользователей: {total} · 🚫 заблокировали: {blocked}")
+
+async def send_report(targets=None):
+    txt = await report_text()
+    for a in (targets or ADMINS): await send(a, txt)
+
+async def report_loop():  # раз в минуту проверяет, не пора ли отправить отчёт (если сервер спал — отправит, когда проснётся)
+    while True:
+        try:
+            if await get_setting("rep_on", "1") == "1":
+                now = datetime.now(TZ); today = now.date().isoformat(); last = await get_setting("rep_last", "")
+                if not last: await set_setting("rep_last", today)   # первый запуск: отчёт придёт завтра
+                elif now.hour >= int(await get_setting("rep_hour", "9")) and last != today:
+                    await set_setting("rep_last", today); await send_report()
+        except Exception as e: print("report error:", repr(e))
+        await asyncio.sleep(60)
+
+# ================= Задания =================
+async def task_rows():
+    return await pool.fetch("""SELECT t.*, (SELECT count(*) FROM events e WHERE e.task_id=t.id AND e.kind='done') done
+        FROM tasks t WHERE NOT t.deleted ORDER BY t.sort, t.id""")
+
+async def tk_list(cid):
+    rows = await task_rows()
+    if not rows: await send(cid, "Заданий пока нет.", kb([cb("➕ Добавить задание", "add")], [cb("⬅️ Меню", "adm")])); return
+    lines = [f"{i}. {'✅' if r['active'] else '⏸'} <b>{E(r['title'])}</b> — {'заявки' if r['kind'] == 'request' else 'ссылка'}, выполнили {r['done']}" +
+             (f" из {r['limit_n']}" if r['limit_n'] else "") for i, r in enumerate(rows, 1)]
+    await send(cid, "📋 <b>Задания</b> (в таком порядке их видят пользователи)\n\n" + "\n".join(lines) + "\n\nВыбери задание, чтобы изменить:",
+               kb(*[[cb(f"{i}. {r['title'][:32]} {'✅' if r['active'] else '⏸'}", f"t:{r['id']}")] for i, r in enumerate(rows, 1)], [cb("⬅️ Меню", "adm")]))
+
+async def tk_card(cid, tid):
+    r = next((x for x in await task_rows() if x["id"] == tid), None)
+    if not r: await send(cid, "Задание не найдено.", kb([cb("📋 К списку", "tk")])); return
+    await send(cid, f"📌 <b>#{r['id']} {E(r['title'])}</b>\nТип: {'заявки' if r['kind'] == 'request' else 'обычная ссылка'} · {'включено ✅' if r['active'] else 'выключено ⏸'}\n"
+                    f"Выполнили: <b>{r['done']}</b>" + (f" из <b>{r['limit_n']}</b>" if r['limit_n'] else " (лимита нет)") + f"\nСсылка: {E(r['link'])}",
+               kb([cb("⏸ Выключить" if r["active"] else "▶️ Включить", f"tg:{tid}")], [cb("⬆️ Выше", f"tu:{tid}"), cb("⬇️ Ниже", f"td:{tid}")],
+                  [cb("✏️ Название", f"te:{tid}"), cb("🎯 Лимит", f"tl:{tid}")], [cb("🗑 Удалить", f"tx:{tid}")], [cb("📋 К списку", "tk")]))
+
+async def move_task(tid, d):
+    ids = [r["id"] for r in await pool.fetch("SELECT id FROM tasks WHERE NOT deleted ORDER BY sort, id")]
+    if tid not in ids: return
+    i = ids.index(tid); j = i + d
+    if 0 <= j < len(ids):
+        ids[i], ids[j] = ids[j], ids[i]
+        for k, x in enumerate(ids): await pool.execute("UPDATE tasks SET sort=$2 WHERE id=$1", x, k + 1)
+
 async def on_message(msg):
     if msg["chat"]["type"] != "private": return
     uid, cid, text = msg["from"]["id"], msg["chat"]["id"], msg.get("text") or ""
@@ -209,6 +366,33 @@ async def on_message(msg):
         if uid in ADMINS: await send(cid, "⚙️ Админ-панель", PANEL)
     elif uid in ADMINS and text == "/admin":
         STATE.pop(uid, None); await send(cid, "⚙️ Админ-панель", PANEL)
+    elif uid in ADMINS and STATE.get(uid, {}).get("step") == "tedit":
+        if not text.strip() or len(text) > 60: await send(cid, "Пришли новое название (до 60 символов)."); return
+        tid = STATE.pop(uid)["tid"]; await pool.execute("UPDATE tasks SET title=$2 WHERE id=$1", tid, text.strip()); await tk_card(cid, tid)
+    elif uid in ADMINS and STATE.get(uid, {}).get("step") == "tlim":
+        if not text.strip().isdigit() or int(text) > 1000000: await send(cid, "Пришли число (0 — без лимита)."); return
+        tid = STATE.pop(uid)["tid"]; await pool.execute("UPDATE tasks SET limit_n=$2 WHERE id=$1", tid, int(text))
+        await pool.execute("DELETE FROM settings WHERE key=$1", f"limit_{tid}"); await tk_card(cid, tid)
+    elif uid in ADMINS and STATE.get(uid, {}).get("step") == "rphour":
+        if text.strip().isdigit() and 0 <= int(text) <= 23:
+            await set_setting("rep_hour", int(text)); STATE.pop(uid, None); await send(cid, f"✅ Отчёт будет приходить в <b>{int(text):02d}:00</b> (UTC{TZ.utcoffset(None).total_seconds() / 3600:+.0f})", kb([cb("📬 Отчёт", "rp")]))
+        else: await send(cid, "Пришли час от 0 до 23.")
+    elif uid in ADMINS and STATE.get(uid, {}).get("step") == "txt":
+        key = STATE[uid]["key"]; rich = TEXTS[key][2]
+        if not text.strip(): await send(cid, "Пришли текст сообщением (не фото и не файл)."); return
+        if rich:
+            ents = [e for e in (msg.get("entities") or []) if e.get("type") in RICH_OK]
+            await set_setting("txt_" + key, json.dumps({"t": text, "e": ents}, ensure_ascii=False))
+            ce = any(e["type"] == "custom_emoji" for e in ents)
+        else:
+            if len(text) > 64: await send(cid, "Текст кнопки — до 64 символов."); return
+            await set_setting("txt_" + key, json.dumps({"t": text.strip()}, ensure_ascii=False)); ents = None; ce = False
+        STATE.pop(uid, None)
+        await send(cid, "✅ Сохранено. Вот как это выглядит:")
+        if rich: await send(cid, text, entities=ents)
+        else: await send(cid, "Кнопка: <b>" + E(text.strip()) + "</b>")
+        if ce: await send(cid, "ℹ️ Премиум-эмодзи доходят до людей, только если у владельца бота есть Telegram Premium (или у бота есть username с Fragment). Если не доходят — они показываются обычными.")
+        await send(cid, "Что дальше?", kb([cb("✏️ Тексты", "tt")], [cb("⬅️ Меню", "adm")]))
     elif uid in ADMINS and STATE.get(uid, {}).get("step") == "refprice":
         if text.strip().isdigit() and int(text) <= 10000:
             await pool.execute("INSERT INTO settings(key,value) VALUES('ref_price',$1) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value", text.strip())
@@ -283,9 +467,44 @@ async def on_cb(q):
         STATE[uid] = {"step": "refprice"}
         await send(cid, f"Сейчас цена: <b>{await get_price() or 'выключено'}</b>\nПришли сумму в звёздах (от 1 до 10000) или 0, чтобы выключить платный вариант.", kb([cb("❌ Отмена", "cancel")]))
     elif data == "adm": await send(cid, "⚙️ Админ-панель", PANEL)
-    elif data == "st":
-        n = await pool.fetchval("SELECT count(*) FROM users"); b = await pool.fetchval("SELECT count(*) FROM users WHERE blocked")
-        await send(cid, f"📊 Статистика\n\n👥 Уникальных стартов: <b>{n}</b>\n🚫 Заблокировали бота: <b>{b}</b>\n✅ Активных: <b>{n-b}</b>", kb([cb("⬅️ Меню", "adm")]))
+    elif data == "st": await send(cid, await stats_text(), kb([cb("🧾 Последние покупки", "sl")], [cb("⬅️ Меню", "adm")]))
+    elif data == "sl": await send(cid, await last_purchases_text(), kb([cb("📊 Статистика", "st")], [cb("⬅️ Меню", "adm")]))
+    elif data == "tk": await tk_list(cid)
+    elif re.fullmatch(r"t:\d+", data): await tk_card(cid, int(data[2:]))
+    elif re.fullmatch(r"tg:\d+", data):
+        await pool.execute("UPDATE tasks SET active = NOT active WHERE id=$1", int(data[3:])); await tk_card(cid, int(data[3:]))
+    elif re.fullmatch(r"t[ud]:\d+", data):
+        await move_task(int(data[3:]), -1 if data[1] == "u" else 1); await tk_list(cid)
+    elif re.fullmatch(r"te:\d+", data):
+        STATE[uid] = {"step": "tedit", "tid": int(data[3:])}; await send(cid, "Пришли новое название задания (его видят пользователи на кнопке).", kb([cb("❌ Отмена", "cancel")]))
+    elif re.fullmatch(r"tl:\d+", data):
+        STATE[uid] = {"step": "tlim", "tid": int(data[3:])}
+        await send(cid, "🎯 Пришли лимит выполнений, например <b>500</b>: когда столько человек выполнят задание, оно перестанет требоваться. 0 — без лимита.", kb([cb("❌ Отмена", "cancel")]))
+    elif re.fullmatch(r"tx:\d+", data):
+        await send(cid, "Точно удалить задание? Статистика по нему тоже скроется.", kb([cb("Да, удалить", "ty:" + data[3:])], [cb("Отмена", "t:" + data[3:])]))
+    elif re.fullmatch(r"ty:\d+", data):
+        await pool.execute("UPDATE tasks SET deleted=TRUE, active=FALSE WHERE id=$1", int(data[3:])); await tk_list(cid)
+    elif data == "tt":
+        await send(cid, "✏️ <b>Тексты</b>\n\nВыбери, что изменить. В текстах сообщений работает форматирование и премиум-эмодзи.",
+                   kb(*[[cb(v[0], "tt:" + k)] for k, v in TEXTS.items()], [cb("⬅️ Меню", "adm")]))
+    elif data.startswith("tt:") and data[3:] in TEXTS:
+        key = data[3:]; t, e = await get_text(key); STATE[uid] = {"step": "txt", "key": key}
+        await send(cid, f"✏️ <b>{TEXTS[key][0]}</b>\nСейчас:")
+        if TEXTS[key][2]: await send(cid, t, entities=e)
+        else: await send(cid, "Кнопка: <b>" + E(t) + "</b>")
+        await send(cid, "Пришли новый " + ("текст одним сообщением — можно с жирным шрифтом, ссылками и премиум-эмодзи." if TEXTS[key][2] else "текст кнопки (до 64 символов, без форматирования)."),
+                   kb([cb("↩️ Сбросить по умолчанию", "ttr:" + key)], [cb("❌ Отмена", "cancel")]))
+    elif data.startswith("ttr:") and data[4:] in TEXTS:
+        await pool.execute("DELETE FROM settings WHERE key=$1", "txt_" + data[4:]); STATE.pop(uid, None)
+        await send(cid, "↩️ Возвращён текст по умолчанию.", kb([cb("✏️ Тексты", "tt")], [cb("⬅️ Меню", "adm")]))
+    elif data == "rp":
+        on = await get_setting("rep_on", "1") == "1"; h = int(await get_setting("rep_hour", "9"))
+        await send(cid, f"📬 <b>Ежедневный отчёт</b>\n\nСтатус: {'включён ✅' if on else 'выключен ⏸'}\nВремя: <b>{h:02d}:00</b> (UTC{TZ.utcoffset(None).total_seconds() / 3600:+.0f})\n"
+                        "В отчёте: новые пользователи, покупки, звёзды, пересылки.\n\n<i>На бесплатном Render сервер спит без запросов, тогда отчёт придёт, когда он проснётся.</i>",
+                   kb([cb("🔕 Выключить" if on else "🔔 Включить", "rpt"), cb("⏰ Время", "rph")], [cb("📨 Отправить сейчас", "rps")], [cb("⬅️ Меню", "adm")]))
+    elif data == "rpt": await set_setting("rep_on", "0" if await get_setting("rep_on", "1") == "1" else "1"); await on_cb({**q, "data": "rp"})
+    elif data == "rph": STATE[uid] = {"step": "rphour"}; await send(cid, "Пришли час отправки (0–23).", kb([cb("❌ Отмена", "cancel")]))
+    elif data == "rps": await send_report([cid])
     elif data == "add":
         STATE[uid] = {"step": "link"}
         await send(cid, "Пришли ссылку на канал или чат (https://t.me/название или @название). Для приватного — перешли любое сообщение из него. Я должен быть там администратором.")
@@ -295,32 +514,29 @@ async def on_cb(q):
         link = ("https://t.me/" + c["username"]) if (not req and c["username"]) else (inv["invite_link"] if inv else None)
         if not link:
             await send(cid, f"Не получилось создать ссылку: {E(ERR[0])}\nПроверь, что у меня есть право приглашать пользователей."); return
-        tid = await pool.fetchval("INSERT INTO tasks(chat_id,title,kind,link) VALUES($1,$2,$3,$4) RETURNING id", c["id"], c["title"], "request" if req else "link", link)
+        tid = await pool.fetchval("INSERT INTO tasks(chat_id,title,kind,link,sort) VALUES($1,$2,$3,$4,(SELECT coalesce(max(sort),0)+1 FROM tasks)) RETURNING id", c["id"], c["title"], "request" if req else "link", link)
         STATE.pop(uid, None)
         await send(cid, f"✅ Задание #{tid} добавлено: <b>{E(c['title'])}</b> ({'заявки' if req else 'обычная ссылка'})", kb([cb("⬅️ Меню", "adm")]))
     elif data == "ls":
         rows = await pool.fetch("""SELECT t.id,t.title,t.kind,
           count(*) FILTER (WHERE e.kind='join') joins, count(*) FILTER (WHERE e.kind='request') reqs,
           count(*) FILTER (WHERE e.kind='done') done
-          FROM tasks t LEFT JOIN events e ON e.task_id=t.id WHERE t.active GROUP BY t.id ORDER BY t.id""")
+          FROM tasks t LEFT JOIN events e ON e.task_id=t.id WHERE NOT t.deleted GROUP BY t.id ORDER BY t.id""")
         if not rows: await send(cid, "Заданий пока нет.", kb([cb("⬅️ Меню", "adm")])); return
         txt = "\n\n".join(f"<b>#{r['id']} {E(r['title'])}</b> ({'заявки' if r['kind']=='request' else 'ссылка'})\n"
             f"👥 Вступили: {r['joins']}\n✉️ Заявок: {r['reqs']}\n✅ Выполнили: {r['done']}" for r in rows)
-        await send(cid, "🔗 Статистика ссылок\n\n" + txt, kb(*[[cb(f"🗑 Удалить #{r['id']}", f"del:{r['id']}")] for r in rows], [cb("⬅️ Меню", "adm")]))
-    elif data.startswith("del:"):
-        await pool.execute("UPDATE tasks SET active=FALSE WHERE id=$1", int(data[4:]))
-        await send(cid, "🗑 Задание удалено.", kb([cb("⬅️ Меню", "adm")]))
+        await send(cid, "🔗 Статистика ссылок\n\n" + txt, kb([cb("📋 Задания", "tk")], [cb("⬅️ Меню", "adm")]))
 
 async def on_join(r):  # человек подал заявку в канал/чат, где у нас есть задание типа «заявки»
     await pool.execute("""INSERT INTO events(task_id,user_id,kind) SELECT id,$2,'request' FROM tasks
-        WHERE chat_id=$1 AND kind='request' AND active ON CONFLICT DO NOTHING""", r["chat"]["id"], r["from"]["id"])
+        WHERE chat_id=$1 AND kind='request' AND NOT deleted ON CONFLICT DO NOTHING""", r["chat"]["id"], r["from"]["id"])
 
 async def on_member(m):  # кто-то вступил в канал/чат, где есть задание
     new, old = m["new_chat_member"], m["old_chat_member"]
     ok = lambda x: x["status"] in ("member", "administrator", "creator") or (x["status"] == "restricted" and x.get("is_member"))
     if ok(new) and not ok(old):
         await pool.execute("""INSERT INTO events(task_id,user_id,kind) SELECT id,$2,'join' FROM tasks
-            WHERE chat_id=$1 AND active ON CONFLICT DO NOTHING""", m["chat"]["id"], new["user"]["id"])
+            WHERE chat_id=$1 AND NOT deleted ON CONFLICT DO NOTHING""", m["chat"]["id"], new["user"]["id"])
 
 async def on_block(m):  # человек заблокировал или разблокировал бота
     if m["chat"]["type"] == "private":
@@ -363,14 +579,22 @@ def register(app):
                           provider_token="", currency="XTR", prices=[{"label": "Доп. информация", "amount": price}])
         if not link: raise HTTPException(502, "Telegram не создал счёт")
         return {"url": link}
+    @app.get("/health")
+    async def health(): return {"ok": True}   # сюда можно слать пинг (UptimeRobot), чтобы бесплатный сервер не засыпал
     @app.post("/api/invite")
     async def invite(authorization: str = Header()):
         uid = auth_user(authorization)["id"]
-        res = {"type": "article", "id": f"inv{uid}", "title": "Приглашение",
-               "input_message_content": {"message_text": "👋 Смотри результаты своего Telegram-аккаунта!\nУзнай свой стаж, подарки и баллы и сравни себя с топ-100 👇", "link_preview_options": {"is_disabled": True}},
-               "reply_markup": {"inline_keyboard": [[{"text": "Узнать мои результаты", "url": ref_link(uid)}]]}}
-        r = await call("savePreparedInlineMessage", user_id=uid, result=res, allow_user_chats=True, allow_group_chats=True, allow_channel_chats=True)
+        t, e = await get_text("invite_text"); lbl, _ = await get_text("invite_btn")
+        def make(ents):
+            m = {"message_text": t, "link_preview_options": {"is_disabled": True}}
+            if ents: m["entities"] = ents
+            return {"type": "article", "id": f"inv{uid}", "title": "Приглашение", "input_message_content": m,
+                    "reply_markup": {"inline_keyboard": [[{"text": lbl, "url": ref_link(uid)}]]}}
+        r = await call("savePreparedInlineMessage", user_id=uid, result=make(e), allow_user_chats=True, allow_group_chats=True, allow_channel_chats=True)
+        if not r and e and len(no_ce(e)) != len(e):  # премиум-эмодзи в приглашении не приняты -> без них
+            r = await call("savePreparedInlineMessage", user_id=uid, result=make(no_ce(e)), allow_user_chats=True, allow_group_chats=True, allow_channel_chats=True)
         if not r: raise HTTPException(502, "Telegram не принял сообщение")
+        await log_share(uid, "invite")
         return {"id": r["id"]}
     @app.post("/webhook")
     async def webhook(req: Request):
