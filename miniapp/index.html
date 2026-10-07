@@ -92,6 +92,10 @@ button:active{transform:scale(.94);transition:transform .1s}
 .b1{background:linear-gradient(90deg,#2f7cf6,#7b5cff);color:#fff;box-shadow:0 8px 20px rgba(47,124,246,.35)}
 .b2{background:var(--row);color:var(--tx)}
 .pill{background:rgba(255,255,255,.28);border-radius:12px;padding:3px 9px;font-size:13px}
+.dt{padding:4px 0 6px}
+.num{font-size:56px;font-weight:800;line-height:1.1;margin-top:6px;background:linear-gradient(90deg,var(--c1),var(--c2));-webkit-background-clip:text;background-clip:text;color:transparent;animation:pop .7s .1s cubic-bezier(.3,1.6,.5,1) both}
+.unit{font-size:20px;font-weight:700;margin:2px 0 10px}
+.est{font-size:13px;opacity:.8;margin-top:10px}
 .big{font-size:64px;line-height:1.1;margin:6px 0 8px;animation:pop .6s cubic-bezier(.3,1.6,.5,1) both}
 .lst{max-height:44vh;overflow:auto;margin:14px -6px 10px;padding:0 6px;text-align:left}
 .lr{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:16px}
@@ -267,7 +271,19 @@ const avatar=p=>{const nm=(p.name||"?").trim(),ini=esc([...nm][0]||"?").toUpperC
  return p.photo?`<img class="av" src="${esc(p.photo)}" data-ini="${ini}" data-h="${h}" alt="">`:`<div class="av ini" style="background:hsl(${h} 62% 52%)">${ini}</div>`};
 document.addEventListener("error",e=>{const t=e.target;if(t&&t.classList&&t.classList.contains("av")){const d=document.createElement("div");d.className="av ini";d.style.background=`hsl(${t.dataset.h} 62% 52%)`;d.textContent=t.dataset.ini;t.replaceWith(d)}},true);
 const prog=m=>`<div class="pc"><div class="pr2"><span>Приглашено</span><b>${m.count} из ${m.need}</b></div><div class="pb"><i style="width:${m.need?Math.min(100,m.count/m.need*100):100}%"></i></div></div>`;
-const ITEMS=[{k:"top",ic:"🏆",c:["#ffb347","#ff6b6b"],t:"Таблица лидеров",s:"Топ-100 по баллам за аккаунт"}];
+const ITEMS=[{k:"top",ic:"🏆",c:["#ffb347","#ff6b6b"],t:"Таблица лидеров",s:"Топ-100 по баллам за аккаунт"},
+ {k:"gv",ic:"{g}",c:["#ff6b9d","#c44dff"],t:"Сколько ты подарил подарков",s:"Примерная оценка по твоим тратам звёзд"},
+ {k:"bl",ic:"🚫",c:["#ff9966","#e0384f"],t:"Сколько людей тебя заблокировало",s:"Примерная оценка за всё время аккаунта"},
+ {k:"hr",ic:"⏱️",c:["#4facfe","#00c6a7"],t:"Сколько часов ты провёл в Telegram",s:"Примерное время в приложении"}];
+// экраны с «оценкой»: считаем по формулам из данных аккаунта
+const pl3=(n,w)=>n%10==1&&n%100!=11?w[0]:(n%10>=2&&n%10<=4&&(n%100<12||n%100>14))?w[1]:w[2];
+const DET={
+ gv:{ic:"{g}",c:["#ff6b9d","#c44dff"],t:"Ты подарил подарков",v:()=>Math.floor((D.stars||0)/40),w:["подарок","подарка","подарков"],note:"Оценка: потрачено звёзд ÷ 40"},
+ bl:{ic:"🚫",c:["#ff9966","#e0384f"],t:"Тебя заблокировали",v:()=>Math.round((D.days||0)*0.3),w:["человек","человека","человек"],note:"Оценка: примерно 0,3 блокировки на каждый день аккаунта"},
+ hr:{ic:"⏱️",c:["#4facfe","#00c6a7"],t:"Ты провёл в Telegram",v:()=>Math.round((D.days||0)*70/60),w:["час","часа","часов"],note:"Оценка: примерно 1 час 10 минут на каждый день аккаунта",extra:v=>{const d=Math.round(v/24);return`это около ${N(d)} ${pl3(d,["сутки","суток","суток"])} без перерыва`}}};
+function vDet(k){const x=DET[k],v=x.v();
+ return `<div class="dt" style="--c1:${x.c[0]};--c2:${x.c[1]}"><div class="big">${rich(x.ic)}</div><h2>${x.t}</h2><div class="num">≈ ${N(v)}</div><div class="unit">${pl3(v,x.w)}</div>${x.extra?`<p class="mut">${x.extra(v)}</p>`:""}<p class="mut est">${x.note}</p></div><div class="bt col"><button type="button" class="b2" data-s="menu">Назад</button></div>`}
+function cu(){document.querySelectorAll("#sh .cnt").forEach(el=>{const to=+el.dataset.to,t0=performance.now();(function f(t){const p=Math.min(1,(t-t0)/1100),e=1-Math.pow(1-p,3);el.textContent=Math.round(to*e).toLocaleString("ru");if(p<1)requestAnimationFrame(f)})(t0)})}
 const loading=()=>`<div class="ld"><div class="spin"></div><p class="mut">Загружаем…</p></div>`;
 function vMenu(){const m=MORE,lock=!m.unlocked,left=Math.max(0,m.need-m.count);
  return `<h2>Хочешь узнать больше?</h2><p class="mut">${lock?`Пригласи ${m.need} ${fr(m.need)} — и всё откроется бесплатно`:"Всё открыто — выбирай!"}</p>
@@ -292,8 +308,8 @@ function vTop(){if(!TOP)return loading()+`<div class="bt col"><button type="butt
 function renderSheet(){
  let h=loading();
  if(FAIL)h=`<div class="ld"><div class="big">😕</div><p class="mut">Не получилось загрузить. Попробуй позже.</p></div><div class="bt col"><button type="button" class="b2" data-s="x">Закрыть</button></div>`;
- else if(MORE)h=VIEW=="inv"?vInv():VIEW=="top"?vTop():VIEW=="opt"?vOpt():vMenu();
- SH.innerHTML='<div class="grab"></div>'+h;hydrate()}
+ else if(MORE)h=VIEW=="inv"?vInv():VIEW=="top"?vTop():VIEW=="opt"?vOpt():VIEW.startsWith("d:")?vDet(VIEW.slice(2)):vMenu();
+ SH.innerHTML='<div class="grab"></div>'+h;hydrate();cu()}
 async function refreshMore(){try{MORE=live?await api("/api/more"):Object.assign({},DM,{points:total(),count:MORE?MORE.count:DM.count});FAIL=false}catch(e){FAIL=!MORE}if(OV.classList.contains("on"))renderSheet()}
 function openSheet(){VIEW="menu";OV.classList.add("on");renderSheet();if(tg)tg.BackButton.show();refreshMore()}
 function closeSheet(){OV.classList.remove("on");if(tg&&i==0)tg.BackButton.hide()}
@@ -320,7 +336,7 @@ OV.addEventListener("click",e=>{
  if(e.target===OV){closeSheet();return}
  const b=e.target.closest("[data-s]");if(!b)return;const a=b.dataset.s;
  if(a=="x")closeSheet();else if(a=="menu"){VIEW="menu";renderSheet()}
- else if(a=="more"){VIEW=MORE.price>0?"opt":"inv";NOTE="";renderSheet()}else if(a=="inv"){VIEW="inv";renderSheet()}else if(a=="back"){VIEW=parent();renderSheet()}else if(a=="pay")pay();else if(a=="menu0"){}else if(a=="top")openTop();
+ else if(a=="more"){VIEW=MORE.price>0?"opt":"inv";NOTE="";renderSheet()}else if(a=="inv"){VIEW="inv";renderSheet()}else if(a=="back"){VIEW=parent();renderSheet()}else if(a=="pay")pay();else if(a=="menu0"){}else if(a=="top")openTop();else if(DET[a]){VIEW="d:"+a;renderSheet()}
  else if(a=="send")sendInvite();else if(a=="copy")copyLink()});
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&OV.classList.contains("on")&&live)refreshMore()});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a;a=="n"?go(1):a=="b"?go(-1):a=="m"?openSheet():share()});
