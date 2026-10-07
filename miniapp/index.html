@@ -272,22 +272,22 @@ const avatar=p=>{const nm=(p.name||"?").trim(),ini=esc([...nm][0]||"?").toUpperC
 document.addEventListener("error",e=>{const t=e.target;if(t&&t.classList&&t.classList.contains("av")){const d=document.createElement("div");d.className="av ini";d.style.background=`hsl(${t.dataset.h} 62% 52%)`;d.textContent=t.dataset.ini;t.replaceWith(d)}},true);
 const prog=m=>`<div class="pc"><div class="pr2"><span>Приглашено</span><b>${m.count} из ${m.need}</b></div><div class="pb"><i style="width:${m.need?Math.min(100,m.count/m.need*100):100}%"></i></div></div>`;
 const ITEMS=[{k:"top",ic:"🏆",c:["#ffb347","#ff6b6b"],t:"Таблица лидеров",s:"Топ-100 по баллам за аккаунт"},
- {k:"gv",ic:"{g}",c:["#ff6b9d","#c44dff"],t:"Сколько ты подарил подарков",s:"Примерная оценка по твоим тратам звёзд"},
- {k:"bl",ic:"🚫",c:["#ff9966","#e0384f"],t:"Сколько людей тебя заблокировало",s:"Примерная оценка за всё время аккаунта"},
- {k:"hr",ic:"⏱️",c:["#4facfe","#00c6a7"],t:"Сколько часов ты провёл в Telegram",s:"Примерное время в приложении"}];
+ {k:"gv",ic:"{g}",c:["#ff6b9d","#c44dff"],t:"Сколько ты подарил подарков",s:""},
+ {k:"bl",ic:"🚫",c:["#ff9966","#e0384f"],t:"Сколько людей тебя заблокировало",s:""},
+ {k:"hr",ic:"⏱️",c:["#4facfe","#00c6a7"],t:"Сколько часов ты провёл в Telegram",s:""}];
 // экраны с «оценкой»: считаем по формулам из данных аккаунта
 const pl3=(n,w)=>n%10==1&&n%100!=11?w[0]:(n%10>=2&&n%10<=4&&(n%100<12||n%100>14))?w[1]:w[2];
 const DET={
- gv:{ic:"{g}",c:["#ff6b9d","#c44dff"],t:"Ты подарил подарков",v:()=>Math.floor((D.stars||0)/40),w:["подарок","подарка","подарков"],note:"Оценка: потрачено звёзд ÷ 40"},
- bl:{ic:"🚫",c:["#ff9966","#e0384f"],t:"Тебя заблокировали",v:()=>Math.round((D.days||0)*0.3),w:["человек","человека","человек"],note:"Оценка: примерно 0,3 блокировки на каждый день аккаунта"},
- hr:{ic:"⏱️",c:["#4facfe","#00c6a7"],t:"Ты провёл в Telegram",v:()=>Math.round((D.days||0)*70/60),w:["час","часа","часов"],note:"Оценка: примерно 1 час 10 минут на каждый день аккаунта",extra:v=>{const d=Math.round(v/24);return`это около ${N(d)} ${pl3(d,["сутки","суток","суток"])} без перерыва`}}};
+ gv:{ic:"{g}",c:["#ff6b9d","#c44dff"],t:"Ты подарил подарков",v:()=>Math.floor((D.stars||0)/40),w:["подарок","подарка","подарков"]},
+ bl:{ic:"🚫",c:["#ff9966","#e0384f"],t:"Тебя заблокировали",v:()=>Math.round((D.days||0)*0.3),w:["человек","человека","человек"]},
+ hr:{ic:"⏱️",c:["#4facfe","#00c6a7"],t:"Ты провёл в Telegram",v:()=>Math.round((D.days||0)*70/60),w:["час","часа","часов"],extra:v=>{const d=Math.round(v/24);return`это около ${N(d)} суток без перерыва`}}};
 function vDet(k){const x=DET[k],v=x.v();
- return `<div class="dt" style="--c1:${x.c[0]};--c2:${x.c[1]}"><div class="big">${rich(x.ic)}</div><h2>${x.t}</h2><div class="num">≈ ${N(v)}</div><div class="unit">${pl3(v,x.w)}</div>${x.extra?`<p class="mut">${x.extra(v)}</p>`:""}<p class="mut est">${x.note}</p></div><div class="bt col"><button type="button" class="b2" data-s="menu">Назад</button></div>`}
+ return `<div class="dt" style="--c1:${x.c[0]};--c2:${x.c[1]}"><div class="big">${rich(x.ic)}</div><h2>${x.t}</h2><div class="num">≈ ${N(v)}</div><div class="unit">${pl3(v,x.w)}</div>${x.extra?`<p class="mut">${x.extra(v)}</p>`:""}</div><div class="bt col"><button type="button" class="b2" data-s="menu">Назад</button></div>`}
 function cu(){document.querySelectorAll("#sh .cnt").forEach(el=>{const to=+el.dataset.to,t0=performance.now();(function f(t){const p=Math.min(1,(t-t0)/1100),e=1-Math.pow(1-p,3);el.textContent=Math.round(to*e).toLocaleString("ru");if(p<1)requestAnimationFrame(f)})(t0)})}
 const loading=()=>`<div class="ld"><div class="spin"></div><p class="mut">Загружаем…</p></div>`;
 function vMenu(){const m=MORE,lock=!m.unlocked,left=Math.max(0,m.need-m.count);
  return `<h2>Хочешь узнать больше?</h2><p class="mut">${lock?`Пригласи ${m.need} ${fr(m.need)} — и всё откроется бесплатно`:"Всё открыто — выбирай!"}</p>
- <div class="rows">${ITEMS.map((x,j)=>`<button type="button" class="row" style="animation-delay:${j*.08}s" data-s="${lock?"more":x.k}"><span class="ic" style="background:linear-gradient(135deg,${x.c[0]},${x.c[1]})">${rich(x.ic)}${lock?'<i class="lk">🔒</i>':""}</span><span class="rt"><b>${x.t}</b><small>${x.s}</small></span><span class="chev">›</span></button>`).join("")}</div>
+ <div class="rows">${ITEMS.map((x,j)=>`<button type="button" class="row" style="animation-delay:${j*.08}s" data-s="${lock?"more":x.k}"><span class="ic" style="background:linear-gradient(135deg,${x.c[0]},${x.c[1]})">${rich(x.ic)}${lock?'<i class="lk">🔒</i>':""}</span><span class="rt"><b>${x.t}</b>${x.s?`<small>${x.s}</small>`:""}</span><span class="chev">›</span></button>`).join("")}</div>
  <div class="bt">${lock?`<button type="button" class="b2" data-s="x">Нет, спасибо</button><button type="button" class="b1" data-s="more">Узнать больше информации<span class="pill">ещё ${left}</span></button>`:`<button type="button" class="b2" data-s="x">Назад</button>`}</div>`}
 function vInv(){const m=MORE,left=Math.max(0,m.need-m.count);
  return `<div class="big">💌</div><h2>${left?`Пригласи ещё ${left} ${fr(left)}`:"Ты пригласил всех!"}</h2>
