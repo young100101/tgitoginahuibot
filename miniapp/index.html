@@ -9,18 +9,21 @@
 html,body{height:100dvh;background:#111;color:#fff;overflow:hidden}
 #app{height:100%;max-width:480px;margin:auto;position:relative;transition:background .4s;display:flex;flex-direction:column;align-items:center;text-align:center;padding:calc(var(--tg-safe-area-inset-top,env(safe-area-inset-top,0px)) + var(--tg-content-safe-area-inset-top,0px) + 14px) 20px calc(var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom,0px)) + 16px)}
 .snow{position:absolute;inset:0;pointer-events:none;overflow:hidden}
-.snow i{position:absolute;top:-10px;width:4px;height:4px;border-radius:50%;background:#fff;opacity:.7;animation:f linear infinite}
-@keyframes f{to{transform:translateY(110vh)}}
+.snow img{position:absolute;top:-50px;height:auto;opacity:.85;pointer-events:none;user-select:none;-webkit-user-drag:none;will-change:transform;animation:f linear infinite,sw ease-in-out infinite}
+@keyframes f{from{transform:translateY(0) rotate(0)}to{transform:translateY(112vh) rotate(var(--r,180deg))}}
 .bars{display:flex;gap:4px;width:100%;z-index:1}
 .bars b{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.3)}
 .bars b.on{background:#fff}
-h1{font-size:24px;margin-top:26px;z-index:1}
+h1{font-size:26px;margin-top:34px;z-index:1}
 .sub{opacity:.85;margin-top:8px;font-size:15px;z-index:1}
 .mid{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:1;width:100%;animation:p .5s}
 @keyframes p{from{transform:scale(.8);opacity:0}}
-.emo{font-size:110px;line-height:1.1}
+.emo{font-size:clamp(72px,12vh,110px);line-height:1.1}
 .lbl{opacity:.85;font-size:16px;margin-top:14px}
-.val{font-size:44px;font-weight:800;margin-top:6px}
+.val{font-size:44px;font-weight:800;margin-top:6px;line-height:1.05}
+.bn{display:block;font-size:clamp(84px,min(29vw,17vh),150px);font-weight:800;line-height:1;letter-spacing:-2px}
+.vu{display:block;font-size:24px;font-weight:700;margin-top:6px}
+.vt{font-size:clamp(40px,11.5vw,56px)}
 .tier{margin-top:12px;padding:8px 18px;border-radius:20px;background:rgba(255,255,255,.22);font-weight:700;font-size:18px}
 .btns{display:flex;gap:10px;width:100%;z-index:2;position:relative}.btns button{flex:1}
 button{border:0;border-radius:14px;padding:15px;font-size:16px;font-weight:600;cursor:pointer;position:relative;z-index:2;touch-action:manipulation}
@@ -53,8 +56,7 @@ h1{animation:up .6s .05s both}.sub{animation:up .6s .15s both}
 .li{animation:up .5s both}
 .btns,.share{animation:up .6s .5s both}
 button:active{transform:scale(.94);transition:transform .1s}
-.snow i{animation-name:f,sw}
-@keyframes sw{50%{margin-left:18px}}
+@keyframes sw{50%{margin-left:22px}}
 .cf{position:absolute;top:-30px;z-index:3;pointer-events:none;animation:cfall linear both}
 @keyframes cfall{to{transform:translateY(105vh) rotate(540deg);opacity:.9}}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01s!important;animation-delay:0s!important}}
@@ -62,7 +64,7 @@ button:active{transform:scale(.94);transition:transform .1s}
 .pv{font-size:22px;font-weight:800;padding:7px 18px;border-radius:18px;background:linear-gradient(90deg,rgba(255,255,255,.38),rgba(255,255,255,.14));animation:pop .7s 1.1s cubic-bezier(.3,1.6,.5,1) both,glow 2s 2s ease-in-out infinite alternate}
 .pr{opacity:.7;font-size:13px;margin-top:7px;animation:up .6s 1.3s both}
 @keyframes glow{to{box-shadow:0 0 20px rgba(255,255,255,.65)}}
-.tot{font-size:46px;font-weight:800;margin:4px 0 12px;animation:pop .8s .3s cubic-bezier(.3,1.6,.5,1) both}
+.tot{font-size:64px;font-weight:800;margin:4px 0 12px;animation:pop .8s .3s cubic-bezier(.3,1.6,.5,1) both}
 .ce{display:inline-block;width:1.1em;height:1.1em;vertical-align:-.15em;line-height:1}
 .ce svg,.ce img,.ce video{width:100%;height:100%;display:block}
 .fp{position:absolute;top:-60px;z-index:1;pointer-events:none;animation:fallp linear both;will-change:transform}
@@ -93,7 +95,7 @@ button:active{transform:scale(.94);transition:transform .1s}
 .b2{background:var(--row);color:var(--tx)}
 .pill{background:rgba(255,255,255,.28);border-radius:12px;padding:3px 9px;font-size:13px}
 .dt{padding:4px 0 6px}
-.num{font-size:56px;font-weight:800;line-height:1.1;margin-top:6px;background:linear-gradient(90deg,var(--c1),var(--c2));-webkit-background-clip:text;background-clip:text;color:transparent;animation:pop .7s .1s cubic-bezier(.3,1.6,.5,1) both}
+.num{font-size:76px;font-weight:800;line-height:1.1;margin-top:6px;background:linear-gradient(90deg,var(--c1),var(--c2));-webkit-background-clip:text;background-clip:text;color:transparent;animation:pop .7s .1s cubic-bezier(.3,1.6,.5,1) both}
 .unit{font-size:20px;font-weight:700;margin:2px 0 10px}
 .est{font-size:13px;opacity:.8;margin-top:10px}
 .big{font-size:64px;line-height:1.1;margin:6px 0 8px;animation:pop .6s cubic-bezier(.3,1.6,.5,1) both}
@@ -120,7 +122,7 @@ const BOT="https://t.me/tgitoginahuibot/app";
 const T=(a,b,c)=>v=>v<a?0:v<b?1:2;
 const S=[
 {k:"days",p:v=>Math.floor(v/10),pr:"1 балл за каждые 10 дней",t:"Твой стаж",s:"Сколько дней ты в Telegram?",u:"дней",f:T(500,1000),
- c:[["#2e9e4f","#1d6b35"],["#2f7cf6","#1747c9"],["#8a3ee0","#52209e"]],
+ c:[["#2e9e4f","#1d6b35"],["#2fa8ff","#0a63ff"],["#8a3ee0","#52209e"]],
  d:[["🐣","Новичок"],["😎","Середнячок"],["👑","Сын Дурова"]]},
 {k:"pct",t:"Рейтинг в Telegram",s:"траты звёёёёёёз",u:"",f:v=>v>=50?0:v>=10?1:2,
  c:[["#e0832e","#a8501a"],["#18a8c9","#0d6f8f"],["#e0b72e","#a8741a"]],
@@ -135,7 +137,7 @@ const S=[
  c:[["#00c2d1","#0a5fb0"],["#7b5cff","#d13fc1"],["#f7b733","#fc4a1a"]],
  d:[["🧸","Начинающий коллекционер"],["💠","Серьёзный коллекционер"],["🐉","Легенда рынка"]]},
 {k:"fast",t:"Самый быстрый ответ",s:"Ты что 24/7 в телеграмме?",f:()=>0,c:[["#2e9e4f","#1d6b35"]],d:[["⚡",""]]},
-{k:"slow",t:"Самый долгий ответ",s:"Как же долго он ждал ответа....",f:()=>0,c:[["#2f7cf6","#1747c9"]],d:[["🐌",""]]},
+{k:"slow",t:"Самый долгий ответ",s:"Как же долго он ждал ответа....",f:()=>0,c:[["#2fa8ff","#0a63ff"]],d:[["🐌",""]]},
 {k:"online",t:"Постоянный онлайн",s:"В этот день ты сидел больше всего в телеграмме!",f:()=>0,c:[["#8a3ee0","#52209e"]],d:[["😈",""]]},
 {k:"dialog",t:"Самый длинный диалог",s:"Вот это был разговор!",f:()=>0,c:[["#f2994a","#d9480f"]],d:[["💬",""]]},
 {k:"pinned",t:"Сколько людей закрепляло чат с тобой",s:"Ты всегда у них под рукой!",f:()=>0,c:[["#ec4899","#9d174d"]],d:[["📌",""]]},
@@ -222,21 +224,23 @@ function fx(n,all,key){
   c.style.cssText=`left:${Math.random()*100}%;animation-delay:${Math.random()*.8}s;animation-duration:${2+Math.random()*2}s;font-size:${16+Math.random()*18}px`;app.appendChild(c);setTimeout(()=>c.remove(),5000)}}
  hydrate();
  if(tg&&tg.HapticFeedback)tg.HapticFeedback.impactOccurred(n==2?"heavy":"light")}
-function snow(){let h="";for(let n=0;n<28;n++)h+=`<i style="left:${Math.random()*100}%;animation-duration:${4+Math.random()*6}s;animation-delay:-${Math.random()*8}s"></i>`;return`<div class="bgl" style="background:${nb}"></div><div class="snow">${h}</div>`}
+const SP=[{u:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACcAAAA4CAYAAAB+I+F7AAADfUlEQVR42s2YW2tUVxTHf+tM4uXBapp4S1urYmgNqKjYIlRKoZUqqB/ABx/qg1/Chz74cdqXUhEfVVBQIt6lSlqr0ao1VkVLjDP/PnQt2RwyTOJsJ3vBYc3Zc9jzm7X2uh3IJJJM0jIySpVxrwbwnaSFJcL1AZ8Bi8KS8w6XQPQDI66LdOswsKBEuA+AIeBDv7cS4AJiGbAygaMkuOXAKmCgJMuFDDrQUIlnbtD1UEmWU+JWgNWuWyXBBdRwbb0ItwbUgCQzM3VbJbqCSyAWexoJCy4pISDCMh8Bn/rnFcAnOYIiF9yw5zh5tBYBF7LZddOBtpTg1kgXu2r3W3NFbFetkqQBSTf0v0y7viVpabd9XZXhvH0BrHUrNVxvAL7JVSneZV6oJDUk/ezWeuO66fq4pAX+nPUSrs/1AXdluDOk5WuH/LlGL6Cq+CFJo5Ku1qyl2v24pC0BKKl6X+6rkvWvE7CWZpYAHJO0q/4H5+zudjDJ9yOSjkmabGOxdoAPJf0oac0MezbawVonNwLrgJ3AHuBbL0+R02bjpqZHMcDfwHHgV+Ccmf05m3QQh3YQWAN8DowCO4BNSVEPKJtjipBf6Z+ZAK4Ap4GbwG/APeCFmTXfwknaDux3y2yLwTiR6WT8q7qsKK1kCE/lJXAdOAn8ApwPuEXAUu8sRoGNPr1v8gRbtXHTXKTp+1hizTvAJeAWcM31BPDEzF50OnMfA+uB74GvgC+ToVmzdK2SIzQFXADOAKeAS2Y2MedIrUeOpMWSdkv6KUkfnaI1TTMnJO2V1N/pd2eVYvzhKs3wkvok/SDpboc8F+uPJR2OqlJPHzkTcgq52/PXTIAtv15J2lf7s/Y+S5gltfVIG/dGE3A0sVRvin+cC0kLJZ2tATb9Ou/n1HralaSdhqSDNVeGi4/0rCNpU9qQNCzpXs2d9yWtj0jseSdsZi131wPgbG2GGDOz8XhuvgacyszkiTWt1Zdz7J+r+btS22+shNEwStM4MOn7vQL+yDEa5oJ7AERvdge4WwJcyHPgmX9+Bvwz726N11weFI98+amZTSXr82q5iNC/XD8s6Z1wwMU5+z3X3jnfbD4q0XIhk64flwSnZOx7mUAW9cL6iQfF0xItNwncT+CKstxrP2//lhgQLS9hU8XAJVVgGrjtwzPdVofclpsGLrp7yxNJ/TmHmf8A/piP1Ydvt5MAAAAASUVORK5CYII=",w:14},{u:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACUAAAAuCAYAAACvWdDAAAADCElEQVR42s2Yz0uUQRzGP7O7rmYkWGRBZWZFVnqJIj0FdQ0igrp164/o3KVz0Ll7xy6JQRR16GTQL+0gmWZGRW6W0uq6T4e+A9Owrrr76vt+YZl3Z5aZ532e768dSMAkOUmOhCyX0D4twEDWQBWA/kyACiQrAj2SClliagdwBGiNwKYCyh/eZfIVs8CUC5jqAdqyJN8eoBPYHYFNFVS/ReChLIHaH43pgLIIq9q4y6b3+uXUmHLOCegAjtmUH6tpgXIBO/vsuU9Su3NOzeSqJECdArabZIeBvmb9qhlQ3m/O2lgB2oGhJJy94ZonqVPSuP7Zko0PJOWTbGXWCypvPdRVSRVJVUkrBmpeUr+t57ZEPmNAFnmXgHwg5YqVnCu2nttUxuzN88H3G5IWjKWqseSfv0oatN/lEpPT028bhmCKkm5KKgdAQvPfpyRdqyF7fl3tcwygli9I6pB0WdLjiJVa5v1rUdJdSWcktdTY878zPVBXB2ib1bIBC/OLwPEoHbg1UoZf/wW8BEaA58A7oOScW66ZAI2VA1bhe6xUdANHgd6grhGUkNwGclnVgsHbH+ALMAm8B2aBD/Y8A8w466sHgfPASWtDDlqWjsHIALkNJtkYmLdvwDQwBowCz4BRV0O2ojVrvQZyCDht0rkNsKXgJQDKdvgTAzBubM055yqrOnod/9om6YKkO5K+mxNX6jh6HIW3zdlb1wg011AkShqQNGIHLteJvqqke5K6V4m4XFP/rEOgQXq4XyNPhWniVgRk87J7AKxL0psoL/nxYZAk81tVkAs2Xg+k8p8FSefCF9iy1sU+OyVNRP41HKw3JFdDrYV1AM459wN4FGX5Yd8h2JhKO/w02KsCvCAt86lC0glJJZNuUlJns5ccSfTon62WAbx2zs1Jco1Kl9T91E/go02NpfoP2ZjI2/jJpmezcJfgJZqOQGXiKmjSAE6lfpcQ2BQwnxVQ/vBF6x5/Z0m+EjDR7G1L0kyVjKly6qCCBLkAvAWWovlU5SsDr5oFsxmtTCGp/f4C2cImWoPwwBsAAAAASUVORK5CYII=",w:12},{u:"data:image/png;base64,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",w:26}];  // три звёздочки (маленькая, средняя, большая), PNG без фона
+function snow(){let h="";for(let n=0;n<24;n++){const q=SP[Math.floor(Math.random()*3)],w=(q.w*(.7+Math.random()*.5)).toFixed(1),r=(Math.random()<.5?-1:1)*(90+Math.random()*270);
+ h+=`<img src="${q.u}" alt="" draggable="false" style="left:${(Math.random()*96).toFixed(1)}%;width:${w}px;--r:${r.toFixed(0)}deg;animation-duration:${(5+Math.random()*7).toFixed(1)}s,${(2+Math.random()*3).toFixed(1)}s;animation-delay:-${(Math.random()*10).toFixed(1)}s,-${(Math.random()*4).toFixed(1)}s">`}
+ return`<div class="bgl" style="background:${nb}"></div><div class="snow">${h}</div>`}
 let cur="#5b6cf0",nb=cur,dir="fwd";
 function bg(c){try{if(tg){tg.setHeaderColor(c[0]);tg.setBackgroundColor(c[1])}}catch(e){}
  app.style.background=cur;nb=`linear-gradient(160deg,${c[0]},${c[1]})`;setTimeout(()=>{cur=nb;app.style.background=cur},500)}
 const N=x=>`<span class="cnt" data-to="${x}">0</span>`;
-function val(s){const v=D[s.k];if(RND.includes(s.k))return`<span style="font-size:38px">${v}</span>`;if(s.k=="prem")return"";if(s.k=="pct")return`Рейтинг ${N(D.lvl)}<br><span style="font-size:22px;font-weight:600">Ты в топ ${N(v)}% пользователей</span><br><span style="font-size:22px;font-weight:700;display:inline-block;margin-top:8px">${CE(EM.star,"⭐")} Потрачено звёзд: ${N(D.stars||0)}</span>`;return N(v)+(s.u?`<br><span style="font-size:20px;font-weight:600">${s.u}</span>`:"")}
+function val(s){const v=D[s.k];if(RND.includes(s.k))return`<span class="vt">${v}</span>`;if(s.k=="prem")return"";if(s.k=="pct")return`<span style="font-size:24px;font-weight:700">Рейтинг</span><span class="bn">${N(D.lvl)}</span><span style="font-size:22px;font-weight:600">Ты в топ ${N(v)}% пользователей</span><br><span style="font-size:22px;font-weight:700;display:inline-block;margin-top:8px">${CE(EM.star,"⭐")} Потрачено звёзд: ${N(D.stars||0)}</span>`;return`<span class="bn">${N(v)}</span>`+(s.u?`<span class="vu">${s.u}</span>`:"")}
 function show(){
  if(i>=S.length){final();return}
  const s=S[i],n=s.f(D[s.k]),[e,name]=s.d[n];bg(s.c[n]);
  if(window.lottie)lottie.destroy();
- app.innerHTML=snow()+`<div class="bars">${S.map((_,j)=>`<b class="${j<i?"on":j==i?"cur":""}"></b>`).join("")}</div>
- <h1>${s.t}</h1><div class="sub">${s.s}</div>
+ app.innerHTML=snow()+`<h1>${s.t}</h1><div class="sub">${s.s}</div>
  <div class="mid ${dir}"><div class="emo">${rich(e)}</div><div class="val">${val(s)}</div>${name?`<div class="tier">${name}</div>`:""}${s.p?`<div class="pts"><div class="pv">+${N(pts(s))} ${pl(pts(s))}</div><div class="pr">${s.pr}</div></div>`:""}</div>
  <button type="button" class="share" data-a="s">Поделиться ↗</button><div class="btns">${i>0?`<button type="button" class="back" data-a="b">Назад</button>`:""}<button type="button" class="next" data-a="n">Продолжить</button></div>`;fx(n,0,s.k)}
-function final(){bg(["#2f7cf6","#8a3ee0"]);
+function final(){bg(["#2fa8ff","#8a3ee0"]);
  if(window.lottie)lottie.destroy();
  const r=S.map(s=>s.d[s.f(D[s.k])]);
  app.innerHTML=snow()+`<h1>Итоги</h1><div class="sub">Вот кто ты в Telegram</div><div class="mid" style="font-size:15px;gap:5px;overflow-y:auto;justify-content:flex-start;padding-top:4px"><div class="lbl" style="margin:0">Сумма баллов</div><div class="tot">${rich("🏆")} ${N(total())} ${pl(total())}</div>`+
