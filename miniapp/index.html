@@ -14,7 +14,7 @@ html,body{height:100dvh;background:#111;color:#fff;overflow:hidden}
 .bars{display:flex;gap:4px;width:100%;z-index:1}
 .bars b{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.3)}
 .bars b.on{background:#fff}
-h1{font-size:26px;margin-top:34px;z-index:1}
+h1{font-size:36px;margin-top:30px;z-index:1}
 .sub{opacity:.85;margin-top:8px;font-size:15px;z-index:1}
 .mid{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:1;width:100%;animation:p .5s}
 @keyframes p{from{transform:scale(.8);opacity:0}}
@@ -117,6 +117,22 @@ button:active{transform:scale(.94);transition:transform .1s}
 .ld{padding:30px 0;display:flex;flex-direction:column;align-items:center}
 .spin{width:34px;height:34px;border-radius:50%;border:4px solid var(--ln);border-top-color:#2f7cf6;animation:rot .8s linear infinite;margin-bottom:12px}
 @keyframes rot{to{transform:rotate(360deg)}}
+/* ===== Интро: пиньята ===== */
+.pin-wrap{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;color:#111}
+.pin-title{font-size:clamp(44px,13vw,64px);font-weight:800;letter-spacing:-1px;color:#111;animation:up .5s both}
+.pin-sub{color:#777;font-size:16px;margin-top:8px;font-weight:600;animation:up .5s .1s both}
+.pin{width:min(62vw,290px);margin-top:34px;cursor:pointer;user-select:none;-webkit-user-drag:none;transition:filter .3s;animation:pinin .55s .2s cubic-bezier(.3,1.6,.5,1) both;touch-action:manipulation}
+@keyframes pinin{from{transform:scale(0);opacity:0}}
+.pin.hit{animation:shake .45s}
+@keyframes shake{0%{transform:translateX(0) rotate(0)}15%{transform:translateX(-16px) rotate(-7deg)}35%{transform:translateX(14px) rotate(6deg)}55%{transform:translateX(-10px) rotate(-4deg)}75%{transform:translateX(7px) rotate(3deg)}100%{transform:translateX(0)}}
+.pin.boom{animation:boomA .75s cubic-bezier(.2,.8,.3,1) both}
+@keyframes boomA{30%{transform:scale(1.25) rotate(8deg);opacity:1}100%{transform:scale(2.3) rotate(25deg);opacity:0}}
+.flash{position:fixed;inset:0;background:#fff;z-index:60;pointer-events:none;animation:flashA .6s both}
+@keyframes flashA{from{opacity:0}20%{opacity:1}to{opacity:0}}
+.cnd{position:absolute;z-index:3;pointer-events:none;animation:cndf linear both}
+@keyframes cndf{to{transform:translateY(105vh) rotate(540deg)}}
+.pin-count{margin-top:18px;font-size:15px;font-weight:700;color:#999;min-height:20px}
+
 </style></head><body><div id="app"></div>
 <script>
 const tg=window.Telegram&&Telegram.WebApp;if(tg){tg.ready();tg.expand();
@@ -133,24 +149,24 @@ const S=[
  c:[["#2ba0ff","#0264fd"],["#2ba0ff","#0264fd"],["#2ba0ff","#0264fd"],["#2ba0ff","#0264fd"],["#2ba0ff","#0264fd"],["#2ba0ff","#0264fd"],["#2ba0ff","#0264fd"]],
  d:[["🐣","Новичок"],["😎","Освоившийся"],["💪","Опытный"],["🕰️","Олд"],["🎖️","Ветеран"],["🔥","Легенда"],["👑","Сын Дурова"]]},
 {k:"pct",t:"Рейтинг в Telegram",s:"траты звёёёёёёз",u:"",f:v=>v>=50?0:v>=10?1:2,
- c:[["#e0832e","#a8501a"],["#18a8c9","#0d6f8f"],["#e0b72e","#a8741a"]],
+ c:[["#ffa63d","#ff6a00"],["#33d6ff","#0090ff"],["#ffe14d","#ffb300"]],
  d:[["👥","Один из многих"],["🚀","Выше большинства"],["💎","Элита"]]},
 {k:"prem",t:"Telegram Premium",s:"",u:"",f:v=>+v,
- c:[["#5b6cf0","#3a3fb5"],["#9b4be0","#e04b9b"]],
+ c:[["#7b8cff","#4a5cff"],["#c95bff","#ff5bd0"]],
  d:[["🔒","У тебя нет Telegram Premium"],["⭐","У тебя есть Telegram Premium"]]},
 {k:"gifts",p:v=>Math.floor(v/5),pr:"1 балл за каждые 5 подарков",t:"Обычные подарки",s:"Сколько их в твоём профиле?",u:"шт.",f:v=>v<=3?0:v<=10?1:2,
- c:[["#6a7a8c","#3c4a5a"],["#e0832e","#b8461a"],["#e0457b","#a3194f"]],
+ c:[["#8fa3b8","#5c7186"],["#ff9440","#ff5e1a"],["#ff5e9e","#e0176d"]],
  d:[["🎁","Скромная полка"],["{g}","Неплохая коллекция"],["🏆","Подарочный магнат"]]},
 {k:"nft",p:v=>v,pr:"1 балл за каждый NFT-подарок",t:"NFT-подарки",s:"Улучшенные подарки в профиле",u:"шт.",f:v=>v<=3?0:v<=10?1:2,
- c:[["#00c2d1","#0a5fb0"],["#7b5cff","#d13fc1"],["#f7b733","#fc4a1a"]],
+ c:[["#00e5ff","#0090ff"],["#9a6bff","#e055ff"],["#ffd24d","#ff6a1a"]],
  d:[["🧸","Начинающий коллекционер"],["💠","Серьёзный коллекционер"],["🐉","Легенда рынка"]]},
-{k:"fast",t:"Самый быстрый ответ",s:"Ты что 24/7 в телеграмме?",f:()=>0,c:[["#2e9e4f","#1d6b35"]],d:[["⚡",""]]},
-{k:"slow",t:"Самый долгий ответ",s:"Как же долго он ждал ответа....",f:()=>0,c:[["#2fa8ff","#0a63ff"]],d:[["🐌",""]]},
-{k:"online",t:"Постоянный онлайн",s:"В этот день ты сидел больше всего в телеграмме!",f:()=>0,c:[["#8a3ee0","#52209e"]],d:[["😈",""]]},
-{k:"dialog",t:"Самый длинный диалог",s:"Вот это был разговор!",f:()=>0,c:[["#f2994a","#d9480f"]],d:[["💬",""]]},
-{k:"pinned",t:"Сколько людей закрепляло чат с тобой",s:"Ты всегда у них под рукой!",f:()=>0,c:[["#ec4899","#9d174d"]],d:[["📌",""]]},
-{k:"nobreak",t:"Самый длинный период без общения",s:"Кому-то не повезло...",f:()=>0,c:[["#43a047","#1b5e20"]],d:[["🧊",""]]},
-{k:"maxmsgs",t:"Максимум сообщений за 1 день",s:"Пальцы горели!",f:()=>0,c:[["#ef4444","#991b1b"]],d:[["🔥",""]]}
+{k:"fast",t:"Самый быстрый ответ",s:"Ты что 24/7 в телеграмме?",f:()=>0,c:[["#3ddc6a","#0da84e"]],d:[["⚡",""]]},
+{k:"slow",t:"Самый долгий ответ",s:"Как же долго он ждал ответа....",f:()=>0,c:[["#4dc3ff","#0a8fff"]],d:[["🐌",""]]},
+{k:"online",t:"Постоянный онлайн",s:"В этот день ты сидел больше всего в телеграмме!",f:()=>0,c:[["#b15cff","#7a1fff"]],d:[["😈",""]]},
+{k:"dialog",t:"Самый длинный диалог",s:"Вот это был разговор!",f:()=>0,c:[["#ffab5e","#ff5e0d"]],d:[["💬",""]]},
+{k:"pinned",t:"Сколько людей закрепляло чат с тобой",s:"Ты всегда у них под рукой!",f:()=>0,c:[["#ff6ab8","#d61f6f"]],d:[["📌",""]]},
+{k:"nobreak",t:"Самый длинный период без общения",s:"Кому-то не повезло...",f:()=>0,c:[["#5fd06a","#1f9e2e"]],d:[["🧊",""]]},
+{k:"maxmsgs",t:"Максимум сообщений за 1 день",s:"Пальцы горели!",f:()=>0,c:[["#ff6a5e","#d61f1f"]],d:[["🔥",""]]}
 ];
 const EM={days:"5469741319330996757",star:"5406812184359507637",gift:"5280598054901145762",fall:["5283228279988309088","5280598054901145762","5280651583078556009","5280922999241859582"],nft:["5456299600702889290","5454039464357682228","5456504676801338603","5456461744308249091","5456147077824274112"]};
 const CE=(id,fb)=>`<span class="ce" data-ce="${id}">${fb}</span>`;
@@ -218,11 +234,12 @@ const API=""; // бэкенд на том же адресе
 const DEMO={stars:3450,days:640,pct:12,lvl:7,prem:1,gifts:5,nft:2,value:1200,id:0};
 const D={};let i=0;const app=document.getElementById("app");
 async function load(){
- app.innerHTML=snow()+'<div class="mid"><div class="emo">⏳</div><div class="lbl">Считаем твою статистику…</div></div>';bg(["#5b6cf0","#3a3fb5"]);
+ app.innerHTML=PIN_INTRO;bg(["#ffffff","#ffffff"]);if(tg)tg.BackButton.hide();introStart();
  try{const r=await fetch(API+"/api/me",{headers:{Authorization:"tma "+(tg?tg.initData:"")}});if(!r.ok)throw 0;Object.assign(D,await r.json())}
  catch(e){Object.assign(D,DEMO)}
- rolls();  // без бэкенда показываем демо-данные
- i=0;show()}
+ rolls();
+ i=0;DATA_READY=true;
+ if(INTRO_DONE)show()}
 function fx(n,all,key){
  document.querySelectorAll(".cnt").forEach(el=>{const to=+el.dataset.to,t0=performance.now(),D=1300;
   (function f(t){const p=Math.min(1,(t-t0)/D),e=1-Math.pow(1-p,3);el.textContent=Math.round(to*e).toLocaleString("ru");if(p<1)requestAnimationFrame(f)})(t0)});
@@ -368,5 +385,34 @@ OV.addEventListener("click",e=>{
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&OV.classList.contains("on")&&live)refreshMore()});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a;a=="n"?go(1):a=="b"?go(-1):a=="m"?openSheet():share()});
 if(tg)tg.BackButton.onClick(()=>{if(OV.classList.contains("on"))sheetBack();else go(-1)});
+// ===== Интро: пиньята =====
+const PIN_INTRO='<div class="pin-wrap"><div class="pin-title">Бей! Бей!</div><div class="pin-sub">Нажми на пиньяту, чтобы расколоть!</div><img class="pin" id="pin" src="cards/pinata.png" alt=""><div class="pin-count" id="pcount"></div></div>';
+const PIN_DMG=["","brightness(.96) saturate(.9)","brightness(.9) saturate(.75) contrast(1.05)","brightness(.82) saturate(.6) contrast(1.12) sepia(.15)","brightness(.7) saturate(.45) contrast(1.2) sepia(.3)"];
+const CANDY=["🍬","🍭","🍫","🧁","🍩"];
+let hits=0,DATA_READY=false,INTRO_DONE=false;
+function dropCandy(x,y,n){for(let k=0;k<n;k++){const c=document.createElement("span");c.className="cnd";c.textContent=CANDY[k%5];
+ c.style.cssText=`left:${x}px;top:${y}px;font-size:${18+Math.random()*16|0}px;animation-delay:${Math.random()*.2}s;animation-duration:${1+Math.random()*.9}s`;
+ app.appendChild(c);setTimeout(()=>c.remove(),2600)}}
+function introStart(){
+ const p=document.getElementById("pin"),pc=document.getElementById("pcount");
+ p.addEventListener("click",()=>{
+  if(hits>=5)return;
+  hits++;
+  p.classList.remove("hit");void p.offsetWidth;p.classList.add("hit");
+  p.style.filter=PIN_DMG[Math.min(hits,4)];
+  const r=p.getBoundingClientRect(),ar=app.getBoundingClientRect();
+  dropCandy(r.left-ar.left+r.width*(.25+Math.random()*.5),r.top-ar.top+r.height*.55,6);
+  pc.textContent=hits<5?("Осталось ударов: "+(5-hits)):"";
+  if(tg&&tg.HapticFeedback)tg.HapticFeedback.impactOccurred(hits==5?"heavy":"medium");
+  if(hits==5)setTimeout(boom,350)})}
+function boom(){
+ const p=document.getElementById("pin");p.classList.remove("hit");p.classList.add("boom");
+ const f=document.createElement("div");f.className="flash";app.appendChild(f);
+ if(tg&&tg.HapticFeedback)tg.HapticFeedback.notificationOccurred("success");
+ const r=p.getBoundingClientRect(),ar=app.getBoundingClientRect(),cx=r.left-ar.left+r.width/2,cy=r.top-ar.top+r.height/2;
+ for(let k=0;k<30;k++){const c=document.createElement("span");c.className="cnd";c.textContent=CANDY[k%5];
+  c.style.cssText=`left:${cx}px;top:${cy}px;font-size:${20+Math.random()*20|0}px;animation-duration:${1.2+Math.random()}s;animation-delay:${Math.random()*.15}s`;
+  app.appendChild(c);setTimeout(()=>c.remove(),3200)}
+ setTimeout(()=>{INTRO_DONE=true;if(DATA_READY)show();else app.innerHTML='<div class="mid"><div class="emo">⏳</div><div class="lbl">Считаем твою статистику…</div></div>'},650)}
 load();
 </script></body></html>
