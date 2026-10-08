@@ -14,15 +14,15 @@ html,body{height:100dvh;background:#111;color:#fff;overflow:hidden}
 .bars{display:flex;gap:4px;width:100%;z-index:1}
 .bars b{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.3)}
 .bars b.on{background:#fff}
-h1{font-size:34px;font-weight:850;letter-spacing:-.8px;margin-top:30px;z-index:1;text-shadow:0 2px 18px rgba(0,0,0,.16)}
-.sub{opacity:.92;margin-top:9px;font-size:18px;font-weight:600;line-height:1.25;z-index:1;text-shadow:0 2px 14px rgba(0,0,0,.12)}
-.mid{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:1;width:100%;animation:p .5s}
+h1{font-size:31px;font-weight:850;letter-spacing:-.8px;margin-top:30px;z-index:1;text-shadow:0 2px 18px rgba(0,0,0,.16)}
+.sub{opacity:.92;margin-top:9px;font-size:16px;font-weight:600;line-height:1.25;z-index:1;text-shadow:0 2px 14px rgba(0,0,0,.12)}
+.mid{transform:translateY(-12px);flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:1;width:100%;animation:p .5s}
 @keyframes p{from{transform:scale(.8);opacity:0}}
 .emo{font-size:clamp(72px,12vh,110px);line-height:1.1}
 .lbl{opacity:.92;font-size:18px;font-weight:600;margin-top:14px}
 .val{font-size:50px;font-weight:850;margin-top:8px;line-height:1.05;text-shadow:0 3px 22px rgba(0,0,0,.12)}
-.bn{display:block;font-size:clamp(98px,min(32vw,19vh),170px);font-weight:900;line-height:.96;letter-spacing:-3px;text-shadow:0 5px 28px rgba(0,0,0,.16)}
-.vu{display:block;font-size:28px;font-weight:800;margin-top:8px}
+.bn{display:block;font-size:clamp(88px,min(29vw,17vh),155px);font-weight:900;line-height:.96;letter-spacing:-3px;text-shadow:0 5px 28px rgba(0,0,0,.16)}
+.vu{display:block;font-size:25px;font-weight:800;margin-top:8px}
 .dw{position:relative;display:inline-block;font-size:clamp(110px,min(34vw,21vh),170px);line-height:1}
 .dw .bn{font-size:1em;white-space:nowrap;position:relative;z-index:1}
 .dw .ce.dce{position:absolute;left:50%;top:50%;width:1.12em;height:1.12em;margin:-.56em 0 0 -.56em;vertical-align:baseline;z-index:0;pointer-events:none}
@@ -120,8 +120,8 @@ button:active{transform:scale(.94);transition:transform .1s}
 
 /* Visual refresh: larger typography + brighter slide backgrounds */
 @media (max-width:390px){
-  h1{font-size:30px}
-  .sub{font-size:16px}
+  h1{font-size:28px}
+  .sub{font-size:15px}
   .bn{font-size:clamp(88px,min(31vw,18vh),150px)}
   .val{font-size:46px}
   .vu{font-size:25px}
@@ -154,12 +154,12 @@ const S=[
 {k:"nft",p:v=>v,pr:"1 балл за каждый NFT-подарок",t:"NFT-подарки",s:"Улучшенные подарки в профиле",u:"шт.",f:v=>v<=3?0:v<=10?1:2,
  c:[["#06b6d4","#2563eb"],["#8b5cf6","#ec4899"],["#fbbf24","#f43f5e"]],
  d:[["🧸","Начинающий коллекционер"],["💠","Серьёзный коллекционер"],["🐉","Легенда рынка"]]},
-{k:"fast",t:"Самый быстрый ответ",s:"Ты что 24/7 в телеграмме?",f:()=>0,c:[["#34d399","#059669"]],d:[["⚡",""]]},
+{k:"fast",t:"Самый быстрый ответ",s:"Ты что 24/7 в телеграмме?",f:()=>0,c:[["#fff3b0","#f7d96a"]],d:[["⚡",""]]},
 {k:"slow",t:"Самый долгий ответ",s:"Как же долго он ждал ответа....",f:()=>0,c:[["#38bdf8","#2563eb"]],d:[["🐌",""]]},
 {k:"online",t:"Постоянный онлайн",s:"В этот день ты сидел больше всего в телеграмме!",f:()=>0,c:[["#d946ef","#7c3aed"]],d:[["😈",""]]},
 {k:"dialog",t:"Самый длинный диалог",s:"Вот это был разговор!",f:()=>0,c:[["#ffb454","#f97316"]],d:[["💬",""]]},
 {k:"pinned",t:"Сколько людей закрепляло чат с тобой",s:"Ты всегда у них под рукой!",f:()=>0,c:[["#f472b6","#db2777"]],d:[["📌",""]]},
-{k:"nobreak",t:"Самый длинный период без общения",s:"Кому-то не повезло...",f:()=>0,c:[["#4ade80","#15803d"]],d:[["🧊",""]]},
+{k:"nobreak",t:"Самый длинный период без общения",s:"Кому-то не повезло...",f:()=>0,c:[["#55c7ff","#2487d8"]],d:[["🧊",""]]},
 {k:"maxmsgs",t:"Максимум сообщений за 1 день",s:"Пальцы горели!",f:()=>0,c:[["#ff5a5f","#dc2626"]],d:[["🔥",""]]}
 ];
 const EM={days:"5469741319330996757",star:"5406812184359507637",gift:"5280598054901145762",fall:["5283228279988309088","5280598054901145762","5280651583078556009","5280922999241859582"],nft:["5456299600702889290","5454039464357682228","5456504676801338603","5456461744308249091","5456147077824274112"]};
