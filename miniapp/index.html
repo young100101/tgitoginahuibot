@@ -24,8 +24,8 @@ h1{font-size:26px;margin-top:34px;z-index:1}
 .bn{display:block;font-size:clamp(84px,min(29vw,17vh),150px);font-weight:800;line-height:1;letter-spacing:-2px}
 .vu{display:block;font-size:24px;font-weight:700;margin-top:6px}
 .dw{position:relative;display:inline-block;font-size:clamp(110px,min(34vw,21vh),170px);line-height:1}
-.dw .bn{font-size:1em;white-space:nowrap}
-.dw .ce.dce{position:absolute;left:50%;top:50%;width:1.12em;height:1.12em;margin:-.56em 0 0 -.56em;vertical-align:baseline;z-index:3;pointer-events:none}
+.dw .bn{font-size:1em;white-space:nowrap;position:relative;z-index:1}
+.dw .ce.dce{position:absolute;left:50%;top:50%;width:1.12em;height:1.12em;margin:-.56em 0 0 -.56em;vertical-align:baseline;z-index:0;pointer-events:none}
 .yp{margin-top:12px;font-size:15px;font-weight:600;opacity:.92;animation:up .6s 1s both}
 .vt{font-size:clamp(40px,11.5vw,56px)}
 .tier{margin-top:12px;padding:8px 18px;border-radius:20px;background:rgba(255,255,255,.22);font-weight:700;font-size:18px}
@@ -65,10 +65,10 @@ button:active{transform:scale(.94);transition:transform .1s}
 @keyframes cfall{to{transform:translateY(105vh) rotate(540deg);opacity:.9}}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01s!important;animation-delay:0s!important}}
 .pts{margin-top:14px;display:flex;flex-direction:column;align-items:center}
-.pv{font-size:22px;font-weight:800;padding:7px 18px;border-radius:18px;background:linear-gradient(90deg,rgba(255,255,255,.38),rgba(255,255,255,.14));animation:pop .7s 1.1s cubic-bezier(.3,1.6,.5,1) both,glow 2s 2s ease-in-out infinite alternate}
-.pr{opacity:.7;font-size:13px;margin-top:7px;animation:up .6s 1.3s both}
+.pv{font-size:17px;font-weight:800;padding:6px 15px;border-radius:16px;background:linear-gradient(90deg,rgba(255,255,255,.38),rgba(255,255,255,.14));animation:pop .7s 1.1s cubic-bezier(.3,1.6,.5,1) both,glow 2s 2s ease-in-out infinite alternate}
+.pr{opacity:.7;font-size:12px;margin-top:7px;animation:up .6s 1.3s both}
 @keyframes glow{to{box-shadow:0 0 20px rgba(255,255,255,.65)}}
-.tot{font-size:64px;font-weight:800;margin:4px 0 12px;animation:pop .8s .3s cubic-bezier(.3,1.6,.5,1) both}
+.tot{font-size:46px;font-weight:800;margin:4px 0 12px;animation:pop .8s .3s cubic-bezier(.3,1.6,.5,1) both}
 .ce{display:inline-block;width:1.1em;height:1.1em;vertical-align:-.15em;line-height:1}
 .ce svg,.ce img,.ce video{width:100%;height:100%;display:block}
 .fp{position:absolute;top:-60px;z-index:1;pointer-events:none;animation:fallp linear both;will-change:transform}
@@ -109,9 +109,9 @@ button:active{transform:scale(.94);transition:transform .1s}
 .rk{flex:none;width:30px;text-align:center;font-weight:800;color:var(--mut);font-size:15px}.rk.md{font-size:22px}
 .av{flex:none;width:42px;height:42px;border-radius:50%;object-fit:cover;display:block}
 .av.ini{display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:18px}
-.pt{font-weight:800;font-size:17px;white-space:nowrap}
+.pt{font-weight:800;font-size:15px;white-space:nowrap}
 .mecard{display:flex;align-items:center;justify-content:space-between;text-align:left;padding:14px 16px;border-radius:20px;color:#fff;background:linear-gradient(120deg,#2f7cf6,#7b5cff);margin-bottom:12px;box-shadow:0 8px 20px rgba(47,124,246,.3)}
-.mecard div{display:flex;flex-direction:column}.mecard small{color:rgba(255,255,255,.8)}.mecard b{font-size:20px}.mecard .pt{font-size:24px}
+.mecard div{display:flex;flex-direction:column}.mecard small{color:rgba(255,255,255,.8)}.mecard b{font-size:20px}.mecard .pt{font-size:20px}
 .br{display:flex;align-items:center;justify-content:space-between;padding:12px 10px;border-bottom:1px solid var(--ln)}.br>span{display:flex;flex-direction:column}
 .note{color:#ff9500;font-size:14px;font-weight:600;margin:4px 0 10px}
 .ld{padding:30px 0;display:flex;flex-direction:column;align-items:center}
@@ -130,7 +130,7 @@ const regYear=d=>Math.min(2026,Math.max(2013,new Date(Date.now()-(d||0)*864e5).g
 const yIdx=d=>{const y=regYear(d);return y>=2025?0:y>=2023?1:y>=2020?2:y>=2018?3:y>=2016?4:y>=2014?5:6};
 const S=[
 {k:"days",p:v=>Math.floor(v/10),pr:"1 балл за каждые 10 дней",t:"Твой стаж",s:"Сколько дней ты в Telegram?",u:"дней",f:yIdx,
- c:[["#2e9e4f","#1d6b35"],["#2fa8ff","#0a63ff"],["#18a8c9","#0d6f8f"],["#8a3ee0","#52209e"],["#e0832e","#a8501a"],["#e0457b","#a3194f"],["#e0b72e","#a8741a"]],
+ c:[["#2ba0ff","#0264fd"],["#2ba0ff","#0264fd"],["#2ba0ff","#0264fd"],["#2ba0ff","#0264fd"],["#2ba0ff","#0264fd"],["#2ba0ff","#0264fd"],["#2ba0ff","#0264fd"]],
  d:[["🐣","Новичок"],["😎","Освоившийся"],["💪","Опытный"],["🕰️","Олд"],["🎖️","Ветеран"],["🔥","Легенда"],["👑","Сын Дурова"]]},
 {k:"pct",t:"Рейтинг в Telegram",s:"траты звёёёёёёз",u:"",f:v=>v>=50?0:v>=10?1:2,
  c:[["#e0832e","#a8501a"],["#18a8c9","#0d6f8f"],["#e0b72e","#a8741a"]],
