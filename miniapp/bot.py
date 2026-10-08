@@ -39,6 +39,8 @@ ALTER TABLE tasks ADD COLUMN IF NOT EXISTS deleted BOOLEAN DEFAULT FALSE;
 CREATE TABLE IF NOT EXISTS links(id SERIAL PRIMARY KEY, name TEXT NOT NULL, created TIMESTAMPTZ DEFAULT now());
 CREATE UNIQUE INDEX IF NOT EXISTS links_name_ci ON links(lower(name));
 CREATE TABLE IF NOT EXISTS link_starts(link_id INT, user_id BIGINT, ts TIMESTAMPTZ DEFAULT now(), PRIMARY KEY(link_id, user_id));
+ALTER TABLE link_starts ADD COLUMN IF NOT EXISTS is_new BOOLEAN DEFAULT FALSE;
+CREATE TABLE IF NOT EXISTS link_clicks(link_id INT, user_id BIGINT, ts TIMESTAMPTZ DEFAULT now());
 """
 
 BOT_USERNAME = os.environ.get("BOT_USERNAME", "tgitoginahuibot").lstrip("@")
@@ -459,14 +461,18 @@ async def ul_list(T):
 async def ul_card(T, lid):
     r = await pool.fetchrow("SELECT id, name, created FROM links WHERE id=$1", lid)
     if not r: await scr(T, "Ссылка не найдена.", kb([cb("📋 Текущие ссылки", "ull")])); return
-    starts = await pool.fetchval("SELECT count(*) FROM link_starts WHERE link_id=$1", lid)
-    done = await pool.fetchval("SELECT count(*) FROM link_starts l JOIN users u ON u.user_id=l.user_id WHERE l.link_id=$1 AND u.passed_at IS NOT NULL", lid)
-    app = await pool.fetchval("SELECT count(*) FROM link_starts l JOIN profiles p ON p.user_id=l.user_id WHERE l.link_id=$1", lid)
-    pc = lambda x: f" ({x * 100 // starts}%)" if starts else ""
+    clicks = await pool.fetchval("SELECT count(*) FROM link_clicks WHERE link_id=$1", lid)
+    q = lambda extra: pool.fetchval(f"SELECT count(*) FROM link_starts l {extra}", lid)
+    uniq = await q("WHERE l.link_id=$1"); new_n = await q("WHERE l.link_id=$1 AND l.is_new")
+    done = await q("JOIN users u ON u.user_id=l.user_id WHERE l.link_id=$1 AND u.passed_at IS NOT NULL")
+    done_n = await q("JOIN users u ON u.user_id=l.user_id WHERE l.link_id=$1 AND l.is_new AND u.passed_at IS NOT NULL")
+    app = await q("JOIN profiles p ON p.user_id=l.user_id WHERE l.link_id=$1")
+    app_n = await q("JOIN profiles p ON p.user_id=l.user_id WHERE l.link_id=$1 AND l.is_new")
     await scr(T, f"🔗 <b>{E(r['name'])}</b>\n<code>{E(src_link(r['name']))}</code>\nСоздана: {r['created'].astimezone(TZ):%d.%m.%Y %H:%M}\n\n"
-                 f"👥 Нажали «Начать»: <b>{starts}</b>\n"
-                 f"✅ Выполнили задания (подписка / заявки): <b>{done}</b>{pc(done)}\n"
-                 f"📱 Зашли в мини-апп: <b>{app}</b>{pc(app)}",
+                 f"👥 Нажали старт: <b>{clicks}</b> (уник: <b>{new_n}</b>)\n"
+                 f"✅ Выполнили задания (подписка / заявки): <b>{done}</b> (новых: <b>{done_n}</b>)\n"
+                 f"📱 Зашли в мини-апп: <b>{app}</b> (новых: <b>{app_n}</b>)\n\n"
+                 f"<i>Уник / новых — люди, которые до этой ссылки ни разу не заходили в бота. Всего уникальных людей: {uniq}.</i>",
               kb([cb("🔄 Обновить", f"lk:{lid}")], [cb("📋 Текущие ссылки", "ull")], [cb("⬅️ Меню", "adm")]))
 
 async def tt_menu(T, note=""):
@@ -493,7 +499,9 @@ async def on_message(msg):
             await pool.execute("INSERT INTO referrals(invitee,inviter) VALUES($1,$2) ON CONFLICT DO NOTHING", uid, int(payload[4:]))
         if payload.startswith("src_"):  # переход по уникальной ссылке -> считаем уникального человека
             lid = await pool.fetchval("SELECT id FROM links WHERE lower(name)=lower($1)", payload[4:])
-            if lid: await pool.execute("INSERT INTO link_starts(link_id,user_id) VALUES($1,$2) ON CONFLICT DO NOTHING", lid, uid)
+            if lid:
+                await pool.execute("INSERT INTO link_clicks(link_id,user_id) VALUES($1,$2)", lid, uid)   # все нажатия «Начать»
+                await pool.execute("INSERT INTO link_starts(link_id,user_id,is_new) VALUES($1,$2,$3) ON CONFLICT DO NOTHING", lid, uid, bool(new))   # уникальные люди; is_new — раньше в бота не заходил
         await gate(uid, cid)
         if uid in ADMINS: await panel({"cid": cid, "mid": None})
     elif uid in ADMINS and text == "/texts":
