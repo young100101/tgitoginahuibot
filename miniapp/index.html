@@ -23,6 +23,10 @@ h1{font-size:26px;margin-top:34px;z-index:1}
 .val{font-size:44px;font-weight:800;margin-top:6px;line-height:1.05}
 .bn{display:block;font-size:clamp(84px,min(29vw,17vh),150px);font-weight:800;line-height:1;letter-spacing:-2px}
 .vu{display:block;font-size:24px;font-weight:700;margin-top:6px}
+.dw{position:relative;display:inline-block;font-size:clamp(110px,min(34vw,21vh),170px);line-height:1}
+.dw .bn{font-size:1em;white-space:nowrap}
+.dw .ce.dce{position:absolute;left:50%;top:50%;width:1.12em;height:1.12em;margin:-.56em 0 0 -.56em;vertical-align:baseline;z-index:3;pointer-events:none}
+.yp{margin-top:12px;font-size:15px;font-weight:600;opacity:.92;animation:up .6s 1s both}
 .vt{font-size:clamp(40px,11.5vw,56px)}
 .tier{margin-top:12px;padding:8px 18px;border-radius:20px;background:rgba(255,255,255,.22);font-weight:700;font-size:18px}
 .btns{display:flex;gap:10px;width:100%;z-index:2;position:relative}.btns button{flex:1}
@@ -120,10 +124,14 @@ const tg=window.Telegram&&Telegram.WebApp;if(tg){tg.ready();tg.expand();
  try{if(tg.isVersionAtLeast&&tg.isVersionAtLeast("8.0"))tg.requestFullscreen()}catch(e){}}  // во весь экран
 const BOT="https://t.me/tgitoginahuibot/app";
 const T=(a,b,c)=>v=>v<a?0:v<b?1:2;
+// стаж: звание и «% пользователей» зависят от года регистрации аккаунта
+const YP={2013:"<0,01%",2014:"~0,03%",2015:"~0,08%",2016:"~0,15%",2017:"~0,3%",2018:"~0,6%",2019:"~1%",2020:"~2%",2021:"~4%",2022:"~7%",2023:"~12%",2024:"~20%",2025:"~30%",2026:"~40%"};
+const regYear=d=>Math.min(2026,Math.max(2013,new Date(Date.now()-(d||0)*864e5).getFullYear()));
+const yIdx=d=>{const y=regYear(d);return y>=2025?0:y>=2023?1:y>=2020?2:y>=2018?3:y>=2016?4:y>=2014?5:6};
 const S=[
-{k:"days",p:v=>Math.floor(v/10),pr:"1 балл за каждые 10 дней",t:"Твой стаж",s:"Сколько дней ты в Telegram?",u:"дней",f:T(500,1000),
- c:[["#2e9e4f","#1d6b35"],["#2fa8ff","#0a63ff"],["#8a3ee0","#52209e"]],
- d:[["🐣","Новичок"],["😎","Середнячок"],["👑","Сын Дурова"]]},
+{k:"days",p:v=>Math.floor(v/10),pr:"1 балл за каждые 10 дней",t:"Твой стаж",s:"Сколько дней ты в Telegram?",u:"дней",f:yIdx,
+ c:[["#2e9e4f","#1d6b35"],["#2fa8ff","#0a63ff"],["#18a8c9","#0d6f8f"],["#8a3ee0","#52209e"],["#e0832e","#a8501a"],["#e0457b","#a3194f"],["#e0b72e","#a8741a"]],
+ d:[["🐣","Новичок"],["😎","Освоившийся"],["💪","Опытный"],["🕰️","Олд"],["🎖️","Ветеран"],["🔥","Легенда"],["👑","Сын Дурова"]]},
 {k:"pct",t:"Рейтинг в Telegram",s:"траты звёёёёёёз",u:"",f:v=>v>=50?0:v>=10?1:2,
  c:[["#e0832e","#a8501a"],["#18a8c9","#0d6f8f"],["#e0b72e","#a8741a"]],
  d:[["👥","Один из многих"],["🚀","Выше большинства"],["💎","Элита"]]},
@@ -144,7 +152,7 @@ const S=[
 {k:"nobreak",t:"Самый длинный период без общения",s:"Кому-то не повезло...",f:()=>0,c:[["#43a047","#1b5e20"]],d:[["🧊",""]]},
 {k:"maxmsgs",t:"Максимум сообщений за 1 день",s:"Пальцы горели!",f:()=>0,c:[["#ef4444","#991b1b"]],d:[["🔥",""]]}
 ];
-const EM={star:"5406812184359507637",gift:"5280598054901145762",fall:["5283228279988309088","5280598054901145762","5280651583078556009","5280922999241859582"],nft:["5456299600702889290","5454039464357682228","5456504676801338603","5456461744308249091","5456147077824274112"]};
+const EM={days:"5469741319330996757",star:"5406812184359507637",gift:"5280598054901145762",fall:["5283228279988309088","5280598054901145762","5280651583078556009","5280922999241859582"],nft:["5456299600702889290","5454039464357682228","5456504676801338603","5456461744308249091","5456147077824274112"]};
 const CE=(id,fb)=>`<span class="ce" data-ce="${id}">${fb}</span>`;
 const MAP={"⭐":"5406812184359507637","⚡":"5456140674028019486","🐌":"5368469400695351161","😈":"5373098778439982772","👑":"5357107601584693888","🚀":"5445284980978621387","🏆":"5280769763398671636"};
 const rich=t=>String(t).replace(/⭐|⚡|🐌|😈|👑|🚀|🏆/g,m=>CE(MAP[m],m)).replace(/\{g\}/g,CE(EM.gift,"🎁"));
@@ -232,13 +240,13 @@ let cur="#5b6cf0",nb=cur,dir="fwd";
 function bg(c){try{if(tg){tg.setHeaderColor(c[0]);tg.setBackgroundColor(c[1])}}catch(e){}
  app.style.background=cur;nb=`linear-gradient(160deg,${c[0]},${c[1]})`;setTimeout(()=>{cur=nb;app.style.background=cur},500)}
 const N=x=>`<span class="cnt" data-to="${x}">0</span>`;
-function val(s){const v=D[s.k];if(RND.includes(s.k))return`<span class="vt">${v}</span>`;if(s.k=="prem")return"";if(s.k=="pct")return`<span style="font-size:24px;font-weight:700">Рейтинг</span><span class="bn">${N(D.lvl)}</span><span style="font-size:22px;font-weight:600">Ты в топ ${N(v)}% пользователей</span><br><span style="font-size:22px;font-weight:700;display:inline-block;margin-top:8px">${CE(EM.star,"⭐")} Потрачено звёзд: ${N(D.stars||0)}</span>`;return`<span class="bn">${N(v)}</span>`+(s.u?`<span class="vu">${s.u}</span>`:"")}
+function val(s){const v=D[s.k];if(RND.includes(s.k))return`<span class="vt">${v}</span>`;if(s.k=="prem")return"";if(s.k=="pct")return`<span style="font-size:24px;font-weight:700">Рейтинг</span><span class="bn">${N(D.lvl)}</span><span style="font-size:22px;font-weight:600">Ты в топ ${N(v)}% пользователей</span><br><span style="font-size:22px;font-weight:700;display:inline-block;margin-top:8px">${CE(EM.star,"⭐")} Потрачено звёзд: ${N(D.stars||0)}</span>`;if(s.k=="days")return`<span class="dw"><span class="bn">${N(v)}</span>${CE(EM.days,"⭐").replace('class="ce"','class="ce dce"')}</span><span class="vu">${s.u}</span>`;return`<span class="bn">${N(v)}</span>`+(s.u?`<span class="vu">${s.u}</span>`:"")}
 function show(){
  if(i>=S.length){final();return}
  const s=S[i],n=s.f(D[s.k]),[e,name]=s.d[n];bg(s.c[n]);
  if(window.lottie)lottie.destroy();
  app.innerHTML=snow()+`<h1>${s.t}</h1><div class="sub">${s.s}</div>
- <div class="mid ${dir}"><div class="emo">${rich(e)}</div><div class="val">${val(s)}</div>${name?`<div class="tier">${name}</div>`:""}${s.p?`<div class="pts"><div class="pv">+${N(pts(s))} ${pl(pts(s))}</div><div class="pr">${s.pr}</div></div>`:""}</div>
+ <div class="mid ${dir}">${s.k=="days"?"":`<div class="emo">${rich(e)}</div>`}<div class="val">${val(s)}</div>${name?`<div class="tier">${name}</div>`:""}${s.k=="days"?`<div class="yp">Аккаунт ${regYear(D.days)} года · ${YP[regYear(D.days)]} пользователей</div>`:""}${s.p?`<div class="pts"><div class="pv">+${N(pts(s))} ${pl(pts(s))}</div><div class="pr">${s.pr}</div></div>`:""}</div>
  <button type="button" class="share" data-a="s">Поделиться ↗</button><div class="btns">${i>0?`<button type="button" class="back" data-a="b">Назад</button>`:""}<button type="button" class="next" data-a="n">Продолжить</button></div>`;fx(n,0,s.k)}
 function final(){bg(["#2fa8ff","#8a3ee0"]);
  if(window.lottie)lottie.destroy();
@@ -252,7 +260,7 @@ const BOTSTART=BOT.replace(/\/[^\/]*$/,"")+"?start=share";   // ссылка н�
 function caption(s,n){ // текст под карточкой — про тот слайд, где нажали «Поделиться»
  const nm=s.d[n][1],v=D[s.k],em=plain(s.d[n][0]),h=x=>String(x).replace("&lt;","<"),end="\n\nУзнай свои результаты 👇";
  switch(s.k){
-  case"days":return`${em} Я в Telegram уже ${v} дн. — ${nm}! А ты как давно?`+end;
+  case"days":return`${em} Я в Telegram уже ${v} дн. — ${nm}! Аккаунт ${regYear(v)} года, таких ${YP[regYear(v)]}. А ты как давно?`+end;
   case"pct":return`${em} Мой рейтинг в Telegram — ${D.lvl}, я в топ ${v}% пользователей!\n⭐ Потрачено звёзд: ${D.stars||0}`+end;
   case"prem":return`${em} ${nm.replace("У тебя","У меня")}! А у тебя?`+end;
   case"gifts":return`${em} Обычных подарков в моём профиле: ${v} — ${nm}!`+end;

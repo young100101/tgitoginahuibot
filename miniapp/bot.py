@@ -188,8 +188,17 @@ async def gate(uid, cid, mid=None, cbid=None):
     if mid: await edit(cid, mid, text, kb(*rows), ents)
     else: await send(cid, text, kb(*rows), ents)
 
-PANEL = kb([cb("📢 Рассылка", "bc"), cb("📋 Задания", "tk")], [cb("➕ Добавить задание", "add"), cb("🔗 Статистика ссылок", "ls")],
-           [cb("👥 Доступ к доп. инфо", "refs"), cb("📬 Отчёт", "rp")], [cb("📊 Статистика", "st")])
+def pb(text, data, eid=None):  # кнопка с премиум-эмодзи слева (icon_custom_emoji_id)
+    b = {"text": text, "callback_data": data}
+    if eid: b["icon_custom_emoji_id"] = eid
+    return b
+PANEL = kb([pb("Рассылка", "bc", "5260268501515377807"), pb("Задания", "tk", "5257965174979042426")],
+           [pb("Добавить задание", "add", "5274008024585871702"), pb("Стат. ссылок", "ls", "5260730055880876557")],
+           [pb("Доступ к доп. инфо", "refs", "5258362837411045098"), pb("Отчёт", "rp", "5258362837411045098")],
+           [pb("Статистика", "st", "5258391025281408576")])
+PANEL_PLAIN = kb([cb("📢 Рассылка", "bc"), cb("📋 Задания", "tk")], [cb("➕ Добавить задание", "add"), cb("🔗 Стат. ссылок", "ls")],
+                 [cb("👥 Доступ к доп. инфо", "refs"), cb("📬 Отчёт", "rp")], [cb("📊 Статистика", "st")])   # запасной вариант, если премиум-эмодзи не приняты
+ADMIN_HELLO = "<b>Привет! Это админ панель, здесь ты можешь управлять своим ботом!</b> "
 
 async def resolve_chat(msg):
     t = (msg.get("text") or "").strip()
@@ -222,15 +231,18 @@ async def scr(T, text, markup=None, entities=None):
 
 async def send_banner(cid, caption):  # главное меню с картинкой «АДМИН ПАНЕЛЬ»
     fid = await get_setting("admin_banner_id")
-    for src in ([fid] if fid else []) + [PUBLIC + "/cards/admin_panel.jpg"]:
-        r = await call("sendPhoto", chat_id=cid, photo=src, caption=caption, parse_mode="HTML", reply_markup=PANEL)
-        if r:
-            if src != fid and r.get("photo"): await set_setting("admin_banner_id", r["photo"][-1]["file_id"])   # дальше шлём по file_id, без загрузки
-            return r
-    return await send(cid, caption, PANEL)   # картинка не загрузилась — обычное меню
+    srcs = ([fid] if fid else []) + [PUBLIC + "/cards/admin_panel.jpg"]
+    # сначала с премиум-эмодзи, потом без них
+    for cap, mk in ((caption + '<tg-emoji emoji-id="5258073068852485953">👋</tg-emoji>', PANEL), (caption + "👋", PANEL_PLAIN)):
+        for src in srcs:
+            r = await call("sendPhoto", chat_id=cid, photo=src, caption=cap, parse_mode="HTML", reply_markup=mk)
+            if r:
+                if src != fid and r.get("photo"): await set_setting("admin_banner_id", r["photo"][-1]["file_id"])   # дальше шлём по file_id, без загрузки
+                return r
+    return await send(cid, caption + "👋", PANEL_PLAIN)   # картинка не загрузилась — обычное меню
 
 async def panel(T, note=""):
-    r = await send_banner(T["cid"], (note + "\n\n" if note else "") + "Выбери раздел 👇")
+    r = await send_banner(T["cid"], (note + "\n\n" if note else "") + ADMIN_HELLO)
     await delete(T["cid"], T.get("mid"))
     T["mid"] = r["message_id"] if r else None; T["photo"] = bool(r and r.get("photo"))
     return r
