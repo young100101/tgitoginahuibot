@@ -142,14 +142,14 @@ const S=[
 {k:"days",p:v=>Math.floor(v/10),pr:"1 балл за каждые 10 дней",t:"Твой стаж",s:"Сколько дней ты в Telegram?",u:"дней",f:yIdx,
  c:[["#2ba0ff","#0264fd"],["#2ba0ff","#0264fd"],["#2ba0ff","#0264fd"],["#2ba0ff","#0264fd"],["#2ba0ff","#0264fd"],["#2ba0ff","#0264fd"],["#2ba0ff","#0264fd"]],
  d:[["🐣","Новичок"],["😎","Освоившийся"],["💪","Опытный"],["🕰️","Олд"],["🎖️","Ветеран"],["🔥","Легенда"],["👑","Сын Дурова"]]},
-{k:"pct",t:"Рейтинг в Telegram",s:"траты звёёёёёёз",u:"",f:v=>v>=50?0:v>=10?1:2,
+{k:"pct",t:"Рейтинг в Telegram",s:"сколько ты потратил звёзд",u:"",f:v=>v>=50?0:v>=10?1:2,
  c:[["#ff9f43","#ff5f6d"],["#22d3ee","#2563eb"],["#ffd166","#ff7a18"]],
  d:[["👥","Один из многих"],["🚀","Выше большинства"],["💎","Элита"]]},
-{k:"prem",t:"Telegram Premium",s:"",u:"",f:v=>+v,
+{k:"prem",p:v=>v?20:0,pr:"20 баллов за Telegram Premium",t:"Telegram Premium",s:"",u:"",f:v=>+v,
  c:[["#6366f1","#2563eb"],["#c026d3","#f43f8e"]],
  d:[["🔒","У тебя нет Telegram Premium"],["⭐","У тебя есть Telegram Premium"]]},
 {k:"gifts",p:v=>Math.floor(v/5),pr:"1 балл за каждые 5 подарков",t:"Обычные подарки",s:"Сколько их в твоём профиле?",u:"шт.",f:v=>v<=3?0:v<=10?1:2,
- c:[["#64748b","#334155"],["#ff9f43","#ff5f6d"],["#fb3f8f","#7c3aed"]],
+ c:[["#ff5fa2","#ff2d75"],["#ff4f9a","#d91e72"],["#ff3d81","#b5175b"]],
  d:[["🎁","Скромная полка"],["{g}","Неплохая коллекция"],["🏆","Подарочный магнат"]]},
 {k:"nft",p:v=>v,pr:"1 балл за каждый NFT-подарок",t:"NFT-подарки",s:"Улучшенные подарки в профиле",u:"шт.",f:v=>v<=3?0:v<=10?1:2,
  c:[["#06b6d4","#2563eb"],["#8b5cf6","#ec4899"],["#fbbf24","#f43f5e"]],
@@ -254,8 +254,9 @@ function val(s){const v=D[s.k];if(RND.includes(s.k))return`<span class="vt">${v}
 function show(){
  if(i>=S.length){final();return}
  const s=S[i],n=s.f(D[s.k]),[e,name]=s.d[n];bg(s.c[n]);
+ const sub=s.k=="prem"?(D.prem?"Ты попадаешь в 1.5% в телеграмме!":"Ты попадаешь в 98.5% пользователей."):s.s;
  if(window.lottie)lottie.destroy();
- app.innerHTML=snow()+`<h1>${s.t}</h1><div class="sub">${s.s}</div>
+ app.innerHTML=snow()+`<h1>${s.t}</h1><div class="sub">${sub}</div>
  <div class="mid ${dir}">${s.k=="days"?"":`<div class="emo">${rich(e)}</div>`}<div class="val">${val(s)}</div>${name?`<div class="tier">${name}</div>`:""}${s.k=="days"?`<div class="yp">Аккаунт ${regYear(D.days)} года · ${YP[regYear(D.days)]} пользователей</div>`:""}${s.p?`<div class="pts"><div class="pv">+${N(pts(s))} ${pl(pts(s))}</div><div class="pr">${s.pr}</div></div>`:""}</div>
  <button type="button" class="share" data-a="s">Поделиться ↗</button><div class="btns">${i>0?`<button type="button" class="back" data-a="b">Назад</button>`:""}<button type="button" class="next" data-a="n">Продолжить</button></div>`;fx(n,0,s.k)}
 function final(){bg(["#38bdf8","#c026d3"]);
