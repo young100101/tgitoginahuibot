@@ -36,10 +36,14 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS passed_at TIMESTAMPTZ;
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS limit_n INT DEFAULT 0;
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS sort INT DEFAULT 0;
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS deleted BOOLEAN DEFAULT FALSE;
+CREATE TABLE IF NOT EXISTS links(id SERIAL PRIMARY KEY, name TEXT NOT NULL, created TIMESTAMPTZ DEFAULT now());
+CREATE UNIQUE INDEX IF NOT EXISTS links_name_ci ON links(lower(name));
+CREATE TABLE IF NOT EXISTS link_starts(link_id INT, user_id BIGINT, ts TIMESTAMPTZ DEFAULT now(), PRIMARY KEY(link_id, user_id));
 """
 
 BOT_USERNAME = os.environ.get("BOT_USERNAME", "tgitoginahuibot").lstrip("@")
 def ref_link(uid): return f"https://t.me/{BOT_USERNAME}?start=ref_{uid}"
+def src_link(name): return f"https://t.me/{BOT_USERNAME}?start=src_{name}"   # уникальная ссылка для статистики источников
 
 def auth_user(h: str) -> dict:  # проверка подписи Telegram (initData)
     import hmac, json
@@ -195,9 +199,11 @@ def pb(text, data, eid=None):  # кнопка с премиум-эмодзи с�
 PANEL = kb([pb("Рассылка", "bc", "5260268501515377807"), pb("Задания", "tk", "5257965174979042426")],
            [pb("Добавить задание", "add", "5274008024585871702"), pb("Стат. ссылок", "ls", "5260730055880876557")],
            [pb("Доступ к доп. инфо", "refs", "5258362837411045098"), pb("Отчёт", "rp", "5258362837411045098")],
-           [pb("Статистика", "st", "5258391025281408576")])
+           [pb("Статистика", "st", "5258391025281408576")],
+           [pb("Уникальные ссылки", "ul", "5260730055880876557")])
 PANEL_PLAIN = kb([cb("📢 Рассылка", "bc"), cb("📋 Задания", "tk")], [cb("➕ Добавить задание", "add"), cb("🔗 Стат. ссылок", "ls")],
-                 [cb("👥 Доступ к доп. инфо", "refs"), cb("📬 Отчёт", "rp")], [cb("📊 Статистика", "st")])   # запасной вариант, если премиум-эмодзи не приняты
+                 [cb("👥 Доступ к доп. инфо", "refs"), cb("📬 Отчёт", "rp")], [cb("📊 Статистика", "st")],
+                 [cb("🔗 Уникальные ссылки", "ul")])   # запасной вариант, если премиум-эмодзи не приняты
 ADMIN_HELLO = "<b>Привет! Это админ панель, здесь ты можешь управлять своим ботом!</b> "
 
 async def resolve_chat(msg):
@@ -435,6 +441,34 @@ async def rp_view(T, note=""):
                  "В отчёте: новые пользователи, покупки, звёзды, пересылки.\n\n<i>На бесплатном Render сервер спит без запросов, тогда отчёт придёт, когда он проснётся.</i>",
               kb([cb("🔕 Выключить" if on else "🔔 Включить", "rpt"), cb("⏰ Время", "rph")], [cb("📨 Отправить сейчас", "rps")], [cb("⬅️ Меню", "adm")]))
 
+# ================= Уникальные ссылки =================
+LINK_RE = re.compile(r"[A-Za-z0-9_-]{1,40}")
+
+async def ul_menu(T, note=""):
+    await scr(T, note_(note) + "🔗 <b>Уникальные ссылки</b>\n\nЗдесь можно создать уникальную ссылку на бота и смотреть по ней статистику: "
+                 "сколько людей нажали «Начать», выполнили задания и зашли в мини-апп.",
+              kb([cb("📋 Текущие ссылки", "ull")], [cb("➕ Создать ссылку", "ulc")], [cb("⬅️ Меню", "adm")]))
+
+async def ul_list(T):
+    rows = await pool.fetch("SELECT id, name FROM links ORDER BY id DESC LIMIT 90")
+    if not rows:
+        await scr(T, "Ссылок пока нет. Создай первую!", kb([cb("➕ Создать ссылку", "ulc")], [cb("⬅️ Назад", "ul")])); return
+    await scr(T, "📋 <b>Вот текущие ссылки</b>\n\nНажми на ссылку, чтобы посмотреть статистику:",
+              kb(*[[cb(r["name"], f"lk:{r['id']}")] for r in rows], [cb("➕ Создать ссылку", "ulc")], [cb("⬅️ Назад", "ul")]))
+
+async def ul_card(T, lid):
+    r = await pool.fetchrow("SELECT id, name, created FROM links WHERE id=$1", lid)
+    if not r: await scr(T, "Ссылка не найдена.", kb([cb("📋 Текущие ссылки", "ull")])); return
+    starts = await pool.fetchval("SELECT count(*) FROM link_starts WHERE link_id=$1", lid)
+    done = await pool.fetchval("SELECT count(*) FROM link_starts l JOIN users u ON u.user_id=l.user_id WHERE l.link_id=$1 AND u.passed_at IS NOT NULL", lid)
+    app = await pool.fetchval("SELECT count(*) FROM link_starts l JOIN profiles p ON p.user_id=l.user_id WHERE l.link_id=$1", lid)
+    pc = lambda x: f" ({x * 100 // starts}%)" if starts else ""
+    await scr(T, f"🔗 <b>{E(r['name'])}</b>\n<code>{E(src_link(r['name']))}</code>\nСоздана: {r['created'].astimezone(TZ):%d.%m.%Y %H:%M}\n\n"
+                 f"👥 Нажали «Начать»: <b>{starts}</b>\n"
+                 f"✅ Выполнили задания (подписка / заявки): <b>{done}</b>{pc(done)}\n"
+                 f"📱 Зашли в мини-апп: <b>{app}</b>{pc(app)}",
+              kb([cb("🔄 Обновить", f"lk:{lid}")], [cb("📋 Текущие ссылки", "ull")], [cb("⬅️ Меню", "adm")]))
+
 async def tt_menu(T, note=""):
     await scr(T, note_(note) + "✏️ <b>Тексты</b>\n\nВыбери, что изменить. В текстах сообщений работает форматирование и премиум-эмодзи.",
               kb(*[[cb(v[0], "tt:" + k)] for k, v in TEXTS.items()], [cb("⬅️ Меню", "adm")]))
@@ -457,12 +491,23 @@ async def on_message(msg):
         payload = text.split(maxsplit=1)[1] if " " in text else ""
         if new and payload.startswith("ref_") and payload[4:].isdigit() and int(payload[4:]) != uid:  # реферал только за нового пользователя
             await pool.execute("INSERT INTO referrals(invitee,inviter) VALUES($1,$2) ON CONFLICT DO NOTHING", uid, int(payload[4:]))
+        if payload.startswith("src_"):  # переход по уникальной ссылке -> считаем уникального человека
+            lid = await pool.fetchval("SELECT id FROM links WHERE lower(name)=lower($1)", payload[4:])
+            if lid: await pool.execute("INSERT INTO link_starts(link_id,user_id) VALUES($1,$2) ON CONFLICT DO NOTHING", lid, uid)
         await gate(uid, cid)
         if uid in ADMINS: await panel({"cid": cid, "mid": None})
     elif uid in ADMINS and text == "/texts":
         await delete(cid, msg["message_id"]); await tt_menu({"cid": cid, "mid": None, "photo": False})
     elif uid in ADMINS and text == "/admin":
         STATE.pop(uid, None); await delete(cid, msg["message_id"]); await panel({"cid": cid, "mid": None})
+    elif uid in ADMINS and STATE.get(uid, {}).get("step") == "lnkname":
+        await delete(cid, msg["message_id"]); name = text.strip()
+        if not LINK_RE.fullmatch(name): await bad(uid, cid, "Название — только английские буквы, цифры, _ или - (до 40 символов), без пробелов."); return
+        if await pool.fetchval("SELECT 1 FROM links WHERE lower(name)=lower($1)", name): await bad(uid, cid, "Ссылка с таким названием уже есть. Придумай другое."); return
+        lid = await pool.fetchval("INSERT INTO links(name) VALUES($1) RETURNING id", name)
+        T = T_for(uid, cid); STATE.pop(uid)
+        await scr(T, f"✅ Ссылка создана: <b>{E(name)}</b>\n\n<code>{E(src_link(name))}</code>\n\nОна появилась в «Текущих ссылках», там смотри статистику.",
+                  kb([cb("📊 Статистика ссылки", f"lk:{lid}")], [cb("📋 Текущие ссылки", "ull")], [cb("⬅️ Меню", "adm")]))
     elif uid in ADMINS and STATE.get(uid, {}).get("step") == "tedit":
         await delete(cid, msg["message_id"])
         if not text.strip() or len(text) > 60: await bad(uid, cid, "Название — до 60 символов."); return
@@ -568,6 +613,10 @@ async def on_cb(q):
     elif data == "refs_paid": await ask(T, uid, "refprice", f"Сейчас цена: <b>{await get_price() or 'выключено'}</b>\nПришли сумму в звёздах (от 1 до 10000) или 0, чтобы выключить платный вариант.")
     elif data == "st": await scr(T, await stats_text(), kb([cb("🧾 Последние покупки", "sl")], [cb("⬅️ Меню", "adm")]))
     elif data == "sl": await scr(T, await last_purchases_text(), kb([cb("📊 Статистика", "st")], [cb("⬅️ Меню", "adm")]))
+    elif data == "ul": STATE.pop(uid, None); await ul_menu(T)
+    elif data == "ull": STATE.pop(uid, None); await ul_list(T)
+    elif data == "ulc": await ask(T, uid, "lnkname", "➕ Пришли название для новой ссылки на английском (буквы, цифры, _ или -, без пробелов), например: <b>instagram_1</b>")
+    elif re.fullmatch(r"lk:\d+", data): await ul_card(T, int(data[3:]))
     elif data == "tk": await tk_list(T)
     elif re.fullmatch(r"t:\d+", data): await tk_card(T, int(data[2:]))
     elif re.fullmatch(r"tg:\d+", data):

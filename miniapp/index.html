@@ -2,6 +2,8 @@
 <html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Твой Telegram</title>
+<link rel="preload" as="image" href="/cards/pepe.webp">
+<link rel="preload" as="image" href="/cards/gift.webp">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
 <style>
@@ -28,7 +30,7 @@ h1{font-size:31px;font-weight:850;letter-spacing:-.8px;margin-top:30px;z-index:1
 .dw .ce.dce{position:absolute;left:50%;top:50%;width:1.12em;height:1.12em;margin:-.56em 0 0 -.56em;vertical-align:baseline;z-index:0;pointer-events:none}
 .yp{margin-top:14px;font-size:17px;font-weight:700;opacity:.95;animation:up .6s 1s both}
 .vt{font-size:clamp(46px,13vw,64px);font-weight:850;line-height:1.05}
-.tier{margin-top:14px;padding:10px 20px;border-radius:22px;background:rgba(255,255,255,.24);font-weight:800;font-size:20px;box-shadow:0 8px 24px rgba(0,0,0,.10);backdrop-filter:blur(8px)}
+.tier{margin-top:14px;padding:10px 20px;border-radius:22px;background:rgba(255,255,255,.28);font-weight:800;font-size:20px;box-shadow:0 8px 24px rgba(0,0,0,.10)}
 .btns{display:flex;gap:10px;width:100%;z-index:2;position:relative}.btns button{flex:1}
 button{border:0;border-radius:16px;padding:16px;font-size:17px;font-weight:750;cursor:pointer;position:relative;z-index:2;touch-action:manipulation}
 .back{background:rgba(255,255,255,.22);color:#fff}
@@ -55,17 +57,17 @@ h1{animation:up .6s .05s both}.sub{animation:up .6s .15s both}
 @keyframes fl{50%{transform:translateY(-12px) rotate(4deg)}}
 .val{animation:up .6s .4s both}.lbl{animation:up .6s .3s both}
 .tier{animation:pop .7s .8s cubic-bezier(.3,1.6,.5,1) both;position:relative;overflow:hidden}
-.tier::after{content:"";position:absolute;top:0;bottom:0;width:40%;left:-60%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);animation:sh 2.6s 1.5s infinite}
-@keyframes sh{to{left:130%}}
+.tier::after{content:"";position:absolute;top:0;bottom:0;width:40%;left:0;transform:translateX(-150%);background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);animation:sh 2.6s 1.5s infinite}
+@keyframes sh{to{transform:translateX(325%)}}
 .li{animation:up .5s both}
 .btns,.share{animation:up .6s .5s both}
 button:active{transform:scale(.94);transition:transform .1s}
-@keyframes sw{50%{margin-left:22px}}
+@keyframes sw{50%{translate:22px 0}}
 .cf{position:absolute;top:-30px;z-index:3;pointer-events:none;animation:cfall linear both}
 @keyframes cfall{to{transform:translateY(105vh) rotate(540deg);opacity:.9}}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01s!important;animation-delay:0s!important}}
 .pts{margin-top:14px;display:flex;flex-direction:column;align-items:center}
-.pv{font-size:17px;font-weight:800;padding:6px 15px;border-radius:16px;background:linear-gradient(90deg,rgba(255,255,255,.38),rgba(255,255,255,.14));animation:pop .7s 1.1s cubic-bezier(.3,1.6,.5,1) both,glow 2s 2s ease-in-out infinite alternate}
+.pv{font-size:17px;font-weight:800;padding:6px 15px;border-radius:16px;background:linear-gradient(90deg,rgba(255,255,255,.38),rgba(255,255,255,.14));animation:pop .7s 1.1s cubic-bezier(.3,1.6,.5,1) both}
 .pr{opacity:.7;font-size:12px;margin-top:7px;animation:up .6s 1.3s both}
 @keyframes glow{to{box-shadow:0 0 20px rgba(255,255,255,.65)}}
 .tot{font-size:46px;font-weight:800;margin:4px 0 12px;animation:pop .8s .3s cubic-bezier(.3,1.6,.5,1) both}
@@ -77,9 +79,9 @@ button:active{transform:scale(.94);transition:transform .1s}
 
 .ov{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,0);pointer-events:none;transition:background .3s;--bg:#fff;--tx:#0d0d12;--mut:#8b8b96;--row:#f2f3f8;--ln:#dcdde6}
 .ov[data-th=dark]{--bg:#1b1b20;--tx:#fff;--mut:#9b9ba6;--row:#2a2a31;--ln:#3a3a43}
-.ov.on{background:rgba(0,0,0,.52);pointer-events:auto;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
-.sh{position:absolute;left:50%;bottom:0;width:100%;max-width:480px;max-height:92%;overflow:auto;background:var(--bg);color:var(--tx);border-radius:30px 30px 0 0;padding:10px 18px calc(var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom,0px)) + 18px);transform:translate(-50%,105%);transition:transform .45s cubic-bezier(.2,.9,.25,1);box-shadow:0 -12px 44px rgba(0,0,0,.28);text-align:center}
-.ov.on .sh{transform:translate(-50%,0)}
+.ov.on{background:rgba(0,0,0,.6);pointer-events:auto}
+.sh{position:absolute;left:50%;bottom:0;width:100%;max-width:480px;max-height:92%;overflow:auto;background:var(--bg);color:var(--tx);border-radius:30px 30px 0 0;padding:10px 18px calc(var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom,0px)) + 18px);transform:translate3d(-50%,105%,0);will-change:transform;transition:transform .4s cubic-bezier(.2,.9,.25,1);box-shadow:0 -12px 44px rgba(0,0,0,.28);text-align:center}
+.ov.on .sh{transform:translate3d(-50%,0,0)}
 .grab{width:42px;height:5px;border-radius:3px;background:var(--ln);margin:2px auto 16px}
 .sh h2{font-size:23px;font-weight:800;margin:0 0 6px}
 .mut{color:var(--mut);font-size:15px;line-height:1.35;margin:0 0 4px}
@@ -127,6 +129,28 @@ button:active{transform:scale(.94);transition:transform .1s}
   .vu{font-size:25px}
   .tier{font-size:18px;padding:9px 17px}
 }
+
+/* ===== Правки: текст выше, подарок, пауза анимаций под плашкой, стартовый экран ===== */
+.sl h1{margin-top:14px}
+.sl .mid{transform:translateY(-30px)}
+.gimg{display:block;margin:0 auto;width:clamp(96px,15.5vh,136px);height:auto;filter:drop-shadow(0 8px 16px rgba(0,0,0,.18));-webkit-user-drag:none;user-select:none}
+.li .gimg{display:inline-block;width:1.15em;height:1.15em;margin:0;vertical-align:-.2em;filter:none;object-fit:contain}
+.sh .row{animation:none}
+body.sheet .snow img,body.sheet .fp,body.sheet .cf,body.sheet .emo,body.sheet .tier::after{animation-play-state:paused}
+.intro{position:fixed;inset:0;z-index:100;background:#fff;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.intro.out{opacity:0;pointer-events:none;transition:opacity .6s ease}
+.intro .it{position:absolute;left:0;right:0;z-index:1;text-align:center;padding:0 30px;top:calc(var(--tg-safe-area-inset-top,env(safe-area-inset-top,0px)) + var(--tg-content-safe-area-inset-top,0px) + 11vh)}
+.intro h2{font-size:27px;font-weight:800;line-height:1.16;letter-spacing:-.5px;color:#0d0d12;max-width:340px;margin:0 auto}
+.intro p{margin-top:12px;font-size:16px;font-weight:500;color:#9a9aa6}
+.intro .ihold{position:absolute;left:50%;top:50%;z-index:2}
+.intro .hc,.intro .pulse,.intro .fg{position:absolute;left:0;top:0;border-radius:50%}
+.intro .hc{width:var(--b);height:var(--b);margin:calc(var(--b)/-2) 0 0 calc(var(--b)/-2);background:linear-gradient(145deg,#2ba0ff,#0264fd);will-change:transform}
+.intro .pulse{width:var(--d);height:var(--d);margin:calc(var(--d)/-2) 0 0 calc(var(--d)/-2);border:3px solid rgba(2,100,253,.4);animation:pls 2.4s ease-out infinite}
+.intro.hold .pulse{visibility:hidden}
+.intro .fg{width:var(--d);height:var(--d);margin:calc(var(--d)/-2) 0 0 calc(var(--d)/-2);display:flex;align-items:center;justify-content:center;will-change:transform}
+.intro .fg img{width:78%;height:78%;object-fit:contain;pointer-events:none;-webkit-user-drag:none;animation:bob 3.4s ease-in-out infinite;filter:drop-shadow(0 8px 12px rgba(0,25,110,.3))}
+@keyframes pls{from{transform:scale(1);opacity:.9}to{transform:scale(1.45);opacity:0}}
+@keyframes bob{50%{transform:translateY(-7px) rotate(-2.5deg)}}
 </style></head><body><div id="app"></div>
 <script>
 const tg=window.Telegram&&Telegram.WebApp;if(tg){tg.ready();tg.expand();
@@ -154,7 +178,7 @@ const S=[
 {k:"nft",p:v=>v,pr:"1 балл за каждый NFT-подарок",t:"NFT-подарки",s:"Улучшенные подарки в профиле",u:"шт.",f:v=>v<=3?0:v<=10?1:2,
  c:[["#06b6d4","#2563eb"],["#8b5cf6","#ec4899"],["#fbbf24","#f43f5e"]],
  d:[["🧸","Начинающий коллекционер"],["💠","Серьёзный коллекционер"],["🐉","Легенда рынка"]]},
-{k:"fast",t:"Самый быстрый ответ",s:"Ты что 24/7 в телеграмме?",f:()=>0,c:[["#fff3b0","#f7d96a"]],d:[["⚡",""]]},
+{k:"fast",t:"Самый быстрый ответ",s:"Ты что 24/7 в телеграмме?",f:()=>0,c:[["#ffd426","#ffa800"]],d:[["⚡",""]]},
 {k:"slow",t:"Самый долгий ответ",s:"Как же долго он ждал ответа....",f:()=>0,c:[["#38bdf8","#2563eb"]],d:[["🐌",""]]},
 {k:"online",t:"Постоянный онлайн",s:"В этот день ты сидел больше всего в телеграмме!",f:()=>0,c:[["#d946ef","#7c3aed"]],d:[["😈",""]]},
 {k:"dialog",t:"Самый длинный диалог",s:"Вот это был разговор!",f:()=>0,c:[["#ffb454","#f97316"]],d:[["💬",""]]},
@@ -180,7 +204,9 @@ function put(el,e){ // вставить эмодзи в элемент
  if(e.k=="l"&&window.lottie)lottie.loadAnimation({container:el,renderer:"svg",loop:true,autoplay:true,animationData:JSON.parse(JSON.stringify(e.d))});
  else if(e.k=="v"){const v=document.createElement("video");v.src=e.u;v.autoplay=v.loop=v.muted=v.playsInline=true;el.appendChild(v)}
  else if(e.k=="i"){const m=document.createElement("img");m.src=e.u;el.appendChild(m)}}
-function hydrate(){document.querySelectorAll(".ce:not(.ok)").forEach(el=>{el.classList.add("ok");loadEmoji(el.dataset.ce).then(e=>put(el,e))})}
+function hydrate(){document.querySelectorAll(".ce:not(.ok)").forEach(el=>{el.classList.add("ok");const id=el.dataset.ce;
+ if(el.closest("#sh,.li,.cf,.tot"))still(id).then(u=>u?put(el,{k:"i",u}):loadEmoji(id).then(e=>put(el,e))); // в списках, плашке и конфетти — неподвижные (легче для телефона)
+ else loadEmoji(id).then(e=>put(el,e))})}
 const ST={};
 function stillOld(id){ // неподвижная картинка эмодзи (один кадр) — чтобы падающие не нагружали экран
  return loadEmoji(id).then(e=>new Promise(res=>{
@@ -225,14 +251,43 @@ function rolls(){ // случайные значения, но у одного �
  const mm=1500+Math.floor(r()*1501);D.maxmsgs=mm.toLocaleString("ru")+" "+pl3(mm,["сообщение","сообщения","сообщений"]);   // 1500–3000
  const pn=Math.round((D.days||0)*0.02);D.pinned=pn+" "+pl3(pn,["человек","человека","человек"])}
 const API=""; // бэкенд на том же адресе
+const FB=["🎁","✨","🎀","💝"];   // запасные эмодзи, если картинки не загрузились
+const GIFT='<img class="gimg" src="/cards/gift.webp" alt="" draggable="false" decoding="async">';
 const DEMO={stars:3450,days:640,pct:12,lvl:7,prem:1,gifts:5,nft:2,value:1200,id:0};
 const D={};let i=0;const app=document.getElementById("app");
-async function load(){
- app.innerHTML=snow()+'<div class="mid"><div class="emo">⏳</div><div class="lbl">Считаем твою статистику…</div></div>';bg(["#5b6cf0","#3a3fb5"]);
+let ME=null;
+function fetchMe(){return ME||(ME=(async()=>{
  try{const r=await fetch(API+"/api/me",{headers:{Authorization:"tma "+(tg?tg.initData:"")}});if(!r.ok)throw 0;Object.assign(D,await r.json())}
- catch(e){Object.assign(D,DEMO)}
- rolls();  // без бэкенда показываем демо-данные
- i=0;show()}
+ catch(e){Object.assign(D,DEMO)}   // без бэкенда показываем демо-данные
+ rolls()})())}
+// ===== Стартовый экран: удержи палец — синий круг заполняет экран =====
+function intro(){
+ try{if(tg){tg.setHeaderColor("#ffffff");tg.setBackgroundColor("#ffffff")}}catch(e){}
+ const W=innerWidth,H=innerHeight,BASE=Math.round(Math.min(1600,Math.hypot(W,H)*1.05)),D0=Math.round(Math.min(260,W*.64)),s0=D0/BASE;
+ const el=document.createElement("div");el.className="intro";
+ el.innerHTML=`<div class="it"><h2>Я хочу узнать результаты своего аккаунта</h2><p>Удержи палец в центре экрана</p></div><div class="ihold" style="--b:${BASE}px;--d:${D0}px"><i class="pulse"></i><i class="hc" style="transform:scale(${s0})"></i><div class="fg"><img src="/cards/pepe.webp" alt="" draggable="false"></div></div>`;
+ document.body.appendChild(el);
+ const hc=el.querySelector(".hc"),fg=el.querySelector(".fg"),HOLD=1150;
+ let p=0,holding=false,done=false,raf=0,last=0,tick1=0;
+ const ease=x=>x*x*(3-2*x);
+ const render=()=>{hc.style.transform=`scale(${s0+(1-s0)*ease(p)})`;fg.style.transform=`scale(${1+.1*p})`};
+ const hap=k=>{try{tg&&tg.HapticFeedback&&tg.HapticFeedback.impactOccurred(k)}catch(e){}};
+ function tick(t){
+  const dt=Math.min(48,t-last);last=t;
+  p=Math.max(0,Math.min(1,p+(holding?dt/HOLD:-dt/420)));render();
+  const q=Math.floor(p*6);if(holding&&q>tick1){hap("light")}tick1=q;
+  if(holding&&p>=1){finish();return}
+  raf=(holding||p>0)?requestAnimationFrame(tick):0}
+ async function finish(){
+  done=true;holding=false;raf=0;hap("heavy");
+  try{tg&&tg.HapticFeedback&&tg.HapticFeedback.notificationOccurred("success")}catch(e){}
+  await fetchMe();
+  i=0;dir="fwd";cur="#1580fe";show();if(tg)tg.BackButton.hide();
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{el.classList.add("out");setTimeout(()=>el.remove(),700)}))}
+ el.addEventListener("pointerdown",e=>{if(done)return;e.preventDefault();holding=true;el.classList.add("hold");if(!raf){last=performance.now();raf=requestAnimationFrame(tick)}},{passive:false});
+ const up=()=>{if(done)return;holding=false;el.classList.remove("hold");if(!raf&&p>0){last=performance.now();raf=requestAnimationFrame(tick)}};
+ addEventListener("pointerup",up);addEventListener("pointercancel",up);
+ el.addEventListener("contextmenu",e=>e.preventDefault());el.addEventListener("selectstart",e=>e.preventDefault())}
 function fx(n,all,key){
  document.querySelectorAll(".cnt").forEach(el=>{const to=+el.dataset.to,t0=performance.now(),D=1300;
   (function f(t){const p=Math.min(1,(t-t0)/D),e=1-Math.pow(1-p,3);el.textContent=Math.round(to*e).toLocaleString("ru");if(p<1)requestAnimationFrame(f)})(t0)});
@@ -243,7 +298,8 @@ function fx(n,all,key){
  hydrate();
  if(tg&&tg.HapticFeedback)tg.HapticFeedback.impactOccurred(n==2?"heavy":"light")}
 const SP=[{u:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACcAAAA4CAYAAAB+I+F7AAADfUlEQVR42s2YW2tUVxTHf+tM4uXBapp4S1urYmgNqKjYIlRKoZUqqB/ABx/qg1/Chz74cdqXUhEfVVBQIt6lSlqr0ao1VkVLjDP/PnQt2RwyTOJsJ3vBYc3Zc9jzm7X2uh3IJJJM0jIySpVxrwbwnaSFJcL1AZ8Bi8KS8w6XQPQDI66LdOswsKBEuA+AIeBDv7cS4AJiGbAygaMkuOXAKmCgJMuFDDrQUIlnbtD1UEmWU+JWgNWuWyXBBdRwbb0ItwbUgCQzM3VbJbqCSyAWexoJCy4pISDCMh8Bn/rnFcAnOYIiF9yw5zh5tBYBF7LZddOBtpTg1kgXu2r3W3NFbFetkqQBSTf0v0y7viVpabd9XZXhvH0BrHUrNVxvAL7JVSneZV6oJDUk/ezWeuO66fq4pAX+nPUSrs/1AXdluDOk5WuH/LlGL6Cq+CFJo5Ku1qyl2v24pC0BKKl6X+6rkvWvE7CWZpYAHJO0q/4H5+zudjDJ9yOSjkmabGOxdoAPJf0oac0MezbawVonNwLrgJ3AHuBbL0+R02bjpqZHMcDfwHHgV+Ccmf05m3QQh3YQWAN8DowCO4BNSVEPKJtjipBf6Z+ZAK4Ap4GbwG/APeCFmTXfwknaDux3y2yLwTiR6WT8q7qsKK1kCE/lJXAdOAn8ApwPuEXAUu8sRoGNPr1v8gRbtXHTXKTp+1hizTvAJeAWcM31BPDEzF50OnMfA+uB74GvgC+ToVmzdK2SIzQFXADOAKeAS2Y2MedIrUeOpMWSdkv6KUkfnaI1TTMnJO2V1N/pd2eVYvzhKs3wkvok/SDpboc8F+uPJR2OqlJPHzkTcgq52/PXTIAtv15J2lf7s/Y+S5gltfVIG/dGE3A0sVRvin+cC0kLJZ2tATb9Ou/n1HralaSdhqSDNVeGi4/0rCNpU9qQNCzpXs2d9yWtj0jseSdsZi131wPgbG2GGDOz8XhuvgacyszkiTWt1Zdz7J+r+btS22+shNEwStM4MOn7vQL+yDEa5oJ7AERvdge4WwJcyHPgmX9+Bvwz726N11weFI98+amZTSXr82q5iNC/XD8s6Z1wwMU5+z3X3jnfbD4q0XIhk64flwSnZOx7mUAW9cL6iQfF0xItNwncT+CKstxrP2//lhgQLS9hU8XAJVVgGrjtwzPdVofclpsGLrp7yxNJ/TmHmf8A/piP1Ydvt5MAAAAASUVORK5CYII=",w:14},{u:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACUAAAAuCAYAAACvWdDAAAADCElEQVR42s2Yz0uUQRzGP7O7rmYkWGRBZWZFVnqJIj0FdQ0igrp164/o3KVz0Ll7xy6JQRR16GTQL+0gmWZGRW6W0uq6T4e+A9Owrrr76vt+YZl3Z5aZ532e768dSMAkOUmOhCyX0D4twEDWQBWA/kyACiQrAj2SClliagdwBGiNwKYCyh/eZfIVs8CUC5jqAdqyJN8eoBPYHYFNFVS/ReChLIHaH43pgLIIq9q4y6b3+uXUmHLOCegAjtmUH6tpgXIBO/vsuU9Su3NOzeSqJECdArabZIeBvmb9qhlQ3m/O2lgB2oGhJJy94ZonqVPSuP7Zko0PJOWTbGXWCypvPdRVSRVJVUkrBmpeUr+t57ZEPmNAFnmXgHwg5YqVnCu2nttUxuzN88H3G5IWjKWqseSfv0oatN/lEpPT028bhmCKkm5KKgdAQvPfpyRdqyF7fl3tcwygli9I6pB0WdLjiJVa5v1rUdJdSWcktdTY878zPVBXB2ib1bIBC/OLwPEoHbg1UoZf/wW8BEaA58A7oOScW66ZAI2VA1bhe6xUdANHgd6grhGUkNwGclnVgsHbH+ALMAm8B2aBD/Y8A8w466sHgfPASWtDDlqWjsHIALkNJtkYmLdvwDQwBowCz4BRV0O2ojVrvQZyCDht0rkNsKXgJQDKdvgTAzBubM055yqrOnod/9om6YKkO5K+mxNX6jh6HIW3zdlb1wg011AkShqQNGIHLteJvqqke5K6V4m4XFP/rEOgQXq4XyNPhWniVgRk87J7AKxL0psoL/nxYZAk81tVkAs2Xg+k8p8FSefCF9iy1sU+OyVNRP41HKw3JFdDrYV1AM459wN4FGX5Yd8h2JhKO/w02KsCvCAt86lC0glJJZNuUlJns5ccSfTon62WAbx2zs1Jco1Kl9T91E/go02NpfoP2ZjI2/jJpmezcJfgJZqOQGXiKmjSAE6lfpcQ2BQwnxVQ/vBF6x5/Z0m+EjDR7G1L0kyVjKly6qCCBLkAvAWWovlU5SsDr5oFsxmtTCGp/f4C2cImWoPwwBsAAAAASUVORK5CYII=",w:12},{u:"data:image/png;base64,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",w:26}];  // три звёздочки (маленькая, средняя, большая), PNG без фона
-function snow(){let h="";for(let n=0;n<24;n++){const q=SP[Math.floor(Math.random()*3)],w=(q.w*(.7+Math.random()*.5)).toFixed(1),r=(Math.random()<.5?-1:1)*(90+Math.random()*270);
+SP.forEach(q=>{try{const b=atob(q.u.split(",")[1]),a=new Uint8Array(b.length);for(let k=0;k<b.length;k++)a[k]=b.charCodeAt(k);q.u=URL.createObjectURL(new Blob([a],{type:"image/png"}))}catch(e){}});
+function snow(){let h="";for(let n=0;n<18;n++){const q=SP[Math.floor(Math.random()*3)],w=(q.w*(.7+Math.random()*.5)).toFixed(1),r=(Math.random()<.5?-1:1)*(90+Math.random()*270);
  h+=`<img src="${q.u}" alt="" draggable="false" style="left:${(Math.random()*96).toFixed(1)}%;width:${w}px;--r:${r.toFixed(0)}deg;animation-duration:${(5+Math.random()*7).toFixed(1)}s,${(2+Math.random()*3).toFixed(1)}s;animation-delay:-${(Math.random()*10).toFixed(1)}s,-${(Math.random()*4).toFixed(1)}s">`}
  return`<div class="bgl" style="background:${nb}"></div><div class="snow">${h}</div>`}
 let cur="#5b6cf0",nb=cur,dir="fwd";
@@ -253,17 +309,18 @@ const N=x=>`<span class="cnt" data-to="${x}">0</span>`;
 function val(s){const v=D[s.k];if(RND.includes(s.k))return`<span class="vt">${v}</span>`;if(s.k=="prem")return"";if(s.k=="pct")return`<span style="font-size:24px;font-weight:700">Рейтинг</span><span class="bn">${N(D.lvl)}</span><span style="font-size:22px;font-weight:600">Ты в топ ${N(v)}% пользователей</span><br><span style="font-size:22px;font-weight:700;display:inline-block;margin-top:8px">${CE(EM.star,"⭐")} Потрачено звёзд: ${N(D.stars||0)}</span>`;if(s.k=="days")return`<span class="dw"><span class="bn">${N(v)}</span>${CE(EM.days,"⭐").replace('class="ce"','class="ce dce"')}</span><span class="vu">${s.u}</span>`;return`<span class="bn">${N(v)}</span>`+(s.u?`<span class="vu">${s.u}</span>`:"")}
 function show(){
  if(i>=S.length){final();return}
+ app.classList.add("sl");
  const s=S[i],n=s.f(D[s.k]),[e,name]=s.d[n];bg(s.c[n]);
  const sub=s.k=="prem"?(D.prem?"Ты попадаешь в 1.5% в телеграмме!":"Ты попадаешь в 98.5% пользователей."):s.s;
  if(window.lottie)lottie.destroy();
  app.innerHTML=snow()+`<h1>${s.t}</h1><div class="sub">${sub}</div>
- <div class="mid ${dir}">${s.k=="days"?"":`<div class="emo">${rich(e)}</div>`}<div class="val">${val(s)}</div>${name?`<div class="tier">${name}</div>`:""}${s.k=="days"?`<div class="yp">Аккаунт ${regYear(D.days)} года · ${YP[regYear(D.days)]} пользователей</div>`:""}${s.p?`<div class="pts"><div class="pv">+${N(pts(s))} ${pl(pts(s))}</div><div class="pr">${s.pr}</div></div>`:""}</div>
+ <div class="mid ${dir}">${s.k=="days"?"":`<div class="emo">${s.k=="nft"?GIFT:rich(e)}</div>`}<div class="val">${val(s)}</div>${name?`<div class="tier">${name}</div>`:""}${s.k=="days"?`<div class="yp">Аккаунт ${regYear(D.days)} года · ${YP[regYear(D.days)]} пользователей</div>`:""}${s.p?`<div class="pts"><div class="pv">+${N(pts(s))} ${pl(pts(s))}</div></div>`:""}</div>
  <button type="button" class="share" data-a="s">Поделиться ↗</button><div class="btns">${i>0?`<button type="button" class="back" data-a="b">Назад</button>`:""}<button type="button" class="next" data-a="n">Продолжить</button></div>`;fx(n,0,s.k)}
-function final(){bg(["#38bdf8","#c026d3"]);
+function final(){bg(["#38bdf8","#c026d3"]);app.classList.remove("sl");
  if(window.lottie)lottie.destroy();
  const r=S.map(s=>s.d[s.f(D[s.k])]);
- app.innerHTML=snow()+`<h1>Итоги</h1><div class="sub">Вот кто ты в Telegram</div><div class="mid" style="font-size:15px;gap:5px;overflow-y:auto;justify-content:flex-start;padding-top:4px"><div class="lbl" style="margin:0">Сумма баллов</div><div class="tot">${rich("🏆")} ${N(total())} ${pl(total())}</div>`+
- S.map((s,j)=>`<div class="li" style="animation-delay:${j*.12+.2}s">${rich(r[j][0])} <b>${s.t}:</b> ${r[j][1]||D[s.k]}${s.p?` · <b>+${pts(s)}</b>`:""}</div>`).join("")+
+ app.innerHTML=snow()+`<h1>Итоги</h1><div class="sub">Вот кто ты в Telegram</div><div class="mid" style="font-size:15px;gap:5px;overflow-y:auto;justify-content:flex-start;padding-top:18px"><div class="lbl" style="margin:0">Сумма баллов</div><div class="tot">${rich("🏆")} ${N(total())} ${pl(total())}</div>`+
+ S.map((s,j)=>`<div class="li" style="animation-delay:${j*.12+.2}s">${s.k=="nft"?GIFT:rich(r[j][0])} <b>${s.t}:</b> ${r[j][1]||D[s.k]}${s.p?` · <b>+${pts(s)}</b>`:""}</div>`).join("")+
  `</div><button type="button" class="share" data-a="s">Поделиться ↗</button><div class="btns"><button type="button" class="back" data-a="b">Назад</button><button type="button" class="next" data-a="m">Продолжить</button></div>`;fx(2,1,"final")}
 dir="fwd";
 function go(d){dir=d>0?"fwd":"bk";i=Math.min(S.length,Math.max(0,i+d));show();if(tg)i>0?tg.BackButton.show():tg.BackButton.hide()}
@@ -348,9 +405,11 @@ function renderSheet(){
  if(FAIL)h=`<div class="ld"><div class="big">😕</div><p class="mut">Не получилось загрузить. Попробуй позже.</p></div><div class="bt col"><button type="button" class="b2" data-s="x">Закрыть</button></div>`;
  else if(MORE)h=VIEW=="inv"?vInv():VIEW=="top"?vTop():VIEW=="opt"?vOpt():VIEW.startsWith("d:")?vDet(VIEW.slice(2)):vMenu();
  SH.innerHTML='<div class="grab"></div>'+h;hydrate();cu()}
-async function refreshMore(){try{MORE=live?await api("/api/more"):Object.assign({},DM,{points:total(),count:MORE?MORE.count:DM.count});FAIL=false}catch(e){FAIL=!MORE}if(OV.classList.contains("on"))renderSheet()}
-function openSheet(){VIEW="menu";OV.classList.add("on");renderSheet();if(tg)tg.BackButton.show();refreshMore()}
-function closeSheet(){OV.classList.remove("on");if(tg&&i==0)tg.BackButton.hide()}
+async function refreshMore(){const prev=JSON.stringify(MORE);try{MORE=live?await api("/api/more"):Object.assign({},DM,{points:total(),count:MORE?MORE.count:DM.count});FAIL=false}catch(e){FAIL=!MORE}
+ if(OV.classList.contains("on")&&(FAIL||JSON.stringify(MORE)!==prev))renderSheet()}   // перерисовываем, только если данные изменились — без мигания
+function openSheet(){VIEW="menu";renderSheet();void OV.offsetWidth;document.body.classList.add("sheet");try{window.lottie&&lottie.pause()}catch(e){}
+ requestAnimationFrame(()=>{OV.classList.add("on");if(tg)tg.BackButton.show();setTimeout(refreshMore,450)})}
+function closeSheet(){OV.classList.remove("on");document.body.classList.remove("sheet");try{window.lottie&&lottie.play()}catch(e){}if(tg&&i==0)tg.BackButton.hide()}
 function sheetBack(){if(VIEW!="menu"){VIEW=parent();renderSheet()}else closeSheet()}
 async function openTop(){VIEW="top";TOP=null;renderSheet();
  try{TOP=live?await api("/api/top"):demoTop();renderSheet()}
@@ -379,5 +438,6 @@ OV.addEventListener("click",e=>{
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&OV.classList.contains("on")&&live)refreshMore()});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a;a=="n"?go(1):a=="b"?go(-1):a=="m"?openSheet():share()});
 if(tg)tg.BackButton.onClick(()=>{if(OV.classList.contains("on"))sheetBack();else go(-1)});
-load();
+fetchMe().then(()=>refreshMore());   // данные и «доп. инфо» грузим заранее, пока человек держит палец
+intro();
 </script></body></html>
