@@ -197,7 +197,7 @@ const S=[
 {k:"slow",t:"Самый долгий ответ",s:"Как же долго он ждал ответа....",f:()=>0,c:[["#38bdf8","#2563eb"]],d:[["{e:5418028873705069979|🕐}",""]]},
 {k:"online",t:"Постоянный онлайн",s:"В этот день ты сидел больше всего в телеграмме!",f:()=>0,c:[["#d946ef","#7c3aed"]],d:[["😈",""]]},
 {k:"dialog",t:"Самый длинный диалог",s:"Вот это был разговор!",f:()=>0,c:[["#ffb454","#f97316"]],d:[["{e:5443038326535759644|💬}",""]]},
-{k:"pinned",t:"Сколько людей закрепляло чат с тобой",s:"Ты всегда у них под рукой!",f:()=>0,c:[["#f472b6","#db2777"]],d:[["📌",""]]},
+{k:"pinned",t:"Сколько людей закрепляло чат с тобой",s:"Ты всегда у них под рукой!",f:()=>0,c:[["#f472b6","#db2777"]],d:[["{e:5397782960512444700|📌}",""]]},
 {k:"nobreak",t:"Самый длинный период без общения",s:"Кому-то не повезло...",f:()=>0,c:[["#55c7ff","#2487d8"]],d:[["{e:5372800046284674872|❄️}",""]]},
 {k:"maxmsgs",t:"Максимум сообщений за 1 день",s:"Пальцы горели!",f:()=>0,c:[["#ff5a5f","#dc2626"]],d:[["🔥",""]]}
 ];
@@ -223,9 +223,9 @@ function put(el,e){ // вставить эмодзи в элемент
   v.muted=true;v.setAttribute("muted","");v.setAttribute("playsinline","");v.setAttribute("webkit-playsinline","");v.loop=true;v.autoplay=true;v.addEventListener("error",fb);v.src=e.u;el.appendChild(v);
   const pr=v.play();if(pr&&pr.catch)pr.catch(fb)}
  else if(e.k=="i"){const m=document.createElement("img");m.src=e.u;el.appendChild(m)}}
-const STILLONLY=new Set(["5289761157173775507","5983201451227222757","5372800046284674872","5418028873705069979"]);   // тяжёлая анимация / нужна статика
-const ANIMID=new Set(),AN={};   // эмодзи с оригинальной анимацией, но в виде лёгкого WebP (собирает сервер)
-const animUrl=id=>AN[id]||(AN[id]=fetch(API+"/api/emoji/"+id+"?anim=192").then(async r=>{const m=(r.headers.get("X-Sheet")||"").split(",").map(Number);if(!r.ok||m.length<4||m.some(isNaN))throw 0;
+const STILLONLY=new Set(["5289761157173775507","5983201451227222757","5372800046284674872","5418028873705069979","5397782960512444700"]);   // тяжёлая анимация / нужна статика
+const ANIMID=new Set(["5372800046284674872","5418028873705069979","5397782960512444700"]),AN={};   // эмодзи с оригинальной анимацией, но в виде лёгкого WebP (собирает сервер)
+const animUrl=id=>AN[id]||(AN[id]=fetch(API+"/api/emoji/"+id+"?anim=256").then(async r=>{const m=(r.headers.get("X-Sheet")||"").split(",").map(Number);if(!r.ok||m.length<4||m.some(isNaN))throw 0;
  const u=URL.createObjectURL(await r.blob()),im=new Image();im.src=u;await (im.decode?im.decode():Promise.resolve());return{u,cols:m[0],rows:m[1],n:m[2],dur:m[3]}}).catch(()=>null));
 function animate(el,id){animUrl(id).then(a=>{if(!a||!el.isConnected)return;   // спрайт-лист: одна картинка, кадры просто листаются — почти без нагрузки
  const b=document.createElement("div");b.style.cssText=`width:100%;height:100%;background:url(${a.u}) 0 0/${a.cols*100}% ${a.rows*100}% no-repeat`;
@@ -253,7 +253,7 @@ function stillOld(id,z){z=z||128; // неподвижная картинка э�
      if(sum>0){url=cv.toDataURL("image/png");break}}
     try{an.destroy()}catch(x){}res(url)})
   }catch(x){res(null)}})).catch(()=>null)}
-const HQ=new Set(["5289761157173775507","5983201451227222757","5372800046284674872","5418028873705069979"]);   // эмодзи, которые рисуем в высоком качестве (кадр из векторной анимации)
+const HQ=new Set(["5289761157173775507","5983201451227222757","5372800046284674872","5418028873705069979","5397782960512444700"]);   // эмодзи, которые рисуем в высоком качестве (кадр из векторной анимации)
 const hqPng=id=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),12000);
  return fetch(API+"/api/emoji/"+id+"?png=768",{signal:c.signal}).then(async r=>{clearTimeout(t);if(!r.ok||!(r.headers.get("content-type")||"").startsWith("image"))throw 0;return URL.createObjectURL(await r.blob())})};
 const stillHQ=id=>hqPng(id).catch(()=>thumb(id).then(e=>e.u)).catch(()=>null);   // PNG 512px с сервера; если не вышло — маленькое превью
@@ -328,8 +328,6 @@ function intro(){
 function fx(n,all,key){
  document.querySelectorAll(".cnt").forEach(el=>{const to=+el.dataset.to,t0=performance.now(),D=1300;
   (function f(t){const p=Math.min(1,(t-t0)/D),e=1-Math.pow(1-p,3);el.textContent=Math.round(to*e).toLocaleString("ru");if(p<1)requestAnimationFrame(f)})(t0)});
- if(key=="gifts")fall("gifts",EM.fall,12,1.3,2.3,1.2,5500);
- if(key=="nft")fall("nft",EM.nft,14,.7,1.8,.6,3600); // 2–3 секунды
  if(n==2&&key!="days"&&key!="gifts"&&key!="nft"){const E=["🎉","✨","⭐","🎊","💫"];for(let k=0;k<26;k++){const c=document.createElement("span");c.className="cf";if(E[k%5]=="⭐")c.innerHTML=CE(EM.star,"⭐");else c.textContent=E[k%5];
   c.style.cssText=`left:${Math.random()*100}%;animation-delay:${Math.random()*.8}s;animation-duration:${2+Math.random()*2}s;font-size:${16+Math.random()*18}px`;app.appendChild(c);setTimeout(()=>c.remove(),5000)}}
  hydrate();
