@@ -469,10 +469,10 @@ async def ul_card(T, lid):
     app = await q("JOIN profiles p ON p.user_id=l.user_id WHERE l.link_id=$1")
     app_n = await q("JOIN profiles p ON p.user_id=l.user_id WHERE l.link_id=$1 AND l.is_new")
     await scr(T, f"🔗 <b>{E(r['name'])}</b>\n<code>{E(src_link(r['name']))}</code>\nСоздана: {r['created'].astimezone(TZ):%d.%m.%Y %H:%M}\n\n"
-                 f"👥 Нажали старт: <b>{clicks}</b> (уник: <b>{new_n}</b>)\n"
+                 f"👥 Нажали старт: <b>{uniq}</b> (новых: <b>{new_n}</b>)\n"
                  f"✅ Выполнили задания (подписка / заявки): <b>{done}</b> (новых: <b>{done_n}</b>)\n"
                  f"📱 Зашли в мини-апп: <b>{app}</b> (новых: <b>{app_n}</b>)\n\n"
-                 f"<i>Уник / новых — люди, которые до этой ссылки ни разу не заходили в бота. Всего уникальных людей: {uniq}.</i>",
+                 f"<i>Каждый человек считается один раз, сколько бы раз он ни нажимал старт. «Новых» — те, кого эта ссылка привела в бота впервые (до этого они не заходили). Всего переходов по ссылке, включая повторные: {clicks}.</i>",
               kb([cb("🔄 Обновить", f"lk:{lid}")], [cb("📋 Текущие ссылки", "ull")], [cb("⬅️ Меню", "adm")]))
 
 async def tt_menu(T, note=""):

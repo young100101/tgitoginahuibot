@@ -73,6 +73,19 @@ async def get_emoji(eid: str, thumb: bool = False):
     return EMOJI_CACHE[key]
 
 PNG_CACHE: dict = {}
+ANIM_CACHE: dict = {}
+
+def render_anim(tgs_json: bytes, size: int) -> bytes:  # вся анимация -> лёгкий анимированный WebP (браузер играет его сам, без lottie и лагов)
+    import io
+    from rlottie_python import LottieAnimation
+    a = LottieAnimation.from_data(tgs_json.decode("utf-8"))
+    n = max(1, a.lottie_animation_get_totalframe()); fr = a.lottie_animation_get_framerate() or 30
+    step = max(1, round(fr / 24), -(-n // 90))  # не больше ~24 кадров/с и ~90 кадров
+    fs = [a.render_pillow_frame(frame_num=i, width=size, height=size) for i in range(0, n, step)]
+    buf = io.BytesIO()
+    fs[0].save(buf, "WEBP", save_all=True, append_images=fs[1:], duration=max(20, int(1000 * step / fr)), loop=0, quality=72, method=3)
+    return buf.getvalue()
+
 
 def render_png(tgs_json: bytes, size: int) -> bytes:  # один кадр векторной анимации -> PNG высокого качества
     import io
@@ -87,8 +100,18 @@ def render_png(tgs_json: bytes, size: int) -> bytes:  # один кадр век
     buf = io.BytesIO(); best.save(buf, "PNG"); return buf.getvalue()
 
 @app.get("/api/emoji/{eid}")
-async def emoji(eid: str, thumb: int = 0, png: int = 0):  # thumb=1 -> неподвижная картинка; png=512 -> кадр в высоком качестве
+async def emoji(eid: str, thumb: int = 0, png: int = 0, anim: int = 0):  # thumb=1 -> неподвижная картинка; png=512 -> кадр в высоком качестве
     if eid not in EMOJI_IDS: raise HTTPException(404)
+    if anim:
+        size = min(max(anim, 64), 512); key = (eid, size)
+        try:
+            if key not in ANIM_CACHE:
+                body, mime = await get_emoji(eid)
+                if mime != "application/json": raise RuntimeError("не векторная анимация: " + mime)
+                ANIM_CACHE[key] = await asyncio.to_thread(render_anim, body, size)
+            return Response(content=ANIM_CACHE[key], media_type="image/webp", headers={"Cache-Control": "public, max-age=86400"})
+        except Exception as e:
+            print("EMOJI ANIM ERROR", eid, repr(e)); raise HTTPException(502, str(e))
     if png:
         size = min(max(png, 64), 1024); key = (eid, size)
         try:

@@ -221,11 +221,14 @@ function put(el,e){ // вставить эмодзи в элемент
   const pr=v.play();if(pr&&pr.catch)pr.catch(fb)}
  else if(e.k=="i"){const m=document.createElement("img");m.src=e.u;el.appendChild(m)}}
 const STILLONLY=new Set(["5289761157173775507","5983201451227222757"]);   // тяжёлая анимация / нужна статика
+const ANIMID=new Set(["5289761157173775507"]),AN={};   // эмодзи с оригинальной анимацией, но в виде лёгкого WebP (собирает сервер)
+const animUrl=id=>AN[id]||(AN[id]=fetch(API+"/api/emoji/"+id+"?anim=256").then(async r=>{if(!r.ok||!(r.headers.get("content-type")||"").includes("webp"))throw 0;return URL.createObjectURL(await r.blob())}).catch(()=>null));
+function animate(el,id){animUrl(id).then(u=>{if(!u)return;const im=el.querySelector("img");if(!im)return;const n=new Image();n.src=u;(n.decode?n.decode():Promise.resolve()).then(()=>{im.src=u}).catch(()=>{})})}
 function hydrate(){document.querySelectorAll(".ce:not(.ok)").forEach(el=>{el.classList.add("ok");const id=el.dataset.ce;
- if(STILLONLY.has(id)||el.closest("#sh,.li,.cf,.tot,.stat"))still(id).then(u=>u?put(el,{k:"i",u}):loadEmoji(id).then(e=>put(el,e))); // в списках, плашке и конфетти — неподвижные (легче для телефона)
+ if(STILLONLY.has(id)||el.closest("#sh,.li,.cf,.tot,.stat"))still(id).then(u=>{if(u){put(el,{k:"i",u});if(ANIMID.has(id)&&!el.closest("#sh,.li,.cf,.tot,.stat"))animate(el,id)}else loadEmoji(id).then(e=>put(el,e))}); // в списках, плашке и конфетти — неподвижные (легче для телефона)
  else loadEmoji(id).then(e=>put(el,e))})}
 const ST={};
-setTimeout(()=>{try{HQ.forEach(id=>still(id))}catch(e){}},300);   // заранее готовим эти эмодзи, чтобы к слайду уже были на месте
+setTimeout(()=>{try{HQ.forEach(id=>still(id));ANIMID.forEach(animUrl)}catch(e){}},300);   // заранее готовим эти эмодзи, чтобы к слайду уже были на месте
 function stillOld(id,z){z=z||128; // неподвижная картинка эмодзи (один кадр) — чтобы падающие не нагружали экран
  return loadEmoji(id).then(e=>new Promise(res=>{
   if(!e)return res(null);
@@ -330,8 +333,13 @@ const BGI={
   ["heart",27,33,30,-14,.15],["bear",66,38,30,12,.15],["bear",25,62,32,-10,.15],["heart",64,64,30,10,.15]],
  nft:[["pepe_bg",6,14,50,-12,.2],["pepe_bg",74,18,42,12,.19],["pepe_bg",10,50,36,10,.17],["pepe_bg",80,54,46,-10,.2],["pepe_bg",8,76,42,8,.17],["pepe_bg",70,80,38,-12,.19],["pepe_bg",44,9,26,6,.13],
   ["pepe_bg",26,34,30,-10,.15],["pepe_bg",67,40,30,12,.15],["pepe_bg",24,63,32,10,.15],["pepe_bg",63,65,30,-8,.15]]};
-const AR={bear:220/216,heart:210/220,pepe_bg:260/249};
-const bgi=k=>BGI[k]?`<div class="bgi">${BGI[k].map(([f,x,y,w,r,o])=>`<i style="left:${x}%;top:${y}%;width:${w}px;height:${(w*AR[f]).toFixed(1)}px;opacity:${o};transform:rotate(${r}deg);--sm:url(/cards/${f}.webp)"></i>`).join("")}</div>`:"";
+const AR={bear:220/216,heart:210/220,pepe_bg:260/249,bubble:1,bolt:1};
+const SV={bubble:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M16 12h68a12 12 0 0 1 12 12v36a12 12 0 0 1-12 12H50L28 94V72h-12A12 12 0 0 1 4 60V24a12 12 0 0 1 12-12z"/></svg>',
+ bolt:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M60 2 16 56h28l-8 42 48-58H54z"/></svg>'};
+const LAY=[[7,15,46,-12,.2],[76,18,40,14,.2],[12,47,32,10,.17],[80,52,36,-10,.19],[9,74,38,8,.17],[72,78,44,-14,.21],[46,88,26,12,.14],[45,8,24,-8,.14],[27,33,28,-14,.15],[66,38,28,12,.15],[25,62,30,-10,.15],[64,64,28,10,.15]];
+BGI.dialog=LAY.map(([x,y,w,r,o],i)=>["bubble",x,y,w,i%2?r:-r,o]);
+BGI.fast=LAY.map(([x,y,w,r,o])=>["bolt",x,y,w,r*.6,o]);
+const bgi=k=>BGI[k]?`<div class="bgi">${BGI[k].map(([f,x,y,w,r,o])=>`<i style="left:${x}%;top:${y}%;width:${w}px;height:${(w*AR[f]).toFixed(1)}px;opacity:${o};transform:rotate(${r}deg);--sm:url(${SV[f]?`'data:image/svg+xml,${encodeURIComponent(SV[f])}'`:`/cards/${f}.webp`})"></i>`).join("")}</div>`:"";
 const bstars=()=>`<div class="bst">${BST.map(([x,y,w,r,o])=>`<i style="left:${x}%;top:${y}%;width:${w}px;height:${w}px;opacity:${o};transform:rotate(${r}deg);--sm:${STAR}"></i>`).join("")}</div>`;
 const RT=[1.44,1.24,1.31];   // пропорции трёх звёздочек
 function stars(tint){let h="";for(let n=0;n<18;n++){const k=Math.floor(Math.random()*3),q=SP[k],w=(q.w*(.7+Math.random()*.5)).toFixed(1),r=(Math.random()<.5?-1:1)*(90+Math.random()*270);
