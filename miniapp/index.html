@@ -224,7 +224,7 @@ function put(el,e){ // вставить эмодзи в элемент
   const pr=v.play();if(pr&&pr.catch)pr.catch(fb)}
  else if(e.k=="i"){const m=document.createElement("img");m.src=e.u;el.appendChild(m)}}
 const STILLONLY=new Set(["5289761157173775507","5983201451227222757","5372800046284674872","5418028873705069979","5397782960512444700"]);   // тяжёлая анимация / нужна статика
-const ANIMID=new Set(["5372800046284674872","5418028873705069979","5397782960512444700"]),AN={};   // эмодзи с оригинальной анимацией, но в виде лёгкого WebP (собирает сервер)
+const ANIMID=new Set(["5289761157173775507","5372800046284674872","5418028873705069979","5397782960512444700"]),AN={};   // эмодзи с оригинальной анимацией, но в виде лёгкого WebP (собирает сервер)
 const animUrl=id=>AN[id]||(AN[id]=fetch(API+"/api/emoji/"+id+"?anim=256").then(async r=>{const m=(r.headers.get("X-Sheet")||"").split(",").map(Number);if(!r.ok||m.length<4||m.some(isNaN))throw 0;
  const u=URL.createObjectURL(await r.blob()),im=new Image();im.src=u;await (im.decode?im.decode():Promise.resolve());return{u,cols:m[0],rows:m[1],n:m[2],dur:m[3]}}).catch(()=>null));
 function animate(el,id){loadEmoji(id).then(e=>{   // настоящая векторная анимация (lottie): любой размер без потери качества, плавно как в Telegram
@@ -232,8 +232,13 @@ function animate(el,id){loadEmoji(id).then(e=>{   // настоящая вект
  if(e&&e.k=="l"&&window.lottie){try{
   const old=el.querySelector("img"),box=document.createElement("div");
   el.style.position="relative";box.style.cssText="position:absolute;left:0;top:0;width:100%;height:100%;opacity:0";el.appendChild(box);
-  const an=lottie.loadAnimation({container:box,renderer:"svg",loop:true,autoplay:true,animationData:JSON.parse(JSON.stringify(e.d)),rendererSettings:{preserveAspectRatio:"xMidYMid meet"}});
-  an.addEventListener("DOMLoaded",()=>{box.style.opacity=1;if(old)old.remove()});
+  const heavy=id=="5289761157173775507";   // мишка сложнее — рисуем на canvas (легче для телефона)
+  const an=lottie.loadAnimation({container:box,renderer:heavy?"canvas":"svg",loop:true,autoplay:true,animationData:JSON.parse(JSON.stringify(e.d)),rendererSettings:heavy?{preserveAspectRatio:"xMidYMid meet",clearCanvas:true,dpr:Math.min(2.5,window.devicePixelRatio||2)}:{preserveAspectRatio:"xMidYMid meet"}});
+  an.addEventListener("DOMLoaded",()=>{box.style.opacity=1;if(old)old.remove();
+   let n=0,t0=0;const probe=t=>{if(!el.isConnected)return;if(!t0)t0=t;n++;   // страховка от лагов: если телефон не тянет (<40 кадров/с), переключаем на лёгкий вариант
+    if(t-t0<1600)return requestAnimationFrame(probe);
+    if(n/((t-t0)/1000)<40){try{an.destroy()}catch(x){}box.remove();if(old)el.appendChild(old);animateSprite(el,id)}};
+   setTimeout(()=>requestAnimationFrame(probe),400)});
   return}catch(x){}}
  animateSprite(el,id)}).catch(()=>animateSprite(el,id))}
 function animateSprite(el,id){animUrl(id).then(a=>{if(!a||!el.isConnected)return;   // спрайт-лист: одна картинка, кадры просто листаются — почти без нагрузки
