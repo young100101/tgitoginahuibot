@@ -157,7 +157,7 @@ body.sheet .fp,body.sheet .cf,body.sheet .emo,body.sheet .tier::after{animation-
 .intro .fg img{transform:translateX(9%)}
 /* полупрозрачные картинки на фоне слайдов (как звёздочки в «Рейтинге») */
 /* эмодзи-«трафареты» Telegram приходят чёрными — красим в белый */
-.ce[data-ce="5983201451227222757"],.ce[data-ce="5289761157173775507"]{filter:brightness(0) invert(1)}
+.ce[data-ce="5983201451227222757"]{filter:brightness(0) invert(1)}
 .bgi{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .bgi i{position:absolute;background:#fff;-webkit-mask:var(--sm) center/contain no-repeat;mask:var(--sm) center/contain no-repeat}
 @keyframes pls{from{transform:scale(1);opacity:.9}to{transform:scale(1.45);opacity:0}}
@@ -219,8 +219,9 @@ function put(el,e){ // вставить эмодзи в элемент
   v.muted=true;v.setAttribute("muted","");v.setAttribute("playsinline","");v.setAttribute("webkit-playsinline","");v.loop=true;v.autoplay=true;v.addEventListener("error",fb);v.src=e.u;el.appendChild(v);
   const pr=v.play();if(pr&&pr.catch)pr.catch(fb)}
  else if(e.k=="i"){const m=document.createElement("img");m.src=e.u;el.appendChild(m)}}
+const STILLONLY=new Set(["5289761157173775507","5983201451227222757"]);   // тяжёлая анимация / нужна статика
 function hydrate(){document.querySelectorAll(".ce:not(.ok)").forEach(el=>{el.classList.add("ok");const id=el.dataset.ce;
- if(el.closest("#sh,.li,.cf,.tot,.stat"))still(id).then(u=>u?put(el,{k:"i",u}):loadEmoji(id).then(e=>put(el,e))); // в списках, плашке и конфетти — неподвижные (легче для телефона)
+ if(STILLONLY.has(id)||el.closest("#sh,.li,.cf,.tot,.stat"))still(id).then(u=>u?put(el,{k:"i",u}):loadEmoji(id).then(e=>put(el,e))); // в списках, плашке и конфетти — неподвижные (легче для телефона)
  else loadEmoji(id).then(e=>put(el,e))})}
 const ST={};
 function stillOld(id){ // неподвижная картинка эмодзи (один кадр) — чтобы падающие не нагружали экран
