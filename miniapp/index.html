@@ -222,8 +222,14 @@ function put(el,e){ // вставить эмодзи в элемент
  else if(e.k=="i"){const m=document.createElement("img");m.src=e.u;el.appendChild(m)}}
 const STILLONLY=new Set(["5289761157173775507","5983201451227222757"]);   // тяжёлая анимация / нужна статика
 const ANIMID=new Set(["5289761157173775507"]),AN={};   // эмодзи с оригинальной анимацией, но в виде лёгкого WebP (собирает сервер)
-const animUrl=id=>AN[id]||(AN[id]=fetch(API+"/api/emoji/"+id+"?anim=256").then(async r=>{if(!r.ok||!(r.headers.get("content-type")||"").includes("webp"))throw 0;return URL.createObjectURL(await r.blob())}).catch(()=>null));
-function animate(el,id){animUrl(id).then(u=>{if(!u)return;const im=el.querySelector("img");if(!im)return;const n=new Image();n.src=u;(n.decode?n.decode():Promise.resolve()).then(()=>{im.src=u}).catch(()=>{})})}
+const animUrl=id=>AN[id]||(AN[id]=fetch(API+"/api/emoji/"+id+"?anim=192").then(async r=>{const m=(r.headers.get("X-Sheet")||"").split(",").map(Number);if(!r.ok||m.length<4||m.some(isNaN))throw 0;
+ const u=URL.createObjectURL(await r.blob()),im=new Image();im.src=u;await (im.decode?im.decode():Promise.resolve());return{u,cols:m[0],rows:m[1],n:m[2],dur:m[3]}}).catch(()=>null));
+function animate(el,id){animUrl(id).then(a=>{if(!a||!el.isConnected)return;   // спрайт-лист: одна картинка, кадры просто листаются — почти без нагрузки
+ const b=document.createElement("div");b.style.cssText=`width:100%;height:100%;background:url(${a.u}) 0 0/${a.cols*100}% ${a.rows*100}% no-repeat`;
+ const old=el.querySelector("img");el.textContent="";el.appendChild(b);let last=-1,t0=performance.now();
+ const tick=t=>{if(!el.isConnected)return;const f=Math.floor(((t-t0)%a.dur)/a.dur*a.n);
+  if(f!=last){last=f;const c=f%a.cols,r=Math.floor(f/a.cols);b.style.backgroundPosition=`${a.cols>1?c/(a.cols-1)*100:0}% ${a.rows>1?r/(a.rows-1)*100:0}%`}
+  requestAnimationFrame(tick)};requestAnimationFrame(tick)})}
 function hydrate(){document.querySelectorAll(".ce:not(.ok)").forEach(el=>{el.classList.add("ok");const id=el.dataset.ce;
  if(STILLONLY.has(id)||el.closest("#sh,.li,.cf,.tot,.stat"))still(id).then(u=>{if(u){put(el,{k:"i",u});if(ANIMID.has(id)&&!el.closest("#sh,.li,.cf,.tot,.stat"))animate(el,id)}else loadEmoji(id).then(e=>put(el,e))}); // в списках, плашке и конфетти — неподвижные (легче для телефона)
  else loadEmoji(id).then(e=>put(el,e))})}

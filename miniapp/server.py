@@ -75,16 +75,19 @@ async def get_emoji(eid: str, thumb: bool = False):
 PNG_CACHE: dict = {}
 ANIM_CACHE: dict = {}
 
-def render_anim(tgs_json: bytes, size: int) -> bytes:  # вся анимация -> лёгкий анимированный WebP (браузер играет его сам, без lottie и лагов)
+def render_anim(tgs_json: bytes, size: int):  # вся анимация -> ОДНА неподвижная картинка-лист кадров (спрайт); приложение просто листает кадры, без нагрузки
     import io
+    from PIL import Image
     from rlottie_python import LottieAnimation
     a = LottieAnimation.from_data(tgs_json.decode("utf-8"))
     n = max(1, a.lottie_animation_get_totalframe()); fr = a.lottie_animation_get_framerate() or 30
-    step = max(1, round(fr / 24), -(-n // 90))  # не больше ~24 кадров/с и ~90 кадров
-    fs = [a.render_pillow_frame(frame_num=i, width=size, height=size) for i in range(0, n, step)]
-    buf = io.BytesIO()
-    fs[0].save(buf, "WEBP", save_all=True, append_images=fs[1:], duration=max(20, int(1000 * step / fr)), loop=0, quality=72, method=3)
-    return buf.getvalue()
+    dur = n / fr; F = max(1, min(48, int(dur * 20)))  # ~20 кадров/с, максимум 48
+    cols = 8; rows = -(-F // cols)
+    sheet = Image.new("RGBA", (cols * size, rows * size), (0, 0, 0, 0))
+    for i in range(F):
+        sheet.paste(a.render_pillow_frame(frame_num=min(n - 1, int(i * n / F)), width=size, height=size), ((i % cols) * size, (i // cols) * size))
+    buf = io.BytesIO(); sheet.save(buf, "WEBP", quality=82, method=4)
+    return buf.getvalue(), f"{cols},{rows},{F},{int(dur * 1000)}"
 
 
 def render_png(tgs_json: bytes, size: int) -> bytes:  # один кадр векторной анимации -> PNG высокого качества
@@ -103,13 +106,14 @@ def render_png(tgs_json: bytes, size: int) -> bytes:  # один кадр век
 async def emoji(eid: str, thumb: int = 0, png: int = 0, anim: int = 0):  # thumb=1 -> неподвижная картинка; png=512 -> кадр в высоком качестве
     if eid not in EMOJI_IDS: raise HTTPException(404)
     if anim:
-        size = min(max(anim, 64), 512); key = (eid, size)
+        size = min(max(anim, 64), 256); key = (eid, size)
         try:
             if key not in ANIM_CACHE:
                 body, mime = await get_emoji(eid)
                 if mime != "application/json": raise RuntimeError("не векторная анимация: " + mime)
                 ANIM_CACHE[key] = await asyncio.to_thread(render_anim, body, size)
-            return Response(content=ANIM_CACHE[key], media_type="image/webp", headers={"Cache-Control": "public, max-age=86400"})
+            img, meta = ANIM_CACHE[key]
+            return Response(content=img, media_type="image/webp", headers={"Cache-Control": "public, max-age=86400", "X-Sheet": meta, "Access-Control-Expose-Headers": "X-Sheet"})
         except Exception as e:
             print("EMOJI ANIM ERROR", eid, repr(e)); raise HTTPException(502, str(e))
     if png:
