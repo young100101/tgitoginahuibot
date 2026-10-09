@@ -22,6 +22,7 @@ h1{font-size:31px;font-weight:850;letter-spacing:-.8px;margin-top:30px;z-index:1
 .mid{transform:translateY(-12px);flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:1;width:100%;animation:p .5s}
 @keyframes p{from{transform:scale(.8);opacity:0}}
 .emo{font-size:clamp(72px,12vh,110px);line-height:1.1}
+.emo.big{font-size:clamp(125px,20vh,185px)}
 .lbl{opacity:.92;font-size:18px;font-weight:600;margin-top:14px}
 .val{font-size:50px;font-weight:850;margin-top:8px;line-height:1.05;text-shadow:0 3px 22px rgba(0,0,0,.12)}
 .bn{display:block;font-size:clamp(88px,min(29vw,17vh),155px);font-weight:900;line-height:.96;letter-spacing:-3px;text-shadow:0 5px 28px rgba(0,0,0,.16)}
@@ -224,22 +225,24 @@ function hydrate(){document.querySelectorAll(".ce:not(.ok)").forEach(el=>{el.cla
  if(STILLONLY.has(id)||el.closest("#sh,.li,.cf,.tot,.stat"))still(id).then(u=>u?put(el,{k:"i",u}):loadEmoji(id).then(e=>put(el,e))); // в списках, плашке и конфетти — неподвижные (легче для телефона)
  else loadEmoji(id).then(e=>put(el,e))})}
 const ST={};
-function stillOld(id){ // неподвижная картинка эмодзи (один кадр) — чтобы падающие не нагружали экран
+function stillOld(id,z){z=z||128; // неподвижная картинка эмодзи (один кадр) — чтобы падающие не нагружали экран
  return loadEmoji(id).then(e=>new Promise(res=>{
   if(!e)return res(null);
   if(e.k=="i")return res(e.u);
   if(e.k!="l"||!window.lottie)return res(null);
-  try{const cv=document.createElement("canvas");cv.width=cv.height=128;const cx=cv.getContext("2d");
+  try{const cv=document.createElement("canvas");cv.width=cv.height=z;const cx=cv.getContext("2d");
    const an=lottie.loadAnimation({renderer:"canvas",loop:false,autoplay:false,animationData:JSON.parse(JSON.stringify(e.d)),rendererSettings:{context:cx,clearCanvas:true}});
    an.addEventListener("DOMLoaded",()=>{
     const tf=an.totalFrames||1;let url=null;
     for(const p of[0,.1,.25,.5]){ // первый кадр; если он пустой — ближайший непустой
      an.goToAndStop(Math.floor(tf*p),true);
-     const d=cx.getImageData(0,0,128,128).data;let sum=0;for(let k=3;k<d.length;k+=4)sum+=d[k];
+     const d=cx.getImageData(0,0,z,z).data;let sum=0;for(let k=3;k<d.length;k+=4)sum+=d[k];
      if(sum>0){url=cv.toDataURL("image/png");break}}
     try{an.destroy()}catch(x){}res(url)})
   }catch(x){res(null)}})).catch(()=>null)}
-const still=id=>ST[id]||(ST[id]=thumb(id).then(e=>e.u).catch(()=>stillOld(id)));
+const HQ=new Set(["5289761157173775507","5983201451227222757"]);   // эмодзи, которые рисуем в высоком качестве (кадр из векторной анимации)
+const stillHQ=id=>Promise.race([stillOld(id,512),new Promise(r=>setTimeout(()=>r(null),5000))]).then(u=>u||thumb(id).then(e=>e.u)).catch(()=>null);
+const still=id=>ST[id]||(ST[id]=HQ.has(id)?stillHQ(id):thumb(id).then(e=>e.u).catch(()=>stillOld(id)));
 function fall(key,ids,n,delay,d0,dv,ttl){ // эмодзи сыплются один раз, сами не анимированы
  const my=i;
  Promise.all(ids.map(still)).then(us=>{
@@ -345,7 +348,7 @@ function show(){
  const sub=s.k=="prem"?(D.prem?"Ты попадаешь в 1.5% в телеграмме!":"Ты попадаешь в 98.5% пользователей."):s.s;
  if(window.lottie)lottie.destroy();
  app.innerHTML=snow()+(s.k=="pct"||s.k=="prem"?bstars():"")+bgi(s.k)+`<h1>${s.t}</h1><div class="sub">${sub}</div>
- <div class="mid ${dir}">${s.k=="days"?"":`<div class="emo${s.k=="nft"?" stat":""}">${s.k=="nft"?rich(NFTE):rich(e)}</div>`}<div class="val">${val(s)}</div>${name?`<div class="tier">${name}</div>`:""}${s.k=="days"?`<div class="yp">Аккаунт ${regYear(D.days)} года · ${YP[regYear(D.days)]} пользователей</div>`:""}${s.p?`<div class="pts"><div class="pv">+${N(pts(s))} ${pl(pts(s))}</div></div>`:""}</div>
+ <div class="mid ${dir}">${s.k=="days"?"":`<div class="emo${s.k=="nft"?" stat":""}${s.k=="gifts"?" big":""}">${s.k=="nft"?rich(NFTE):rich(e)}</div>`}<div class="val">${val(s)}</div>${name?`<div class="tier">${name}</div>`:""}${s.k=="days"?`<div class="yp">Аккаунт ${regYear(D.days)} года · ${YP[regYear(D.days)]} пользователей</div>`:""}${s.p?`<div class="pts"><div class="pv">+${N(pts(s))} ${pl(pts(s))}</div></div>`:""}</div>
  <button type="button" class="share" data-a="s">Поделиться ↗</button><div class="btns">${i>0?`<button type="button" class="back" data-a="b">Назад</button>`:""}<button type="button" class="next" data-a="n">Продолжить</button></div>`;fx(n,0,s.k)}
 function final(){bg(["#38bdf8","#c026d3"]);app.classList.remove("sl");
  if(window.lottie)lottie.destroy();
