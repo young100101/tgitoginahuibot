@@ -72,9 +72,33 @@ async def get_emoji(eid: str, thumb: bool = False):
         else: EMOJI_CACHE[key] = (body, "image/webp")
     return EMOJI_CACHE[key]
 
+PNG_CACHE: dict = {}
+
+def render_png(tgs_json: bytes, size: int) -> bytes:  # один кадр векторной анимации -> PNG высокого качества
+    import io
+    from rlottie_python import LottieAnimation
+    a = LottieAnimation.from_data(tgs_json.decode("utf-8"))
+    n = max(1, a.lottie_animation_get_totalframe())
+    best = None
+    for f in (0, n // 10, n // 4, n // 2):  # первый кадр; если пустой — ближайший непустой
+        img = a.render_pillow_frame(frame_num=min(f, n - 1), width=size, height=size)
+        best = best or img
+        if img.getchannel("A").getextrema()[1] > 0: best = img; break
+    buf = io.BytesIO(); best.save(buf, "PNG"); return buf.getvalue()
+
 @app.get("/api/emoji/{eid}")
-async def emoji(eid: str, thumb: int = 0):  # thumb=1 -> неподвижная картинка (для iPhone и падающих эмодзи)
+async def emoji(eid: str, thumb: int = 0, png: int = 0):  # thumb=1 -> неподвижная картинка; png=512 -> кадр в высоком качестве
     if eid not in EMOJI_IDS: raise HTTPException(404)
+    if png:
+        size = min(max(png, 64), 1024); key = (eid, size)
+        try:
+            if key not in PNG_CACHE:
+                body, mime = await get_emoji(eid)
+                if mime != "application/json": raise RuntimeError("не векторная анимация: " + mime)
+                PNG_CACHE[key] = await asyncio.to_thread(render_png, body, size)
+            return Response(content=PNG_CACHE[key], media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
+        except Exception as e:
+            print("EMOJI PNG ERROR", eid, repr(e)); raise HTTPException(502, str(e))
     try: body, mime = await get_emoji(eid, bool(thumb))
     except Exception as e:
         print("EMOJI ERROR", eid, repr(e)); raise HTTPException(502, str(e))

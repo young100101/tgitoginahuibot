@@ -186,7 +186,7 @@ const S=[
  d:[["🔒","У тебя нет Telegram Premium"],["{p}","У тебя есть Telegram Premium"]]},
 {k:"gifts",p:v=>Math.floor(v/5),pr:"1 балл за каждые 5 подарков",t:"Обычные подарки",s:"Сколько их в твоём профиле?",u:"шт.",f:v=>v<=3?0:v<=10?1:2,
  c:[["#ff5fa2","#ff2d75"],["#ff4f9a","#d91e72"],["#ff3d81","#b5175b"]],
- d:[["{e:5289761157173775507|🎁}","Скромная полка"],["{e:5289761157173775507|🎁}","Неплохая коллекция"],["{e:5289761157173775507|🎁}","Подарочный магнат"]]},
+ d:[["{e:5289761157173775507|}","Скромная полка"],["{e:5289761157173775507|}","Неплохая коллекция"],["{e:5289761157173775507|}","Подарочный магнат"]]},
 {k:"nft",p:v=>v,pr:"1 балл за каждый NFT-подарок",t:"NFT-подарки",s:"Улучшенные подарки в профиле",u:"шт.",f:v=>v<=3?0:v<=10?1:2,
  c:[["#06b6d4","#2563eb"],["#8b5cf6","#ec4899"],["#fbbf24","#f43f5e"]],
  d:[["🧸","Начинающий коллекционер"],["💠","Серьёзный коллекционер"],["🐉","Легенда рынка"]]},
@@ -225,6 +225,7 @@ function hydrate(){document.querySelectorAll(".ce:not(.ok)").forEach(el=>{el.cla
  if(STILLONLY.has(id)||el.closest("#sh,.li,.cf,.tot,.stat"))still(id).then(u=>u?put(el,{k:"i",u}):loadEmoji(id).then(e=>put(el,e))); // в списках, плашке и конфетти — неподвижные (легче для телефона)
  else loadEmoji(id).then(e=>put(el,e))})}
 const ST={};
+setTimeout(()=>{try{HQ.forEach(id=>still(id))}catch(e){}},300);   // заранее готовим эти эмодзи, чтобы к слайду уже были на месте
 function stillOld(id,z){z=z||128; // неподвижная картинка эмодзи (один кадр) — чтобы падающие не нагружали экран
  return loadEmoji(id).then(e=>new Promise(res=>{
   if(!e)return res(null);
@@ -241,7 +242,9 @@ function stillOld(id,z){z=z||128; // неподвижная картинка э�
     try{an.destroy()}catch(x){}res(url)})
   }catch(x){res(null)}})).catch(()=>null)}
 const HQ=new Set(["5289761157173775507","5983201451227222757"]);   // эмодзи, которые рисуем в высоком качестве (кадр из векторной анимации)
-const stillHQ=id=>Promise.race([stillOld(id,512),new Promise(r=>setTimeout(()=>r(null),5000))]).then(u=>u||thumb(id).then(e=>e.u)).catch(()=>null);
+const hqPng=id=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),12000);
+ return fetch(API+"/api/emoji/"+id+"?png=512",{signal:c.signal}).then(async r=>{clearTimeout(t);if(!r.ok||!(r.headers.get("content-type")||"").startsWith("image"))throw 0;return URL.createObjectURL(await r.blob())})};
+const stillHQ=id=>hqPng(id).catch(()=>thumb(id).then(e=>e.u)).catch(()=>null);   // PNG 512px с сервера; если не вышло — маленькое превью
 const still=id=>ST[id]||(ST[id]=HQ.has(id)?stillHQ(id):thumb(id).then(e=>e.u).catch(()=>stillOld(id)));
 function fall(key,ids,n,delay,d0,dv,ttl){ // эмодзи сыплются один раз, сами не анимированы
  const my=i;
@@ -271,7 +274,7 @@ function rolls(){ // случайные значения, но у одного �
  const pn=Math.round((D.days||0)*0.02);D.pinned=pn+" "+pl3(pn,["человек","человека","человек"])}
 const API=""; // бэкенд на том же адресе
 const FB=["🎁","✨","🎀","💝"];   // запасные эмодзи, если картинки не загрузились
-const NFTE='{e:5983201451227222757|🎁}';
+const NFTE='{e:5983201451227222757|}';
 const GIFT='<img class="gimg" src="/cards/gift.webp" alt="" draggable="false" decoding="async">';
 const DEMO={stars:3450,days:640,pct:12,lvl:7,prem:1,gifts:5,nft:2,value:1200,id:0};
 const D={};let i=0;const app=document.getElementById("app");
