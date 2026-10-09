@@ -163,8 +163,7 @@ body.sheet .fp,body.sheet .cf,body.sheet .emo,body.sheet .tier::after{animation-
 .bgi{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .bgi i{position:absolute;background:#fff;-webkit-mask:var(--sm) center/contain no-repeat;mask:var(--sm) center/contain no-repeat}
 
-/* полупрозрачные эмодзи на фоне слайдов (белые силуэты, как остальные фоны) */
-.bgi.bge i{background:none;-webkit-mask:none;mask:none;font-style:normal;line-height:1;filter:brightness(0) invert(1);white-space:nowrap}
+.bgi i.g{background:none;-webkit-mask:none;mask:none;font-style:normal;line-height:1;filter:brightness(0) invert(1);white-space:nowrap}
 @keyframes pls{from{transform:scale(1);opacity:.9}to{transform:scale(1.45);opacity:0}}
 @keyframes bob{50%{transform:translateY(-7px) rotate(-2.5deg)}}
 </style></head><body><div id="app"></div>
@@ -195,11 +194,11 @@ const S=[
  c:[["#06b6d4","#2563eb"],["#8b5cf6","#ec4899"],["#fbbf24","#f43f5e"]],
  d:[["🧸","Начинающий коллекционер"],["💠","Серьёзный коллекционер"],["🐉","Легенда рынка"]]},
 {k:"fast",t:"Самый быстрый ответ",s:"Ты что 24/7 в телеграмме?",f:()=>0,c:[["#ffd426","#ffa800"]],d:[["⚡",""]]},
-{k:"slow",t:"Самый долгий ответ",s:"Как же долго он ждал ответа....",f:()=>0,c:[["#38bdf8","#2563eb"]],d:[["🐌",""]]},
+{k:"slow",t:"Самый долгий ответ",s:"Как же долго он ждал ответа....",f:()=>0,c:[["#38bdf8","#2563eb"]],d:[["{e:5418028873705069979|🕐}",""]]},
 {k:"online",t:"Постоянный онлайн",s:"В этот день ты сидел больше всего в телеграмме!",f:()=>0,c:[["#d946ef","#7c3aed"]],d:[["😈",""]]},
 {k:"dialog",t:"Самый длинный диалог",s:"Вот это был разговор!",f:()=>0,c:[["#ffb454","#f97316"]],d:[["{e:5443038326535759644|💬}",""]]},
 {k:"pinned",t:"Сколько людей закрепляло чат с тобой",s:"Ты всегда у них под рукой!",f:()=>0,c:[["#f472b6","#db2777"]],d:[["📌",""]]},
-{k:"nobreak",t:"Самый длинный период без общения",s:"Кому-то не повезло...",f:()=>0,c:[["#55c7ff","#2487d8"]],d:[["🧊",""]]},
+{k:"nobreak",t:"Самый длинный период без общения",s:"Кому-то не повезло...",f:()=>0,c:[["#55c7ff","#2487d8"]],d:[["{e:5372800046284674872|❄️}",""]]},
 {k:"maxmsgs",t:"Максимум сообщений за 1 день",s:"Пальцы горели!",f:()=>0,c:[["#ff5a5f","#dc2626"]],d:[["🔥",""]]}
 ];
 const EM={prem:"5839049953497844833",days:"5469741319330996757",star:"5406812184359507637",gift:"5280598054901145762",fall:["5283228279988309088","5280598054901145762","5280651583078556009","5280922999241859582"],nft:["5456299600702889290","5454039464357682228","5456504676801338603","5456461744308249091","5456147077824274112"]};
@@ -224,7 +223,7 @@ function put(el,e){ // вставить эмодзи в элемент
   v.muted=true;v.setAttribute("muted","");v.setAttribute("playsinline","");v.setAttribute("webkit-playsinline","");v.loop=true;v.autoplay=true;v.addEventListener("error",fb);v.src=e.u;el.appendChild(v);
   const pr=v.play();if(pr&&pr.catch)pr.catch(fb)}
  else if(e.k=="i"){const m=document.createElement("img");m.src=e.u;el.appendChild(m)}}
-const STILLONLY=new Set(["5289761157173775507","5983201451227222757"]);   // тяжёлая анимация / нужна статика
+const STILLONLY=new Set(["5289761157173775507","5983201451227222757","5372800046284674872","5418028873705069979"]);   // тяжёлая анимация / нужна статика
 const ANIMID=new Set(),AN={};   // эмодзи с оригинальной анимацией, но в виде лёгкого WebP (собирает сервер)
 const animUrl=id=>AN[id]||(AN[id]=fetch(API+"/api/emoji/"+id+"?anim=192").then(async r=>{const m=(r.headers.get("X-Sheet")||"").split(",").map(Number);if(!r.ok||m.length<4||m.some(isNaN))throw 0;
  const u=URL.createObjectURL(await r.blob()),im=new Image();im.src=u;await (im.decode?im.decode():Promise.resolve());return{u,cols:m[0],rows:m[1],n:m[2],dur:m[3]}}).catch(()=>null));
@@ -254,7 +253,7 @@ function stillOld(id,z){z=z||128; // неподвижная картинка э�
      if(sum>0){url=cv.toDataURL("image/png");break}}
     try{an.destroy()}catch(x){}res(url)})
   }catch(x){res(null)}})).catch(()=>null)}
-const HQ=new Set(["5289761157173775507","5983201451227222757"]);   // эмодзи, которые рисуем в высоком качестве (кадр из векторной анимации)
+const HQ=new Set(["5289761157173775507","5983201451227222757","5372800046284674872","5418028873705069979"]);   // эмодзи, которые рисуем в высоком качестве (кадр из векторной анимации)
 const hqPng=id=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),12000);
  return fetch(API+"/api/emoji/"+id+"?png=768",{signal:c.signal}).then(async r=>{clearTimeout(t);if(!r.ok||!(r.headers.get("content-type")||"").startsWith("image"))throw 0;return URL.createObjectURL(await r.blob())})};
 const stillHQ=id=>hqPng(id).catch(()=>thumb(id).then(e=>e.u)).catch(()=>null);   // PNG 512px с сервера; если не вышло — маленькое превью
@@ -303,7 +302,7 @@ function intro(){
  const el=document.createElement("div");el.className="intro";
  el.innerHTML=`<div class="it"><h2>Я хочу узнать результаты своего аккаунта</h2><p>Удержи палец в центре экрана</p></div><div class="ihold" style="--b:${BASE}px;--d:${D0}px"><i class="pulse"></i><i class="hc" style="transform:scale(${s0})"></i><div class="fg"><img src="/cards/pepe.webp" alt="" draggable="false"></div></div>`;
  el.insertAdjacentHTML("afterbegin",stars(true));document.body.appendChild(el);
- const hc=el.querySelector(".hc"),fg=el.querySelector(".fg"),HOLD=1500;
+ const hc=el.querySelector(".hc"),fg=el.querySelector(".fg"),HOLD=1200;
  let p=0,holding=false,done=false,raf=0,last=0,tick1=0;
  const ease=x=>Math.pow(x,1.7);   // разгоняется до самого конца — без остановки перед финалом
  const render=()=>{hc.style.transform=`scale(${s0+(1-s0)*ease(p)})`;fg.style.transform=`scale(${1+.1*p})`};
@@ -351,9 +350,24 @@ const SV={bubble:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
 const LAY=[[7,15,46,-12,.2],[76,18,40,14,.2],[12,47,32,10,.17],[80,52,36,-10,.19],[9,74,38,8,.17],[72,78,44,-14,.21],[46,88,26,12,.14],[45,8,24,-8,.14],[27,33,28,-14,.15],[66,38,28,12,.15],[25,62,30,-10,.15],[64,64,28,10,.15]];
 BGI.dialog=LAY.map(([x,y,w,r,o],i)=>["bubble",x,y,w,i%2?r:-r,o]);
 BGI.fast=LAY.map(([x,y,w,r,o])=>["bolt",x,y,w,r*.6,o]);
-const bgi=k=>BGI[k]?`<div class="bgi">${BGI[k].map(([f,x,y,w,r,o])=>`<i style="left:${x}%;top:${y}%;width:${w}px;height:${(w*AR[f]).toFixed(1)}px;opacity:${o};transform:rotate(${r}deg);--sm:url(${SV[f]?`'data:image/svg+xml,${encodeURIComponent(SV[f])}'`:`/cards/${f}.webp`})"></i>`).join("")}</div>`:"";
-const BGE={online:["😈","🌙","📱","💬","🟢","⚡"],slow:["🐌","⏳","🕰️","💤","🕐","😴"],pinned:["📌","❤️","👥","⭐","📍","🤝"],nobreak:["🧊","❄️","🤐","⏳","🔕","🌫️"],maxmsgs:["🔥","💬","⌨️","✉️","📨","🚀"]};
-const bge=k=>BGE[k]?`<div class="bgi bge">${LAY.map(([x,y,w,r,o],j)=>`<i style="left:${x}%;top:${y}%;font-size:${Math.round(w*.9)}px;opacity:${Math.min(.24,o+.02)};transform:rotate(${j%2?r:-r}deg)">${BGE[k][j%BGE[k].length]}</i>`).join("")}</div>`:"";
+const bgi=k=>BGI[k]?`<div class="bgi">${BGI[k].map(([f,x,y,w,r,o])=>f.startsWith("t:")?`<i class="g" style="left:${x}%;top:${y}%;font-size:${Math.round(w*.9)}px;opacity:${o};transform:rotate(${r}deg)">${f.slice(2)}</i>`:`<i style="left:${x}%;top:${y}%;width:${w}px;height:${(w*AR[f]).toFixed(1)}px;opacity:${o};transform:rotate(${r}deg);--sm:url(${SV[f]?`'data:image/svg+xml,${encodeURIComponent(SV[f])}'`:`/cards/${f}.webp`})"></i>`).join("")}</div>`:"";
+const G=(b)=>'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">'+b+'</svg>';
+const ARM='<g stroke="#000" stroke-width="6" stroke-linecap="round" fill="none"><g id="a"><path d="M50 50V8M50 24l-9-9M50 24l9-9"/></g>'+[60,120,180,240,300].map(a=>`<use href="#a" transform="rotate(${a} 50 50)"/>`).join("")+'</g>';
+Object.assign(SV,{
+ snow:G(ARM),
+ hour:G('<path d="M22 6h56v9h-7c0 20-14 28-21 35 7 7 21 15 21 35h7v9H22v-9h7c0-20 14-28 21-35-7-7-21-15-21-35h-7z"/>'),
+ bell:G('<defs><mask id="m"><rect width="100" height="100" fill="#fff"/><path d="M10 6 90 94" stroke="#000" stroke-width="18"/></mask></defs><path mask="url(#m)" d="M50 6a6 6 0 0 1 6 6v3c13 4 20 15 20 30v14l8 10v4H16v-4l8-10V45c0-15 7-26 20-30v-3a6 6 0 0 1 6-6zM38 82h24a12 12 0 0 1-24 0z"/><path d="M10 6 90 94" stroke="#000" stroke-width="7" stroke-linecap="round"/>'),
+ clock:G('<circle cx="50" cy="50" r="38" fill="none" stroke="#000" stroke-width="9"/><path d="M50 26v26l17 11" fill="none" stroke="#000" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>'),
+ zzz:G('<path d="M12 14h32L12 50h32M56 52h26L56 86h26" fill="none" stroke="#000" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>'),
+ flame:G('<path d="M52 3C56 25 80 36 80 64a30 30 0 0 1-60 0c0-15 8-24 15-33 2 9 6 13 11 15C44 32 48 18 52 3z"/>'),
+ plane:G('<path d="M5 46 95 7 73 92 47 67 31 84 29 59 72 24 24 53z"/>'),
+ dots:G('<path fill-rule="evenodd" d="M16 12h68a12 12 0 0 1 12 12v36a12 12 0 0 1-12 12H50L28 94V72h-12A12 12 0 0 1 4 60V24a12 12 0 0 1 12-12zM26 42a6 6 0 1 1 12 0a6 6 0 1 1-12 0zM44 42a6 6 0 1 1 12 0a6 6 0 1 1-12 0zM62 42a6 6 0 1 1 12 0a6 6 0 1 1-12 0z"/>')});
+Object.assign(AR,{snow:1,hour:1,bell:1,clock:1,zzz:1,flame:1,plane:1,dots:1});
+const mixBG=T=>LAY.map(([x,y,w,r,o],j)=>[T[j%T.length],x,y,w,j%2?r:-r,o]);
+BGI.nobreak=mixBG(["snow","hour","snow","bell"]);          // лёд, песочные часы, уведомления выключены
+BGI.slow=mixBG(["t:🐌","zzz","clock"]);                      // улитка, zzz, часы
+BGI.maxmsgs=mixBG(["bubble","flame","plane","dots"]);        // сообщения, огонь, отправка
+BGI.online=mixBG(["bolt","bubble","pepe_bg"]);               // молния, диалог, пепе
 const bstars=()=>`<div class="bst">${BST.map(([x,y,w,r,o])=>`<i style="left:${x}%;top:${y}%;width:${w}px;height:${w}px;opacity:${o};transform:rotate(${r}deg);--sm:${STAR}"></i>`).join("")}</div>`;
 const RT=[1.44,1.24,1.31];   // пропорции трёх звёздочек
 function stars(tint){let h="";for(let n=0;n<18;n++){const k=Math.floor(Math.random()*3),q=SP[k],w=(q.w*(.7+Math.random()*.5)).toFixed(1),r=(Math.random()<.5?-1:1)*(90+Math.random()*270);
@@ -372,7 +386,7 @@ function show(){
  const s=S[i],n=s.f(D[s.k]),[e,name]=s.d[n];bg(s.c[n]);
  const sub=s.k=="prem"?(D.prem?"Ты попадаешь в 1.5% в телеграмме!":"Ты попадаешь в 98.5% пользователей."):s.s;
  if(window.lottie)lottie.destroy();
- app.innerHTML=snow()+(s.k=="pct"||s.k=="prem"?bstars():"")+bgi(s.k)+bge(s.k)+`<h1>${s.t}</h1><div class="sub">${sub}</div>
+ app.innerHTML=snow()+(s.k=="pct"||s.k=="prem"?bstars():"")+bgi(s.k)+`<h1>${s.t}</h1><div class="sub">${sub}</div>
  <div class="mid ${dir}">${s.k=="days"?"":`<div class="emo${s.k=="nft"?" stat":""}${s.k=="gifts"?" big":""}">${s.k=="nft"?rich(NFTE):rich(e)}</div>`}<div class="val">${val(s)}</div>${name?`<div class="tier">${name}</div>`:""}${s.k=="days"?`<div class="yp">Аккаунт ${regYear(D.days)} года · ${YP[regYear(D.days)]} пользователей</div>`:""}${s.p?`<div class="pts"><div class="pv">+${N(pts(s))} ${pl(pts(s))}</div></div>`:""}</div>
  <button type="button" class="share" data-a="s">Поделиться ↗</button><div class="btns">${i>0?`<button type="button" class="back" data-a="b">Назад</button>`:""}<button type="button" class="next" data-a="n">Продолжить</button></div>`;fx(n,0,s.k)}
 function final(){bg(["#38bdf8","#c026d3"]);app.classList.remove("sl");
