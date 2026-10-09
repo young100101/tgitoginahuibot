@@ -227,7 +227,16 @@ const STILLONLY=new Set(["5289761157173775507","5983201451227222757","5372800046
 const ANIMID=new Set(["5372800046284674872","5418028873705069979","5397782960512444700"]),AN={};   // эмодзи с оригинальной анимацией, но в виде лёгкого WebP (собирает сервер)
 const animUrl=id=>AN[id]||(AN[id]=fetch(API+"/api/emoji/"+id+"?anim=256").then(async r=>{const m=(r.headers.get("X-Sheet")||"").split(",").map(Number);if(!r.ok||m.length<4||m.some(isNaN))throw 0;
  const u=URL.createObjectURL(await r.blob()),im=new Image();im.src=u;await (im.decode?im.decode():Promise.resolve());return{u,cols:m[0],rows:m[1],n:m[2],dur:m[3]}}).catch(()=>null));
-function animate(el,id){animUrl(id).then(a=>{if(!a||!el.isConnected)return;   // спрайт-лист: одна картинка, кадры просто листаются — почти без нагрузки
+function animate(el,id){loadEmoji(id).then(e=>{   // настоящая векторная анимация (lottie): любой размер без потери качества, плавно как в Telegram
+ if(!el.isConnected)return;
+ if(e&&e.k=="l"&&window.lottie){try{
+  const old=el.querySelector("img"),box=document.createElement("div");
+  el.style.position="relative";box.style.cssText="position:absolute;left:0;top:0;width:100%;height:100%;opacity:0";el.appendChild(box);
+  const an=lottie.loadAnimation({container:box,renderer:"svg",loop:true,autoplay:true,animationData:JSON.parse(JSON.stringify(e.d)),rendererSettings:{preserveAspectRatio:"xMidYMid meet"}});
+  an.addEventListener("DOMLoaded",()=>{box.style.opacity=1;if(old)old.remove()});
+  return}catch(x){}}
+ animateSprite(el,id)}).catch(()=>animateSprite(el,id))}
+function animateSprite(el,id){animUrl(id).then(a=>{if(!a||!el.isConnected)return;   // спрайт-лист: одна картинка, кадры просто листаются — почти без нагрузки
  const b=document.createElement("div");b.style.cssText=`width:100%;height:100%;background:url(${a.u}) 0 0/${a.cols*100}% ${a.rows*100}% no-repeat`;
  const old=el.querySelector("img");el.textContent="";el.appendChild(b);let last=-1,t0=performance.now();
  const tick=t=>{if(!el.isConnected)return;const f=Math.floor(((t-t0)%a.dur)/a.dur*a.n);
@@ -237,7 +246,7 @@ function hydrate(){document.querySelectorAll(".ce:not(.ok)").forEach(el=>{el.cla
  if(STILLONLY.has(id)||el.closest("#sh,.li,.cf,.tot,.stat"))still(id).then(u=>{if(u){put(el,{k:"i",u});if(ANIMID.has(id)&&!el.closest("#sh,.li,.cf,.tot,.stat"))animate(el,id)}else loadEmoji(id).then(e=>put(el,e))}); // в списках, плашке и конфетти — неподвижные (легче для телефона)
  else loadEmoji(id).then(e=>put(el,e))})}
 const ST={};
-setTimeout(()=>{try{HQ.forEach(id=>still(id));ANIMID.forEach(animUrl)}catch(e){}},300);   // заранее готовим эти эмодзи, чтобы к слайду уже были на месте
+setTimeout(()=>{try{HQ.forEach(id=>still(id));ANIMID.forEach(loadEmoji)}catch(e){}},300);   // заранее готовим эти эмодзи, чтобы к слайду уже были на месте
 function stillOld(id,z){z=z||128; // неподвижная картинка эмодзи (один кадр) — чтобы падающие не нагружали экран
  return loadEmoji(id).then(e=>new Promise(res=>{
   if(!e)return res(null);
@@ -385,7 +394,7 @@ function show(){
  const sub=s.k=="prem"?(D.prem?"Ты попадаешь в 1.5% в телеграмме!":"Ты попадаешь в 98.5% пользователей."):s.s;
  if(window.lottie)lottie.destroy();
  app.innerHTML=snow()+(s.k=="pct"||s.k=="prem"?bstars():"")+bgi(s.k)+`<h1>${s.t}</h1><div class="sub">${sub}</div>
- <div class="mid ${dir}">${s.k=="days"?"":`<div class="emo${s.k=="nft"?" stat":""}${s.k=="gifts"?" big":""}">${s.k=="nft"?rich(NFTE):rich(e)}</div>`}<div class="val">${val(s)}</div>${name?`<div class="tier">${name}</div>`:""}${s.k=="days"?`<div class="yp">Аккаунт ${regYear(D.days)} года · ${YP[regYear(D.days)]} пользователей</div>`:""}${s.p?`<div class="pts"><div class="pv">+${N(pts(s))} ${pl(pts(s))}</div></div>`:""}</div>
+ <div class="mid ${dir}">${s.k=="days"?"":`<div class="emo${s.k=="nft"?" stat":""}${s.k=="gifts"||["slow","nobreak","pinned"].includes(s.k)?" big":""}">${s.k=="nft"?rich(NFTE):rich(e)}</div>`}<div class="val">${val(s)}</div>${name?`<div class="tier">${name}</div>`:""}${s.k=="days"?`<div class="yp">Аккаунт ${regYear(D.days)} года · ${YP[regYear(D.days)]} пользователей</div>`:""}${s.p?`<div class="pts"><div class="pv">+${N(pts(s))} ${pl(pts(s))}</div></div>`:""}</div>
  <button type="button" class="share" data-a="s">Поделиться ↗</button><div class="btns">${i>0?`<button type="button" class="back" data-a="b">Назад</button>`:""}<button type="button" class="next" data-a="n">Продолжить</button></div>`;fx(n,0,s.k)}
 function final(){bg(["#38bdf8","#c026d3"]);app.classList.remove("sl");
  if(window.lottie)lottie.destroy();
