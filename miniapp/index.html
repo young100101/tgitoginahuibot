@@ -156,6 +156,8 @@ body.sheet .fp,body.sheet .cf,body.sheet .emo,body.sheet .tier::after{animation-
 /* лягушка на стартовом экране чуть правее */
 .intro .fg img{transform:translateX(9%)}
 /* полупрозрачные картинки на фоне слайдов (как звёздочки в «Рейтинге») */
+/* эмодзи-«трафареты» Telegram приходят чёрными — красим в белый */
+.ce[data-ce="5983201451227222757"],.ce[data-ce="5289761157173775507"]{filter:brightness(0) invert(1)}
 .bgi{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .bgi i{position:absolute;background:#fff;-webkit-mask:var(--sm) center/contain no-repeat;mask:var(--sm) center/contain no-repeat}
 @keyframes pls{from{transform:scale(1);opacity:.9}to{transform:scale(1.45);opacity:0}}
