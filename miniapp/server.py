@@ -155,7 +155,10 @@ async def me(authorization: str = Header()):
             for g in r["gifts"]:
                 if g["type"] == "unique":
                     uniq += 1; value += FLOORS.get(g["gift"].get("base_name", ""), 0)  # флор-цена с маркета
-                else: gifts += 1; value += g.get("gift", {}).get("star_count", 0)
+                else:  # обычный подарок: считаем только БЕЗ лимита (у лимитированных есть total_count / remaining_count)
+                    gf = g.get("gift") or {}
+                    if gf.get("total_count") is not None or gf.get("remaining_count") is not None: continue
+                    gifts += 1; value += gf.get("star_count", 0)  # цена подарка в звёздах
             off = r.get("next_offset")
             if not off: break
         chat = await tg(c, "getChat", chat_id=uid) or {}

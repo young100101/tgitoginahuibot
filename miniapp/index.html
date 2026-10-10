@@ -105,6 +105,7 @@ button:active{transform:scale(.94);transition:transform .1s}
 .pill{background:rgba(255,255,255,.28);border-radius:12px;padding:3px 9px;font-size:13px}
 .dt{padding:4px 0 6px}
 .num{font-size:76px;font-weight:800;line-height:1.1;margin-top:6px;background:linear-gradient(90deg,var(--c1),var(--c2));-webkit-background-clip:text;background-clip:text;color:transparent;animation:pop .7s .1s cubic-bezier(.3,1.6,.5,1) both}
+.gsum{display:block;font-size:15px;font-weight:600;opacity:.85;margin-top:8px}
 .unit{font-size:20px;font-weight:700;margin:2px 0 10px}
 .est{font-size:13px;opacity:.8;margin-top:10px}
 .big{font-size:64px;line-height:1.1;margin:6px 0 8px;animation:pop .6s cubic-bezier(.3,1.6,.5,1) both}
@@ -391,7 +392,7 @@ let cur="#5b6cf0",nb=cur,dir="fwd";
 function bg(c){try{if(tg){tg.setHeaderColor(c[0]);tg.setBackgroundColor(c[1])}}catch(e){}
  app.style.background=cur;nb=`linear-gradient(145deg,${c[0]},${c[1]})`;setTimeout(()=>{cur=nb;app.style.background=cur},500)}
 const N=x=>`<span class="cnt" data-to="${x}">0</span>`;
-function val(s){const v=D[s.k];if(RND.includes(s.k))return`<span class="vt">${v}</span>`;if(s.k=="prem")return"";if(s.k=="pct")return`<span style="font-size:24px;font-weight:700">Рейтинг</span><span class="bn">${N(D.lvl)}</span><span style="font-size:22px;font-weight:600">Ты в топ ${N(v)}% пользователей</span><br><span style="font-size:22px;font-weight:700;display:inline-block;margin-top:8px">${CE(EM.star,"⭐")} Потрачено звёзд: ${N(D.stars||0)}</span>`;if(s.k=="days")return`<span class="dw"><span class="bn">${N(v)}</span>${CE(EM.days,"⭐").replace('class="ce"','class="ce dce"')}</span><span class="vu">${s.u}</span>`;return`<span class="bn">${N(v)}</span>`+(s.u?`<span class="vu">${s.u}</span>`:"")}
+function val(s){const v=D[s.k];if(RND.includes(s.k))return`<span class="vt">${v}</span>`;if(s.k=="prem")return"";if(s.k=="pct")return`<span style="font-size:24px;font-weight:700">Рейтинг</span><span class="bn">${N(D.lvl)}</span><span style="font-size:22px;font-weight:600">Ты в топ ${N(v)}% пользователей</span><br><span style="font-size:22px;font-weight:700;display:inline-block;margin-top:8px">${CE(EM.star,"⭐")} Потрачено звёзд: ${N(D.stars||0)}</span>`;if(s.k=="days")return`<span class="dw"><span class="bn">${N(v)}</span>${CE(EM.days,"⭐").replace('class="ce"','class="ce dce"')}</span><span class="vu">${s.u}</span>`;if(s.k=="gifts"){const n=Math.round(D.value||0),m=n%10,c=n%100;return`<span class="bn">${N(v)}</span><span class="vu">${s.u}</span><span class="gsum">на сумму: ${N(n)} ${m==1&&c!=11?"звезда":m>=2&&m<=4&&(c<12||c>14)?"звезды":"звёзд"}</span>`}return`<span class="bn">${N(v)}</span>`+(s.u?`<span class="vu">${s.u}</span>`:"")}
 function show(){
  if(i>=S.length){final();return}
  app.classList.add("sl");
