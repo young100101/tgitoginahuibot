@@ -23,6 +23,7 @@ h1{font-size:31px;font-weight:850;letter-spacing:-.8px;margin-top:30px;z-index:1
 @keyframes p{from{transform:scale(.8);opacity:0}}
 .emo{font-size:clamp(72px,12vh,110px);line-height:1.1}
 .emo.big{font-size:clamp(125px,20vh,185px)}
+.emo.low{margin-top:14px}
 .emo.big .ce img{image-rendering:auto;filter:drop-shadow(0 10px 18px rgba(0,0,0,.2))}
 .lbl{opacity:.92;font-size:18px;font-weight:600;margin-top:14px}
 .val{font-size:50px;font-weight:850;margin-top:8px;line-height:1.05;text-shadow:0 3px 22px rgba(0,0,0,.12)}
@@ -74,6 +75,7 @@ button:active{transform:scale(.94);transition:transform .1s}
 .pr{opacity:.7;font-size:12px;margin-top:7px;animation:up .6s 1.3s both}
 @keyframes glow{to{box-shadow:0 0 20px rgba(255,255,255,.65)}}
 .tot{font-size:46px;font-weight:800;margin:4px 0 12px;animation:pop .8s .3s cubic-bezier(.3,1.6,.5,1) both}
+.ce .fb{visibility:hidden;font-weight:inherit}.ce.bad .fb{visibility:visible}
 .ce{display:inline-block;width:1.1em;height:1.1em;vertical-align:-.15em;line-height:1}
 .ce svg,.ce img,.ce video{width:100%;height:100%;display:block}
 .fp{position:absolute;top:-60px;z-index:1;pointer-events:none;animation:fallp linear both;will-change:transform}
@@ -176,6 +178,7 @@ body.sheet .fp,body.sheet .cf,body.sheet .emo,body.sheet .tier::after{animation-
 .ft{font-size:12px;font-weight:600;opacity:.85;line-height:1.2}
 .fv{font-size:15px;font-weight:800;line-height:1.2}
 .fpt{position:absolute;top:7px;right:8px;font-size:11px;font-weight:800;padding:2px 7px;border-radius:10px;background:rgba(255,255,255,.92);color:#a21caf}
+.mid.fwd,.mid.bk{animation:none}
 @keyframes pls{from{transform:scale(1);opacity:.9}to{transform:scale(1.45);opacity:0}}
 @keyframes bob{50%{transform:translateY(-7px) rotate(-2.5deg)}}
 </style></head><body><div id="app"></div>
@@ -214,7 +217,7 @@ const S=[
 {k:"maxmsgs",t:"Максимум сообщений за 1 день",s:"Пальцы горели!",f:()=>0,c:[["#ffb454","#f97316"]],d:[["{e:5444965061749644170|🔥}",""]]}
 ];
 const EM={prem:"5839049953497844833",days:"5469741319330996757",star:"5406812184359507637",gift:"5280598054901145762",fall:["5283228279988309088","5280598054901145762","5280651583078556009","5280922999241859582"],nft:["5456299600702889290","5454039464357682228","5456504676801338603","5456461744308249091","5456147077824274112"]};
-const CE=(id,fb)=>`<span class="ce" data-ce="${id}">${fb}</span>`;
+const CE=(id,fb)=>`<span class="ce" data-ce="${id}"><b class="fb">${fb}</b></span>`;
 const MAP={"⭐":"5406812184359507637","⚡":"5456140674028019486","🐌":"5368469400695351161","😈":"5373098778439982772","👑":"5357107601584693888","🚀":"5445284980978621387","🏆":"5280769763398671636"};
 const rich=t=>String(t).replace(/⭐|⚡|🐌|😈|👑|🚀|🏆/g,m=>CE(MAP[m],m)).replace(/\{g\}/g,CE(EM.gift,"🎁")).replace(/\{p\}/g,CE(EM.prem,"⭐")).replace(/\{e:(\d+)\|([^}]*)\}/g,(m,id,fb)=>CE(id,fb));
 const plain=t=>String(t).replace(/\{g\}/g,"🎁").replace(/\{p\}/g,"⭐").replace(/\{e:\d+\|([^}]*)\}/g,"$1");
@@ -259,11 +262,13 @@ function animateSprite(el,id){animUrl(id).then(a=>{if(!a||!el.isConnected)return
  const tick=t=>{if(!el.isConnected)return;const f=Math.floor(((t-t0)%a.dur)/a.dur*a.n);
   if(f!=last){last=f;const c=f%a.cols,r=Math.floor(f/a.cols);b.style.backgroundPosition=`${a.cols>1?c/(a.cols-1)*100:0}% ${a.rows>1?r/(a.rows-1)*100:0}%`}
   requestAnimationFrame(tick)};requestAnimationFrame(tick)})}
-function hydrate(){document.querySelectorAll(".ce:not(.ok)").forEach(el=>{el.classList.add("ok");const id=el.dataset.ce;
+function hydrate(){document.querySelectorAll(".ce:not(.ok)").forEach(el=>{el.classList.add("ok");const id=el.dataset.ce;setTimeout(()=>{if(el.querySelector(".fb"))el.classList.add("bad")},5000);   // обычный эмодзи покажем, только если премиум совсем не загрузился
+ 
  if(STILLONLY.has(id)||el.closest("#sh,.li,.cf,.tot,.stat"))still(id).then(u=>{if(u){put(el,{k:"i",u});if(ANIMID.has(id)&&!el.closest("#sh,.li,.cf,.tot,.stat"))animate(el,id)}else loadEmoji(id).then(e=>put(el,e))}); // в списках, плашке и конфетти — неподвижные (легче для телефона)
  else loadEmoji(id).then(e=>put(el,e))})}
 const ST={};
-setTimeout(()=>{try{HQ.forEach(id=>still(id));ANIMID.forEach(loadEmoji)}catch(e){}},300);   // заранее готовим эти эмодзи, чтобы к слайду уже были на месте
+setTimeout(()=>{try{const ids=new Set([...Object.values(MAP),...Object.values(EM).flat(),...(JSON.stringify(S).match(/\{e:(\d+)\|/g)||[]).map(x=>x.replace(/\D/g,""))]);
+ ids.forEach(id=>{try{(HQ.has(id)||STILLONLY.has(id))?still(id):loadEmoji(id);if(HQ.has(id))loadEmoji(id)}catch(e){}})}catch(e){}},0);   // заранее грузим все премиум-эмодзи, пока человек держит палец   // заранее готовим эти эмодзи, чтобы к слайду уже были на месте
 function stillOld(id,z){z=z||128; // неподвижная картинка эмодзи (один кадр) — чтобы падающие не нагружали экран
  return loadEmoji(id).then(e=>new Promise(res=>{
   if(!e)return res(null);
@@ -387,10 +392,12 @@ Object.assign(SV,{
  plane:G('<path d="M5 46 95 7 73 92 47 67 31 84 29 59 72 24 24 53z"/>'),
  dots:G('<path fill-rule="evenodd" d="M16 12h68a12 12 0 0 1 12 12v36a12 12 0 0 1-12 12H50L28 94V72h-12A12 12 0 0 1 4 60V24a12 12 0 0 1 12-12zM26 42a6 6 0 1 1 12 0a6 6 0 1 1-12 0zM44 42a6 6 0 1 1 12 0a6 6 0 1 1-12 0zM62 42a6 6 0 1 1 12 0a6 6 0 1 1-12 0z"/>')});
 Object.assign(AR,{snow:1,hour:1,bell:1,clock:1,zzz:1,flame:1,plane:1,dots:1});
+SV.heart=G('<path d="M50 90C20 68 5 50 5 31a23 23 0 0 1 45-7 23 23 0 0 1 45 7c0 19-15 37-45 59z"/>');AR.heart=1;
 const mixBG=T=>LAY.map(([x,y,w,r,o],j)=>[T[j%T.length],x,y,w,j%2?r:-r,o]);
 BGI.nobreak=mixBG(["snow","hour","snow","bell"]);          // лёд, песочные часы, уведомления выключены
 BGI.slow=mixBG(["t:🐌","zzz","clock"]);                      // улитка, zzz, часы
 BGI.maxmsgs=mixBG(["bubble","flame","plane","dots"]);        // сообщения, огонь, отправка
+BGI.pinned=mixBG(["heart","t:📌","bubble"]);              // сердце, кнопка закрепа, диалог
 BGI.online=mixBG(["bolt","bubble","pepe_bg"]);               // молния, диалог, пепе
 const bstars=()=>`<div class="bst">${BST.map(([x,y,w,r,o])=>`<i style="left:${x}%;top:${y}%;width:${w}px;height:${w}px;opacity:${o};transform:rotate(${r}deg);--sm:${STAR}"></i>`).join("")}</div>`;
 const RT=[1.44,1.24,1.31];   // пропорции трёх звёздочек
@@ -411,16 +418,21 @@ function show(){
  const sub=s.k=="prem"?(D.prem?"Ты попадаешь в 1.5% в телеграмме!":"Ты попадаешь в 98.5% пользователей."):s.s;
  if(window.lottie)lottie.destroy();
  app.innerHTML=snow()+(s.k=="pct"||s.k=="prem"?bstars():"")+bgi(s.k)+`<h1>${s.t}</h1><div class="sub">${sub}</div>
- <div class="mid ${dir}">${s.k=="days"?"":`<div class="emo${s.k=="nft"?" stat":""}${s.k=="gifts"||["slow","nobreak","pinned"].includes(s.k)?" big":""}">${s.k=="nft"?rich(NFTE):rich(e)}</div>`}<div class="val">${val(s)}</div>${name?`<div class="tier">${name}</div>`:""}${s.k=="days"?`<div class="yp">Аккаунт ${regYear(D.days)} года · ${YP[regYear(D.days)]} пользователей</div>`:""}${s.p?`<div class="pts"><div class="pv">+${N(pts(s))} ${pl(pts(s))}</div></div>`:""}</div>
+ <div class="mid ${dir}">${s.k=="days"?"":`<div class="emo${s.k=="nft"?" stat":""}${s.k=="gifts"||["slow","nobreak","pinned"].includes(s.k)?" big":""}${s.k=="gifts"?" low":""}">${s.k=="nft"?rich(NFTE):rich(e)}</div>`}<div class="val">${val(s)}</div>${name?`<div class="tier">${name}</div>`:""}${s.k=="days"?`<div class="yp">Аккаунт ${regYear(D.days)} года · ${YP[regYear(D.days)]} пользователей</div>`:""}${s.p?`<div class="pts"><div class="pv">+${N(pts(s))} ${pl(pts(s))}</div></div>`:""}</div>
  <button type="button" class="share" data-a="s">Поделиться ↗</button><div class="btns">${i>0?`<button type="button" class="back" data-a="b">Назад</button>`:""}<button type="button" class="next" data-a="n">Продолжить</button></div>`;fx(n,0,s.k)}
-function final(){bg(["#38bdf8","#c026d3"]);app.classList.remove("sl");
+function final(){bg(["#22d3ee","#7c3aed"]);app.classList.remove("sl");
  if(window.lottie)lottie.destroy();
  const r=S.map(s=>s.d[s.f(D[s.k])]);
  app.innerHTML=snow()+`<h1>Итоги</h1><div class="sub">Вот кто ты в Telegram</div><div class="mid fin"><div class="totc"><div class="lbl" style="margin:0">Сумма баллов</div><div class="tot">${rich("🏆")} ${N(total())} ${pl(total())}</div></div><div class="gr">`+
  S.map((s,j)=>{const v=r[j][1]||(typeof D[s.k]=="number"?N(D[s.k])+(s.u?" "+s.u:""):D[s.k]);return`<div class="li fc" style="animation-delay:${j*.08+.2}s">${s.p?`<span class="fpt">+${pts(s)}</span>`:""}<div class="fe">${s.k=="nft"?rich(NFTE):rich(r[j][0])}</div><div class="ft">${s.t}</div><div class="fv">${v}</div></div>`}).join("")+
  `</div></div><button type="button" class="share" data-a="s">Поделиться ↗</button><div class="btns"><button type="button" class="back" data-a="b">Назад</button><button type="button" class="next" data-a="m">Продолжить</button></div>`;fx(2,1,"final")}
 dir="fwd";
-function go(d){dir=d>0?"fwd":"bk";i=Math.min(S.length,Math.max(0,i+d));show();if(tg)i>0?tg.BackButton.show():tg.BackButton.hide()}
+function slideAll(d){   // весь экран (фон, заголовок, кнопки) уезжает целиком, а новый заезжает следом
+ try{const r=app.getBoundingClientRect(),old=app.cloneNode(true);old.removeAttribute("id");old.style.cssText+=`;position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;margin:0;z-index:40;pointer-events:none`;
+  document.body.appendChild(old);const o={duration:440,easing:"cubic-bezier(.22,.8,.22,1)",fill:"both"};
+  old.animate([{transform:"none"},{transform:`translateX(${-d*100}%)`}],o).onfinish=()=>old.remove();setTimeout(()=>old.remove(),700);
+  app.animate([{transform:`translateX(${d*100}%)`},{transform:"none"}],o)}catch(e){}}
+function go(d){dir=d>0?"fwd":"bk";const was=i;i=Math.min(S.length,Math.max(0,i+d));const old=i!=was;if(old)slideAll(d>0?1:-1);show();if(old)app.style.background=nb;if(tg)i>0?tg.BackButton.show():tg.BackButton.hide()}
 const BOTSTART=BOT.replace(/\/[^\/]*$/,"")+"?start=share";   // ссылка на /start бота
 function caption(s,n){ // текст под карточкой — про тот слайд, где нажали «Поделиться»
  const nm=s.d[n][1],v=D[s.k],em=plain(s.d[n][0]),h=x=>String(x).replace("&lt;","<"),end="\n\nУзнай свои результаты 👇";
@@ -467,11 +479,11 @@ const ITEMS=[{k:"top",ic:"🏆",c:["#ffb347","#ff6b6b"],t:"Таблица лид
  {k:"gv",ic:"{g}",c:["#ff6b9d","#c44dff"],t:"Сколько ты подарил подарков",s:""},
  {k:"bl",ic:"🚫",c:["#ff9966","#e0384f"],t:"Сколько людей тебя заблокировало",s:""},
  {k:"hr",ic:"⏱️",c:["#4facfe","#00c6a7"],t:"Сколько часов ты провёл в Telegram",s:""}];
-// экраны с «оценкой»: считаем по формулам из данных аккаунта
+// экраны с «оценкой» из данных аккаунта
 const pl3=(n,w)=>n%10==1&&n%100!=11?w[0]:(n%10>=2&&n%10<=4&&(n%100<12||n%100>14))?w[1]:w[2];
 const DET={
  gv:{ic:"{g}",c:["#ff6b9d","#c44dff"],t:"Ты подарил подарков",v:()=>Math.floor((D.stars||0)/40),w:["подарок","подарка","подарков"]},
- bl:{ic:"🚫",c:["#ff9966","#e0384f"],t:"Тебя заблокировали",v:()=>Math.round((D.days||0)*0.3),w:["человек","человека","человек"]},
+ bl:{ic:"🚫",c:["#ff9966","#e0384f"],t:"Тебя заблокировали",v:()=>Math.round((D.days||0)*0.14),w:["человек","человека","человек"]},
  hr:{ic:"⏱️",c:["#4facfe","#00c6a7"],t:"Ты провёл в Telegram",v:()=>Math.round((D.days||0)*70/60),w:["час","часа","часов"],extra:v=>{const d=Math.round(v/24);return`это около ${N(d)} суток без перерыва`}}};
 function vDet(k){const x=DET[k],v=x.v();
  return `<div class="dt" style="--c1:${x.c[0]};--c2:${x.c[1]}"><div class="big">${rich(x.ic)}</div><h2>${x.t}</h2><div class="num">≈ ${N(v)}</div><div class="unit">${pl3(v,x.w)}</div>${x.extra?`<p class="mut">${x.extra(v)}</p>`:""}</div><div class="bt col"><button type="button" class="b2" data-s="menu">Назад</button></div>`}
