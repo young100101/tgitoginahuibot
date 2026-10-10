@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS purchases(charge_id TEXT PRIMARY KEY, user_id BIGINT,
 CREATE TABLE IF NOT EXISTS shares(id SERIAL PRIMARY KEY, user_id BIGINT, kind TEXT, ts TIMESTAMPTZ DEFAULT now());
 ALTER TABLE users ADD COLUMN IF NOT EXISTS passed_at TIMESTAMPTZ;
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS limit_n INT DEFAULT 0;
+CREATE INDEX IF NOT EXISTS profiles_rank_idx ON profiles(points DESC, created, user_id);
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS sort INT DEFAULT 0;
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS deleted BOOLEAN DEFAULT FALSE;
 CREATE TABLE IF NOT EXISTS links(id SERIAL PRIMARY KEY, name TEXT NOT NULL, created TIMESTAMPTZ DEFAULT now());
@@ -701,8 +702,9 @@ async def more_data(uid):
     need = await get_need(); price = await get_price()
     cnt = await pool.fetchval("SELECT count(*) FROM referrals WHERE inviter=$1 AND qualified", uid)
     paid = bool(await pool.fetchval("SELECT 1 FROM purchases WHERE user_id=$1 LIMIT 1", uid))
-    me = await pool.fetchrow("""SELECT p.points, (SELECT rn FROM (SELECT p2.user_id, row_number() OVER (ORDER BY p2.points DESC, p2.created, p2.user_id) rn
-        FROM profiles p2 JOIN users u2 ON u2.user_id=p2.user_id) t WHERE t.user_id=$1) rank FROM profiles p WHERE p.user_id=$1""", uid)
+    me = await pool.fetchrow("""SELECT p.points, (SELECT count(*)+1 FROM profiles p2 JOIN users u2 ON u2.user_id=p2.user_id
+        WHERE p2.points > p.points OR (p2.points = p.points AND (p2.created, p2.user_id) < (p.created, p.user_id))) AS rank
+        FROM profiles p WHERE p.user_id=$1""", uid)
     return {"need": need, "count": cnt, "price": price, "paid": paid, "unlocked": paid or cnt >= need, "link": ref_link(uid),
             "rank": me["rank"] if me else None, "points": me["points"] if me else 0}
 
@@ -711,13 +713,19 @@ def register(app):
     @app.get("/api/more")
     async def more(authorization: str = Header()):
         return await more_data(auth_user(authorization)["id"])
+    TOPC = {"t": 0, "rows": []}
+    async def top_rows():
+        if time.time() - TOPC["t"] > 20:   # топ-100 одинаков для всех — считаем раз в 20 секунд
+            rows = await pool.fetch("""SELECT p.name, p.photo, p.points, row_number() OVER (ORDER BY p.points DESC, p.created, p.user_id) rank
+                FROM profiles p JOIN users u ON u.user_id=p.user_id ORDER BY p.points DESC, p.created, p.user_id LIMIT 100""")  # только те, кто запускал бота
+            TOPC["rows"] = [dict(r) for r in rows]; TOPC["t"] = time.time()
+        return TOPC["rows"]
     @app.get("/api/top")
     async def top(authorization: str = Header()):
-        uid = auth_user(authorization)["id"]; m = await more_data(uid)
+        uid = auth_user(authorization)["id"]
+        m, rows = await asyncio.gather(more_data(uid), top_rows())
         if not m["unlocked"]: raise HTTPException(403, "нужно пригласить друзей или оплатить")
-        rows = await pool.fetch("""SELECT p.name, p.photo, p.points, row_number() OVER (ORDER BY p.points DESC, p.created, p.user_id) rank
-            FROM profiles p JOIN users u ON u.user_id=p.user_id ORDER BY p.points DESC, p.created, p.user_id LIMIT 100""")  # только те, кто запускал бота
-        return {"top": [dict(r) for r in rows], "me": {"rank": m["rank"], "points": m["points"]}}
+        return {"top": rows, "me": {"rank": m["rank"], "points": m["points"]}}
     @app.post("/api/pay")
     async def pay(authorization: str = Header()):
         uid = auth_user(authorization)["id"]; price = await get_price()

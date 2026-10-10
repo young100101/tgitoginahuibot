@@ -93,6 +93,7 @@ button:active{transform:scale(.94);transition:transform .1s}
 .ic{position:relative;flex:none;width:48px;height:48px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff;box-shadow:0 6px 14px rgba(0,0,0,.14)}
 .lk{position:absolute;right:-5px;bottom:-5px;font-style:normal;font-size:13px;background:var(--bg);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center}
 .rt{flex:1;min-width:0;display:flex;flex-direction:column}.rt b{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .rt b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.2}
 .rt small,.br small,.mecard small{color:var(--mut);font-size:13px;font-weight:500}
 .chev{color:var(--mut);font-size:26px;line-height:1}
 .pc{background:var(--row);border-radius:18px;padding:12px 14px;margin:14px 0 0;text-align:left}
@@ -165,6 +166,16 @@ body.sheet .fp,body.sheet .cf,body.sheet .emo,body.sheet .tier::after{animation-
 .bgi i{position:absolute;background:#fff;-webkit-mask:var(--sm) center/contain no-repeat;mask:var(--sm) center/contain no-repeat}
 
 .bgi i.g{background:none;-webkit-mask:none;mask:none;font-style:normal;line-height:1;filter:brightness(0) invert(1);white-space:nowrap}
+.fin{font-size:15px;overflow-y:auto;justify-content:flex-start;padding-top:10px;gap:0}
+.totc{width:100%;padding:14px 10px 8px;border-radius:26px;background:linear-gradient(135deg,rgba(255,255,255,.30),rgba(255,255,255,.12));border:1px solid rgba(255,255,255,.35);box-shadow:0 10px 30px rgba(0,0,0,.14)}
+.totc .tot{margin:2px 0 4px;font-size:44px}
+.gr{display:grid;grid-template-columns:1fr 1fr;gap:9px;width:100%;margin-top:11px;padding-bottom:6px}
+.fc{position:relative;background:rgba(255,255,255,.17);border:1px solid rgba(255,255,255,.28);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-radius:20px;padding:13px 8px 11px;box-shadow:0 8px 22px rgba(0,0,0,.12);display:flex;flex-direction:column;align-items:center;gap:3px}
+.fc:last-child:nth-child(odd){grid-column:span 2}
+.fe{font-size:30px;line-height:1;height:38px;display:flex;align-items:center;justify-content:center}
+.ft{font-size:12px;font-weight:600;opacity:.85;line-height:1.2}
+.fv{font-size:15px;font-weight:800;line-height:1.2}
+.fpt{position:absolute;top:7px;right:8px;font-size:11px;font-weight:800;padding:2px 7px;border-radius:10px;background:rgba(255,255,255,.92);color:#a21caf}
 @keyframes pls{from{transform:scale(1);opacity:.9}to{transform:scale(1.45);opacity:0}}
 @keyframes bob{50%{transform:translateY(-7px) rotate(-2.5deg)}}
 </style></head><body><div id="app"></div>
@@ -309,7 +320,7 @@ let ME=null;
 function fetchMe(){return ME||(ME=(async()=>{
  try{const r=await fetch(API+"/api/me",{headers:{Authorization:"tma "+(tg?tg.initData:"")}});if(!r.ok)throw 0;Object.assign(D,await r.json())}
  catch(e){Object.assign(D,DEMO)}   // без бэкенда показываем демо-данные
- rolls()})())}
+ rolls();setTimeout(()=>{try{live&&refreshMore()}catch(e){}},900)})())}
 // ===== Стартовый экран: удержи палец — синий круг заполняет экран =====
 function intro(){
  try{if(tg){tg.setHeaderColor("#ffffff");tg.setBackgroundColor("#ffffff")}}catch(e){}
@@ -405,9 +416,9 @@ function show(){
 function final(){bg(["#38bdf8","#c026d3"]);app.classList.remove("sl");
  if(window.lottie)lottie.destroy();
  const r=S.map(s=>s.d[s.f(D[s.k])]);
- app.innerHTML=snow()+`<h1>Итоги</h1><div class="sub">Вот кто ты в Telegram</div><div class="mid" style="font-size:15px;gap:5px;overflow-y:auto;justify-content:flex-start;padding-top:18px"><div class="lbl" style="margin:0">Сумма баллов</div><div class="tot">${rich("🏆")} ${N(total())} ${pl(total())}</div>`+
- S.map((s,j)=>`<div class="li" style="animation-delay:${j*.12+.2}s">${s.k=="nft"?rich(NFTE):rich(r[j][0])} <b>${s.t}:</b> ${r[j][1]||D[s.k]}${s.p?` · <b>+${pts(s)}</b>`:""}</div>`).join("")+
- `</div><button type="button" class="share" data-a="s">Поделиться ↗</button><div class="btns"><button type="button" class="back" data-a="b">Назад</button><button type="button" class="next" data-a="m">Продолжить</button></div>`;fx(2,1,"final")}
+ app.innerHTML=snow()+`<h1>Итоги</h1><div class="sub">Вот кто ты в Telegram</div><div class="mid fin"><div class="totc"><div class="lbl" style="margin:0">Сумма баллов</div><div class="tot">${rich("🏆")} ${N(total())} ${pl(total())}</div></div><div class="gr">`+
+ S.map((s,j)=>{const v=r[j][1]||(typeof D[s.k]=="number"?N(D[s.k])+(s.u?" "+s.u:""):D[s.k]);return`<div class="li fc" style="animation-delay:${j*.08+.2}s">${s.p?`<span class="fpt">+${pts(s)}</span>`:""}<div class="fe">${s.k=="nft"?rich(NFTE):rich(r[j][0])}</div><div class="ft">${s.t}</div><div class="fv">${v}</div></div>`}).join("")+
+ `</div></div><button type="button" class="share" data-a="s">Поделиться ↗</button><div class="btns"><button type="button" class="back" data-a="b">Назад</button><button type="button" class="next" data-a="m">Продолжить</button></div>`;fx(2,1,"final")}
 dir="fwd";
 function go(d){dir=d>0?"fwd":"bk";i=Math.min(S.length,Math.max(0,i+d));show();if(tg)i>0?tg.BackButton.show():tg.BackButton.hide()}
 const BOTSTART=BOT.replace(/\/[^\/]*$/,"")+"?start=share";   // ссылка на /start бота
@@ -449,7 +460,7 @@ async function api(path,opt){opt=opt||{};opt.headers=Object.assign({Authorizatio
 const DM={need:3,count:1,price:75,paid:false,unlocked:false,link:BOTSTART.replace("start=share","start=ref_0"),rank:200,points:0};
 const demoTop=()=>{const n=["Алексей","Мария","Дмитрий","Анна","Иван","Ольга","Сергей","Елена","Никита","Юля"];return{top:Array.from({length:100},(_,k)=>({rank:k+1,name:n[k%10]+" "+String.fromCharCode(1040+k%26)+".",username:k%3?"user"+(k+1):"",photo:"",points:Math.max(5,Math.round(900/(1+k*.35)))})),me:{rank:200,points:total()}}};
 const avatar=p=>{const nm=(p.name||"?").trim(),ini=esc([...nm][0]||"?").toUpperCase(),h=[...nm].reduce((a,c)=>a+c.charCodeAt(0),0)%360;
- return p.photo?`<img class="av" src="${esc(p.photo)}" data-ini="${ini}" data-h="${h}" alt="">`:`<div class="av ini" style="background:hsl(${h} 62% 52%)">${ini}</div>`};
+ return p.photo?`<img class="av" loading="lazy" decoding="async" src="${esc(p.photo)}" data-ini="${ini}" data-h="${h}" alt="">`:`<div class="av ini" style="background:hsl(${h} 62% 52%)">${ini}</div>`};
 document.addEventListener("error",e=>{const t=e.target;if(t&&t.classList&&t.classList.contains("av")){const d=document.createElement("div");d.className="av ini";d.style.background=`hsl(${t.dataset.h} 62% 52%)`;d.textContent=t.dataset.ini;t.replaceWith(d)}},true);
 const prog=m=>`<div class="pc"><div class="pr2"><span>Приглашено</span><b>${m.count} из ${m.need}</b></div><div class="pb"><i style="width:${m.need?Math.min(100,m.count/m.need*100):100}%"></i></div></div>`;
 const ITEMS=[{k:"top",ic:"🏆",c:["#ffb347","#ff6b6b"],t:"Таблица лидеров",s:"Топ-100 по баллам за аккаунт"},
@@ -492,13 +503,16 @@ function renderSheet(){
  else if(MORE)h=VIEW=="inv"?vInv():VIEW=="top"?vTop():VIEW=="opt"?vOpt():VIEW.startsWith("d:")?vDet(VIEW.slice(2)):vMenu();
  SH.innerHTML='<div class="grab"></div>'+h;hydrate();cu()}
 async function refreshMore(){const prev=JSON.stringify(MORE);try{MORE=live?await api("/api/more"):Object.assign({},DM,{points:total(),count:MORE?MORE.count:DM.count});FAIL=false}catch(e){FAIL=!MORE}
+ if(live&&MORE&&MORE.unlocked)prefetchTop();
  if(OV.classList.contains("on")&&(FAIL||JSON.stringify(MORE)!==prev))renderSheet()}   // перерисовываем, только если данные изменились — без мигания
 function openSheet(){VIEW="menu";renderSheet();void OV.offsetWidth;document.body.classList.add("sheet");try{window.lottie&&lottie.pause()}catch(e){}
  requestAnimationFrame(()=>{OV.classList.add("on");if(tg)tg.BackButton.show();setTimeout(refreshMore,450)})}
 function closeSheet(){OV.classList.remove("on");document.body.classList.remove("sheet");try{window.lottie&&lottie.play()}catch(e){}if(tg&&i==0)tg.BackButton.hide()}
 function sheetBack(){if(VIEW!="menu"){VIEW=parent();renderSheet()}else closeSheet()}
-async function openTop(){VIEW="top";TOP=null;renderSheet();
- try{TOP=live?await api("/api/top"):demoTop();renderSheet()}
+let TOPP=null;
+function prefetchTop(){if(!live||TOP||TOPP)return;TOPP=api("/api/top").then(t=>{TOP=t}).catch(()=>{}).finally(()=>{TOPP=null})}
+async function openTop(){VIEW="top";renderSheet();   // если топ уже загружен заранее — показываем сразу, а свежие данные подтягиваем тихо
+ try{const t=live?await api("/api/top"):demoTop(),ch=JSON.stringify(t)!==JSON.stringify(TOP);TOP=t;if(VIEW=="top"&&ch)renderSheet()}
  catch(e){if(e==403){await refreshMore();VIEW=MORE&&MORE.price>0?"opt":"inv"}else FAIL=true;renderSheet()}}
 async function pay(){NOTE="";
  if(!live){NOTE="Оплата работает только внутри Telegram";renderSheet();return}
