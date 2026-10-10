@@ -196,10 +196,10 @@ const S=[
 {k:"fast",t:"Самый быстрый ответ",s:"Ты что 24/7 в телеграмме?",f:()=>0,c:[["#ffd426","#ffa800"]],d:[["⚡",""]]},
 {k:"slow",t:"Самый долгий ответ",s:"Как же долго он ждал ответа....",f:()=>0,c:[["#38bdf8","#2563eb"]],d:[["{e:5418028873705069979|🕐}",""]]},
 {k:"online",t:"Постоянный онлайн",s:"В этот день ты сидел больше всего в телеграмме!",f:()=>0,c:[["#d946ef","#7c3aed"]],d:[["😈",""]]},
-{k:"dialog",t:"Самый длинный диалог",s:"Вот это был разговор!",f:()=>0,c:[["#ffb454","#f97316"]],d:[["{e:5443038326535759644|💬}",""]]},
+{k:"dialog",t:"Самый длинный диалог",s:"Вот это был разговор!",f:()=>0,c:[["#a0a8b5","#4b5563"]],d:[["{e:5443038326535759644|💬}",""]]},
 {k:"pinned",t:"Сколько людей закрепляло чат с тобой",s:"Ты всегда у них под рукой!",f:()=>0,c:[["#f472b6","#db2777"]],d:[["{e:5397782960512444700|📌}",""]]},
 {k:"nobreak",t:"Самый длинный период без общения",s:"Кому-то не повезло...",f:()=>0,c:[["#55c7ff","#2487d8"]],d:[["{e:5372800046284674872|❄️}",""]]},
-{k:"maxmsgs",t:"Максимум сообщений за 1 день",s:"Пальцы горели!",f:()=>0,c:[["#ff5a5f","#dc2626"]],d:[["🔥",""]]}
+{k:"maxmsgs",t:"Максимум сообщений за 1 день",s:"Пальцы горели!",f:()=>0,c:[["#ffb454","#f97316"]],d:[["{e:5444965061749644170|🔥}",""]]}
 ];
 const EM={prem:"5839049953497844833",days:"5469741319330996757",star:"5406812184359507637",gift:"5280598054901145762",fall:["5283228279988309088","5280598054901145762","5280651583078556009","5280922999241859582"],nft:["5456299600702889290","5454039464357682228","5456504676801338603","5456461744308249091","5456147077824274112"]};
 const CE=(id,fb)=>`<span class="ce" data-ce="${id}">${fb}</span>`;
@@ -223,8 +223,8 @@ function put(el,e){ // вставить эмодзи в элемент
   v.muted=true;v.setAttribute("muted","");v.setAttribute("playsinline","");v.setAttribute("webkit-playsinline","");v.loop=true;v.autoplay=true;v.addEventListener("error",fb);v.src=e.u;el.appendChild(v);
   const pr=v.play();if(pr&&pr.catch)pr.catch(fb)}
  else if(e.k=="i"){const m=document.createElement("img");m.src=e.u;el.appendChild(m)}}
-const STILLONLY=new Set(["5289761157173775507","5983201451227222757","5372800046284674872","5418028873705069979","5397782960512444700"]);   // тяжёлая анимация / нужна статика
-const ANIMID=new Set(["5289761157173775507","5372800046284674872","5418028873705069979","5397782960512444700"]),AN={};   // эмодзи с оригинальной анимацией, но в виде лёгкого WebP (собирает сервер)
+const STILLONLY=new Set(["5444965061749644170","5289761157173775507","5983201451227222757","5372800046284674872","5418028873705069979","5397782960512444700"]);   // тяжёлая анимация / нужна статика
+const ANIMID=new Set(["5444965061749644170","5372800046284674872","5418028873705069979","5397782960512444700"]),AN={};   // эмодзи с оригинальной анимацией, но в виде лёгкого WebP (собирает сервер)
 const animUrl=id=>AN[id]||(AN[id]=fetch(API+"/api/emoji/"+id+"?anim=256").then(async r=>{const m=(r.headers.get("X-Sheet")||"").split(",").map(Number);if(!r.ok||m.length<4||m.some(isNaN))throw 0;
  const u=URL.createObjectURL(await r.blob()),im=new Image();im.src=u;await (im.decode?im.decode():Promise.resolve());return{u,cols:m[0],rows:m[1],n:m[2],dur:m[3]}}).catch(()=>null));
 function animate(el,id){loadEmoji(id).then(e=>{   // настоящая векторная анимация (lottie): любой размер без потери качества, плавно как в Telegram
@@ -232,7 +232,7 @@ function animate(el,id){loadEmoji(id).then(e=>{   // настоящая вект
  if(e&&e.k=="l"&&window.lottie){try{
   const old=el.querySelector("img"),box=document.createElement("div");
   el.style.position="relative";box.style.cssText="position:absolute;left:0;top:0;width:100%;height:100%;opacity:0";el.appendChild(box);
-  const heavy=id=="5289761157173775507";   // мишка сложнее — рисуем на canvas (легче для телефона)
+  const heavy=id=="5444965061749644170";   // мишка сложнее — рисуем на canvas (легче для телефона)
   const an=lottie.loadAnimation({container:box,renderer:heavy?"canvas":"svg",loop:true,autoplay:true,animationData:JSON.parse(JSON.stringify(e.d)),rendererSettings:heavy?{preserveAspectRatio:"xMidYMid meet",clearCanvas:true,dpr:Math.min(2.5,window.devicePixelRatio||2)}:{preserveAspectRatio:"xMidYMid meet"}});
   an.addEventListener("DOMLoaded",()=>{box.style.opacity=1;if(old)old.remove();
    let n=0,t0=0;const probe=t=>{if(!el.isConnected)return;if(!t0)t0=t;n++;   // страховка от лагов: если телефон не тянет (<40 кадров/с), переключаем на лёгкий вариант
@@ -267,7 +267,7 @@ function stillOld(id,z){z=z||128; // неподвижная картинка э�
      if(sum>0){url=cv.toDataURL("image/png");break}}
     try{an.destroy()}catch(x){}res(url)})
   }catch(x){res(null)}})).catch(()=>null)}
-const HQ=new Set(["5289761157173775507","5983201451227222757","5372800046284674872","5418028873705069979","5397782960512444700"]);   // эмодзи, которые рисуем в высоком качестве (кадр из векторной анимации)
+const HQ=new Set(["5444965061749644170","5289761157173775507","5983201451227222757","5372800046284674872","5418028873705069979","5397782960512444700"]);   // эмодзи, которые рисуем в высоком качестве (кадр из векторной анимации)
 const hqPng=id=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),12000);
  return fetch(API+"/api/emoji/"+id+"?png=768",{signal:c.signal}).then(async r=>{clearTimeout(t);if(!r.ok||!(r.headers.get("content-type")||"").startsWith("image"))throw 0;return URL.createObjectURL(await r.blob())})};
 const stillHQ=id=>hqPng(id).catch(()=>thumb(id).then(e=>e.u)).catch(()=>null);   // PNG 512px с сервера; если не вышло — маленькое превью
