@@ -178,7 +178,6 @@ body.sheet .fp,body.sheet .cf,body.sheet .emo,body.sheet .tier::after{animation-
 .ft{font-size:12px;font-weight:600;opacity:.85;line-height:1.2}
 .fv{font-size:15px;font-weight:800;line-height:1.2}
 .fpt{position:absolute;top:7px;right:8px;font-size:11px;font-weight:800;padding:2px 7px;border-radius:10px;background:rgba(255,255,255,.92);color:#a21caf}
-.mid.fwd,.mid.bk{animation:none}
 @keyframes pls{from{transform:scale(1);opacity:.9}to{transform:scale(1.45);opacity:0}}
 @keyframes bob{50%{transform:translateY(-7px) rotate(-2.5deg)}}
 </style></head><body><div id="app"></div>
@@ -423,16 +422,11 @@ function show(){
 function final(){bg(["#22d3ee","#7c3aed"]);app.classList.remove("sl");
  if(window.lottie)lottie.destroy();
  const r=S.map(s=>s.d[s.f(D[s.k])]);
- app.innerHTML=snow()+`<h1>Итоги</h1><div class="sub">Вот кто ты в Telegram</div><div class="mid fin"><div class="totc"><div class="lbl" style="margin:0">Сумма баллов</div><div class="tot">${rich("🏆")} ${N(total())} ${pl(total())}</div></div><div class="gr">`+
+ app.innerHTML=snow()+`<div class="mid fin"><h1 style="margin-top:16px">Итоги</h1><div class="sub" style="margin-bottom:14px">Вот кто ты в Telegram</div><div class="totc"><div class="lbl" style="margin:0">Сумма баллов</div><div class="tot">${rich("🏆")} ${N(total())} ${pl(total())}</div></div><div class="gr">`+
  S.map((s,j)=>{const v=r[j][1]||(typeof D[s.k]=="number"?N(D[s.k])+(s.u?" "+s.u:""):D[s.k]);return`<div class="li fc" style="animation-delay:${j*.08+.2}s">${s.p?`<span class="fpt">+${pts(s)}</span>`:""}<div class="fe">${s.k=="nft"?rich(NFTE):rich(r[j][0])}</div><div class="ft">${s.t}</div><div class="fv">${v}</div></div>`}).join("")+
  `</div></div><button type="button" class="share" data-a="s">Поделиться ↗</button><div class="btns"><button type="button" class="back" data-a="b">Назад</button><button type="button" class="next" data-a="m">Продолжить</button></div>`;fx(2,1,"final")}
 dir="fwd";
-function slideAll(d){   // весь экран (фон, заголовок, кнопки) уезжает целиком, а новый заезжает следом
- try{const r=app.getBoundingClientRect(),old=app.cloneNode(true);old.removeAttribute("id");old.style.cssText+=`;position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;margin:0;z-index:40;pointer-events:none`;
-  document.body.appendChild(old);const o={duration:440,easing:"cubic-bezier(.22,.8,.22,1)",fill:"both"};
-  old.animate([{transform:"none"},{transform:`translateX(${-d*100}%)`}],o).onfinish=()=>old.remove();setTimeout(()=>old.remove(),700);
-  app.animate([{transform:`translateX(${d*100}%)`},{transform:"none"}],o)}catch(e){}}
-function go(d){dir=d>0?"fwd":"bk";const was=i;i=Math.min(S.length,Math.max(0,i+d));const old=i!=was;if(old)slideAll(d>0?1:-1);show();if(old)app.style.background=nb;if(tg)i>0?tg.BackButton.show():tg.BackButton.hide()}
+function go(d){dir=d>0?"fwd":"bk";i=Math.min(S.length,Math.max(0,i+d));show();if(tg)i>0?tg.BackButton.show():tg.BackButton.hide()}
 const BOTSTART=BOT.replace(/\/[^\/]*$/,"")+"?start=share";   // ссылка на /start бота
 function caption(s,n){ // текст под карточкой — про тот слайд, где нажали «Поделиться»
  const nm=s.d[n][1],v=D[s.k],em=plain(s.d[n][0]),h=x=>String(x).replace("&lt;","<"),end="\n\nУзнай свои результаты 👇";
