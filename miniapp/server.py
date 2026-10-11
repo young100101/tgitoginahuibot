@@ -41,9 +41,15 @@ def days_in_tg(uid: int) -> int:
     t = ts[j-1] + (uid - ids[j-1]) / (ids[j] - ids[j-1]) * (ts[j] - ts[j-1])
     return max(1, int((time.time() - t) / 86400))
 
-# уровень рейтинга -> примерный % пользователей (подставь реальные цифры)
-def pct(level: int) -> int:
-    return 60 if level < 1 else 35 if level < 5 else 15 if level < 10 else 5 if level < 20 else 1
+# уровень рейтинга -> % пользователей на этом уровне
+def pct(level: int):
+    if level < 0: return 10
+    if level == 0: return 50
+    if level == 1: return 40
+    if level == 2: return 6
+    for hi, v in ((5, 5), (10, 2), (20, 0.7), (30, 0.5), (40, 0.3), (50, 0.2), (60, 0.15), (70, 0.1), (80, 0.08), (90, 0.05)):
+        if level <= hi: return v
+    return 0.01
 
 async def tg(client, method, **p):
     r = await client.post(f"{API}/{method}", json=p); j = r.json()
@@ -123,12 +129,12 @@ def render_anim(tgs_json: bytes, size: int):  # вся анимация -> ОД�
     from rlottie_python import LottieAnimation
     a = LottieAnimation.from_data(tgs_json.decode("utf-8"))
     n = max(1, a.lottie_animation_get_totalframe()); fr = a.lottie_animation_get_framerate() or 30
-    dur = n / fr; F = max(1, min(48, int(dur * 20)))  # ~20 кадров/с, максимум 48
+    dur = n / fr; F = max(1, min(60, int(dur * 24)))  # ~24 кадра/с, максимум 60
     cols = 8; rows = -(-F // cols)
     sheet = Image.new("RGBA", (cols * size, rows * size), (0, 0, 0, 0))
     for i in range(F):
         sheet.paste(a.render_pillow_frame(frame_num=min(n - 1, int(i * n / F)), width=size, height=size), ((i % cols) * size, (i // cols) * size))
-    buf = io.BytesIO(); sheet.save(buf, "WEBP", quality=82, method=4)
+    buf = io.BytesIO(); sheet.save(buf, "WEBP", quality=88, method=4)
     return buf.getvalue(), f"{cols},{rows},{F},{int(dur * 1000)}"
 
 
@@ -148,7 +154,7 @@ def render_png(tgs_json: bytes, size: int) -> bytes:  # один кадр век
 async def emoji(eid: str, thumb: int = 0, png: int = 0, anim: int = 0):  # thumb=1 -> неподвижная картинка; png=512 -> кадр в высоком качестве
     if eid not in EMOJI_IDS: raise HTTPException(404)
     if anim:
-        size = min(max(anim, 64), 256); key = (eid, size)
+        size = min(max(anim, 64), 384); key = (eid, size)
         try:
             if key not in ANIM_CACHE:
                 body, mime = await get_emoji(eid)
