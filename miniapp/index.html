@@ -23,7 +23,8 @@ h1{font-size:31px;font-weight:850;letter-spacing:-.8px;margin-top:30px;z-index:1
 @keyframes p{from{transform:scale(.8);opacity:0}}
 .emo{font-size:clamp(72px,12vh,110px);line-height:1.1}
 .emo.big{font-size:clamp(125px,20vh,185px)}
-.emo.low{margin-top:14px}
+.emo.low{margin-top:28px}
+.emo.low2{margin-top:16px}
 .emo.big .ce img{image-rendering:auto;filter:drop-shadow(0 10px 18px rgba(0,0,0,.2))}
 .lbl{opacity:.92;font-size:18px;font-weight:600;margin-top:14px}
 .val{font-size:50px;font-weight:850;margin-top:8px;line-height:1.05;text-shadow:0 3px 22px rgba(0,0,0,.12)}
@@ -50,6 +51,7 @@ button{border:0;border-radius:16px;padding:16px;font-size:17px;font-weight:750;c
 .bars b.cur::after{content:"";position:absolute;inset:0;background:#fff;transform-origin:left;animation:fill .7s cubic-bezier(.2,.8,.2,1) both}
 @keyframes fill{from{transform:scaleX(0)}}
 .mid{animation:none}
+*{scrollbar-width:none}*::-webkit-scrollbar{display:none;width:0;height:0}
 .mid.fwd{animation:inR .5s cubic-bezier(.2,.8,.2,1)}
 .mid.bk{animation:inL .5s cubic-bezier(.2,.8,.2,1)}
 @keyframes inR{from{transform:translateX(60px);opacity:0}}
@@ -149,7 +151,9 @@ body.sheet .snow img:nth-child(n+4){display:none}
 body.sheet .fp,body.sheet .cf,body.sheet .emo,body.sheet .tier::after{animation-play-state:paused}
 .intro{position:fixed;inset:0;z-index:100;background:#fff;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .intro.out{opacity:0;pointer-events:none;transition:opacity .7s ease}
-.intro .it{position:absolute;left:0;right:0;z-index:1;text-align:center;padding:0 22px;top:calc(var(--tg-safe-area-inset-top,env(safe-area-inset-top,0px)) + var(--tg-content-safe-area-inset-top,0px) + 5vh)}
+.intro .it{position:absolute;left:0;right:0;z-index:3;pointer-events:none;text-align:center;padding:0 22px;top:calc(var(--tg-safe-area-inset-top,env(safe-area-inset-top,0px)) + var(--tg-content-safe-area-inset-top,0px) + 5vh)}
+.intro h2,.intro p{transition:color .3s}
+.intro.wh h2{color:#fff}.intro.wh p{color:rgba(255,255,255,.85)}
 .intro h2{font-size:23px;font-weight:800;line-height:1.18;letter-spacing:-.4px;color:#0d0d12;max-width:370px;margin:0 auto}
 .intro p{margin-top:8px;font-size:15px;font-weight:500;color:#9a9aa6}
 .intro .ihold{position:absolute;left:50%;top:50%;z-index:2}
@@ -200,7 +204,7 @@ const S=[
  d:[["👥","Один из многих"],["🚀","Выше большинства"],["💎","Элита"]]},
 {k:"prem",p:v=>v?20:0,pr:"20 баллов за Telegram Premium",t:"Telegram Premium",s:"",u:"",f:v=>+v,
  c:[["#6366f1","#2563eb"],["#c026d3","#f43f8e"]],
- d:[["🔒","У тебя нет Telegram Premium"],["{p}","У тебя есть Telegram Premium"]]},
+ d:[["{e:5231302159739395058|🔒}","У тебя нет Telegram Premium"],["{p}","У тебя есть Telegram Premium"]]},
 {k:"gifts",p:v=>Math.floor(v/5),pr:"1 балл за каждые 5 подарков",t:"Обычные подарки",s:"Сколько их в твоём профиле?",u:"шт.",f:v=>v<=3?0:v<=10?1:2,
  c:[["#ff5fa2","#ff2d75"],["#ff4f9a","#d91e72"],["#ff3d81","#b5175b"]],
  d:[["{e:5289761157173775507|}","Скромная полка"],["{e:5289761157173775507|}","Неплохая коллекция"],["{e:5289761157173775507|}","Подарочный магнат"]]},
@@ -237,8 +241,8 @@ function put(el,e){ // вставить эмодзи в элемент
   v.muted=true;v.setAttribute("muted","");v.setAttribute("playsinline","");v.setAttribute("webkit-playsinline","");v.loop=true;v.autoplay=true;v.addEventListener("error",fb);v.src=e.u;el.appendChild(v);
   const pr=v.play();if(pr&&pr.catch)pr.catch(fb)}
  else if(e.k=="i"){const m=document.createElement("img");m.src=e.u;el.appendChild(m)}}
-const STILLONLY=new Set(["5444965061749644170","5289761157173775507","5983201451227222757","5372800046284674872","5418028873705069979","5397782960512444700"]);   // тяжёлая анимация / нужна статика
-const ANIMID=new Set(["5444965061749644170","5372800046284674872","5418028873705069979","5397782960512444700"]),AN={};   // эмодзи с оригинальной анимацией, но в виде лёгкого WebP (собирает сервер)
+const STILLONLY=new Set(["5231302159739395058","5444965061749644170","5289761157173775507","5983201451227222757","5372800046284674872","5418028873705069979","5397782960512444700"]);   // тяжёлая анимация / нужна статика
+const ANIMID=new Set(["5231302159739395058","5444965061749644170","5372800046284674872","5418028873705069979","5397782960512444700"]),AN={};   // эмодзи с оригинальной анимацией, но в виде лёгкого WebP (собирает сервер)
 const animUrl=id=>AN[id]||(AN[id]=fetch(API+"/api/emoji/"+id+"?anim=256").then(async r=>{const m=(r.headers.get("X-Sheet")||"").split(",").map(Number);if(!r.ok||m.length<4||m.some(isNaN))throw 0;
  const u=URL.createObjectURL(await r.blob()),im=new Image();im.src=u;await (im.decode?im.decode():Promise.resolve());return{u,cols:m[0],rows:m[1],n:m[2],dur:m[3]}}).catch(()=>null));
 function animate(el,id){loadEmoji(id).then(e=>{   // настоящая векторная анимация (lottie): любой размер без потери качества, плавно как в Telegram
@@ -246,7 +250,7 @@ function animate(el,id){loadEmoji(id).then(e=>{   // настоящая вект
  if(e&&e.k=="l"&&window.lottie){try{
   const old=el.querySelector("img"),box=document.createElement("div");
   el.style.position="relative";box.style.cssText="position:absolute;left:0;top:0;width:100%;height:100%;opacity:0";el.appendChild(box);
-  const heavy=id=="5444965061749644170";   // мишка сложнее — рисуем на canvas (легче для телефона)
+  const heavy=id=="5444965061749644170"||id=="5231302159739395058";   // мишка сложнее — рисуем на canvas (легче для телефона)
   const an=lottie.loadAnimation({container:box,renderer:heavy?"canvas":"svg",loop:true,autoplay:true,animationData:JSON.parse(JSON.stringify(e.d)),rendererSettings:heavy?{preserveAspectRatio:"xMidYMid meet",clearCanvas:true,dpr:Math.min(2.5,window.devicePixelRatio||2)}:{preserveAspectRatio:"xMidYMid meet"}});
   an.addEventListener("DOMLoaded",()=>{box.style.opacity=1;if(old)old.remove();
    let n=0,t0=0;const probe=t=>{if(!el.isConnected)return;if(!t0)t0=t;n++;   // страховка от лагов: если телефон не тянет (<40 кадров/с), переключаем на лёгкий вариант
@@ -283,7 +287,7 @@ function stillOld(id,z){z=z||128; // неподвижная картинка э�
      if(sum>0){url=cv.toDataURL("image/png");break}}
     try{an.destroy()}catch(x){}res(url)})
   }catch(x){res(null)}})).catch(()=>null)}
-const HQ=new Set(["5444965061749644170","5289761157173775507","5983201451227222757","5372800046284674872","5418028873705069979","5397782960512444700"]);   // эмодзи, которые рисуем в высоком качестве (кадр из векторной анимации)
+const HQ=new Set(["5231302159739395058","5444965061749644170","5289761157173775507","5983201451227222757","5372800046284674872","5418028873705069979","5397782960512444700"]);   // эмодзи, которые рисуем в высоком качестве (кадр из векторной анимации)
 const hqPng=id=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),12000);
  return fetch(API+"/api/emoji/"+id+"?png=768",{signal:c.signal}).then(async r=>{clearTimeout(t);if(!r.ok||!(r.headers.get("content-type")||"").startsWith("image"))throw 0;return URL.createObjectURL(await r.blob())})};
 const stillHQ=id=>hqPng(id).catch(()=>thumb(id).then(e=>e.u)).catch(()=>null);   // PNG 512px с сервера; если не вышло — маленькое превью
@@ -335,7 +339,7 @@ function intro(){
  const hc=el.querySelector(".hc"),fg=el.querySelector(".fg"),HOLD=1200;
  let p=0,holding=false,done=false,raf=0,last=0,tick1=0;
  const ease=x=>Math.pow(x,1.7);   // разгоняется до самого конца — без остановки перед финалом
- const render=()=>{hc.style.transform=`scale(${s0+(1-s0)*ease(p)})`;fg.style.transform=`scale(${1+.1*p})`};
+ const render=()=>{el.classList.toggle("wh",ease(p)>.3);hc.style.transform=`scale(${s0+(1-s0)*ease(p)})`;fg.style.transform=`scale(${1+.1*p})`};
  const hap=k=>{try{tg&&tg.HapticFeedback&&tg.HapticFeedback.impactOccurred(k)}catch(e){}};
  function tick(t){
   const dt=Math.min(48,t-last);last=t;
@@ -358,7 +362,7 @@ function intro(){
 function fx(n,all,key){
  document.querySelectorAll(".cnt").forEach(el=>{const to=+el.dataset.to,t0=performance.now(),D=1300;
   (function f(t){const p=Math.min(1,(t-t0)/D),e=1-Math.pow(1-p,3);el.textContent=Math.round(to*e).toLocaleString("ru");if(p<1)requestAnimationFrame(f)})(t0)});
- if(n==2&&key!="days"&&key!="gifts"&&key!="nft"){const E=["🎉","✨","⭐","🎊","💫"];for(let k=0;k<26;k++){const c=document.createElement("span");c.className="cf";if(E[k%5]=="⭐")c.innerHTML=CE(EM.star,"⭐");else c.textContent=E[k%5];
+ if(n==2&&key!="days"&&key!="gifts"&&key!="nft"&&key!="final"){const E=["🎉","✨","⭐","🎊","💫"];for(let k=0;k<26;k++){const c=document.createElement("span");c.className="cf";if(E[k%5]=="⭐")c.innerHTML=CE(EM.star,"⭐");else c.textContent=E[k%5];
   c.style.cssText=`left:${Math.random()*100}%;animation-delay:${Math.random()*.8}s;animation-duration:${2+Math.random()*2}s;font-size:${16+Math.random()*18}px`;app.appendChild(c);setTimeout(()=>c.remove(),5000)}}
  hydrate();
  if(tg&&tg.HapticFeedback)tg.HapticFeedback.impactOccurred(n==2?"heavy":"light")}
@@ -392,11 +396,15 @@ Object.assign(SV,{
  dots:G('<path fill-rule="evenodd" d="M16 12h68a12 12 0 0 1 12 12v36a12 12 0 0 1-12 12H50L28 94V72h-12A12 12 0 0 1 4 60V24a12 12 0 0 1 12-12zM26 42a6 6 0 1 1 12 0a6 6 0 1 1-12 0zM44 42a6 6 0 1 1 12 0a6 6 0 1 1-12 0zM62 42a6 6 0 1 1 12 0a6 6 0 1 1-12 0z"/>')});
 Object.assign(AR,{snow:1,hour:1,bell:1,clock:1,zzz:1,flame:1,plane:1,dots:1});
 SV.heart=G('<path d="M50 90C20 68 5 50 5 31a23 23 0 0 1 45-7 23 23 0 0 1 45 7c0 19-15 37-45 59z"/>');AR.heart=1;
+SV.lock=G('<rect x="18" y="42" width="64" height="50" rx="11"/><path d="M32 44V32a18 18 0 0 1 36 0v12" fill="none" stroke="#000" stroke-width="9" stroke-linecap="round"/>');
+SV.starb=G('<polygon points="50,6 62,36 94,38 69,58 78,90 50,72 22,90 31,58 6,38 38,36" stroke="#000" stroke-width="6" stroke-linejoin="round"/>');
+AR.lock=1;AR.starb=1;
 const mixBG=T=>LAY.map(([x,y,w,r,o],j)=>[T[j%T.length],x,y,w,j%2?r:-r,o]);
 BGI.nobreak=mixBG(["snow","hour","snow","bell"]);          // лёд, песочные часы, уведомления выключены
 BGI.slow=mixBG(["t:🐌","zzz","clock"]);                      // улитка, zzz, часы
 BGI.maxmsgs=mixBG(["bubble","flame","plane","dots"]);        // сообщения, огонь, отправка
 BGI.pinned=mixBG(["heart","t:📌","bubble"]);              // сердце, кнопка закрепа, диалог
+BGI.prem0=mixBG(["lock","starb","heart"]);                  // замок, звёзды, сердца (когда Premium нет)
 BGI.online=mixBG(["bolt","bubble","pepe_bg"]);               // молния, диалог, пепе
 const bstars=()=>`<div class="bst">${BST.map(([x,y,w,r,o])=>`<i style="left:${x}%;top:${y}%;width:${w}px;height:${w}px;opacity:${o};transform:rotate(${r}deg);--sm:${STAR}"></i>`).join("")}</div>`;
 const RT=[1.44,1.24,1.31];   // пропорции трёх звёздочек
@@ -416,8 +424,8 @@ function show(){
  const s=S[i],n=s.f(D[s.k]),[e,name]=s.d[n];bg(s.c[n]);
  const sub=s.k=="prem"?(D.prem?"Ты попадаешь в 1.5% в телеграмме!":"Ты попадаешь в 98.5% пользователей."):s.s;
  if(window.lottie)lottie.destroy();
- app.innerHTML=snow()+(s.k=="pct"||s.k=="prem"?bstars():"")+bgi(s.k)+`<h1>${s.t}</h1><div class="sub">${sub}</div>
- <div class="mid ${dir}">${s.k=="days"?"":`<div class="emo${s.k=="nft"?" stat":""}${s.k=="gifts"||["slow","nobreak","pinned"].includes(s.k)?" big":""}${s.k=="gifts"?" low":""}">${s.k=="nft"?rich(NFTE):rich(e)}</div>`}<div class="val">${val(s)}</div>${name?`<div class="tier">${name}</div>`:""}${s.k=="days"?`<div class="yp">Аккаунт ${regYear(D.days)} года · ${YP[regYear(D.days)]} пользователей</div>`:""}${s.p?`<div class="pts"><div class="pv">+${N(pts(s))} ${pl(pts(s))}</div></div>`:""}</div>
+ app.innerHTML=snow()+(s.k=="pct"||s.k=="prem"?bstars():"")+bgi(s.k=="prem"&&!+D.prem?"prem0":s.k)+`<h1>${s.t}</h1><div class="sub">${sub}</div>
+ <div class="mid ${dir}">${s.k=="days"?"":`<div class="emo${s.k=="nft"?" stat":""}${s.k=="gifts"||["slow","nobreak","pinned"].includes(s.k)?" big":""}${s.k=="gifts"?" low":""}${s.k=="pct"?" low2":""}">${s.k=="nft"?rich(NFTE):rich(e)}</div>`}<div class="val">${val(s)}</div>${name?`<div class="tier">${name}</div>`:""}${s.k=="days"?`<div class="yp">Аккаунт ${regYear(D.days)} года · ${YP[regYear(D.days)]} пользователей</div>`:""}${s.p?`<div class="pts"><div class="pv">+${N(pts(s))} ${pl(pts(s))}</div></div>`:""}</div>
  <button type="button" class="share" data-a="s">Поделиться ↗</button><div class="btns">${i>0?`<button type="button" class="back" data-a="b">Назад</button>`:""}<button type="button" class="next" data-a="n">Продолжить</button></div>`;fx(n,0,s.k)}
 function final(){bg(["#22d3ee","#7c3aed"]);app.classList.remove("sl");
  if(window.lottie)lottie.destroy();
@@ -444,12 +452,16 @@ function caption(s,n){ // текст под карточкой — про тот
   case"nobreak":return`🧊 Самый долгий период без общения — ${v}...`+end;
   case"maxmsgs":return`🔥 Максимум сообщений за один день — ${v}!`+end}
  return`${em} ${s.t}: ${nm}`+end}
+function shareMsg(id,kind){   // считаем «пересылку», только если человек реально отправил сообщение
+ const off=()=>{try{tg.offEvent("shareMessageSent",ok);tg.offEvent("shareMessageFailed",bad)}catch(e){}},
+  ok=()=>{off();try{fetch(API+"/api/shared",{method:"POST",headers:{Authorization:"tma "+tg.initData,"Content-Type":"application/json"},body:JSON.stringify({kind})})}catch(e){}},bad=()=>off();
+ tg.onEvent("shareMessageSent",ok);tg.onEvent("shareMessageFailed",bad);tg.shareMessage(id)}
 async function share(){
  const fin=i>=S.length,s=fin?null:S[i],n=fin?0:s.f(D[s.k]);
  const text=fin?`🏆 Мои итоги в Telegram — ${total()} ${pl(total())}!\nУзнай свои результаты 👇`:caption(s,n);
  try{if(!tg||!tg.shareMessage||!tg.isVersionAtLeast("8.0"))throw 0;
   const r=await fetch(API+"/api/share",{method:"POST",headers:{Authorization:"tma "+tg.initData,"Content-Type":"application/json"},body:JSON.stringify({slide:fin?"final":s.k,tier:n,text})});
-  if(!r.ok)throw 0;const {id}=await r.json();tg.shareMessage(id)}
+  if(!r.ok)throw 0;const {id}=await r.json();shareMsg(id,"slide")}
  catch(e){const l="https://t.me/share/url?url="+encodeURIComponent(BOTSTART)+"&text="+encodeURIComponent(text);tg?tg.openTelegramLink(l):window.open(l)}}
 
 // ===== Плашка «Хочешь узнать больше?» =====
@@ -530,7 +542,7 @@ async function waitPaid(){NOTE="Проверяем оплату…";renderSheet(
  for(let k=0;k<10;k++){await refreshMore();if(MORE&&MORE.unlocked)break;await new Promise(r=>setTimeout(r,1200))}
  NOTE="";VIEW="menu";renderSheet();if(tg&&tg.HapticFeedback)tg.HapticFeedback.notificationOccurred("success")}
 async function sendInvite(){
- try{if(!live||!tg.shareMessage||!tg.isVersionAtLeast("8.0"))throw 0;const {id}=await api("/api/invite",{method:"POST"});tg.shareMessage(id)}
+ try{if(!live||!tg.shareMessage||!tg.isVersionAtLeast("8.0"))throw 0;const {id}=await api("/api/invite",{method:"POST"});shareMsg(id,"invite")}
  catch(e){const l="https://t.me/share/url?url="+encodeURIComponent(MORE.link)+"&text="+encodeURIComponent("👋 Смотри результаты своего Telegram-аккаунта!");tg?tg.openTelegramLink(l):window.open(l)}}
 async function copyLink(){const t=MORE.link;
  try{await navigator.clipboard.writeText(t)}catch(e){const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();try{document.execCommand("copy")}catch(x){}a.remove()}

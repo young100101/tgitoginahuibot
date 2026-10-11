@@ -347,6 +347,8 @@ async def stats_text():
     now = datetime.now(TZ); t0 = now.replace(hour=0, minute=0, second=0, microsecond=0)
     n = await pool.fetchval("SELECT count(*) FROM users"); b = await pool.fetchval("SELECT count(*) FROM users WHERE blocked")
     nt, nw, nm = [await period_counts("users", "first_seen", x) for x in (t0, now - timedelta(days=7), now - timedelta(days=30))]
+    rt, rw, rm = [await period_counts("referrals", "created", x) for x in (t0, now - timedelta(days=7), now - timedelta(days=30))]
+    ra = await pool.fetchval("SELECT count(*) FROM referrals")
     passed = await pool.fetchval("SELECT count(*) FROM users WHERE passed_at IS NOT NULL")
     app = await pool.fetchval("SELECT count(*) FROM profiles p JOIN users u ON u.user_id=p.user_id")
     need = await get_need()
@@ -359,12 +361,13 @@ async def stats_text():
     sh = {r["kind"]: r["c"] for r in await pool.fetch("SELECT kind, count(*) c FROM shares WHERE ts >= $1 GROUP BY kind", now - timedelta(days=7))}
     pct = lambda x: f"{x * 100 // n}%" if n else "—"
     return (f"📊 <b>Статистика</b>\n\n👥 Уникальных стартов: <b>{n}</b>\n🚫 Заблокировали бота: <b>{b}</b> · ✅ Активных: <b>{n - b}</b>\n\n"
-            f"🆕 <b>Новые</b>: сегодня <b>{nt}</b> · 7 дней <b>{nw}</b> · 30 дней <b>{nm}</b>\n\n"
+            f"🆕 <b>Новые</b>: сегодня <b>{nt}</b> · 7 дней <b>{nw}</b> · 30 дней <b>{nm}</b>\n"
+            f"🤝 <b>По реферальным ссылкам</b>: сегодня <b>{rt}</b> · 7 дней <b>{rw}</b> · 30 дней <b>{rm}</b> · всё время <b>{ra}</b>\n\n"
             f"🔻 <b>Воронка</b>\n1️⃣ Нажали «Начать»: <b>{n}</b> (100%)\n2️⃣ Выполнили задания: <b>{passed}</b> ({pct(passed)})\n"
             f"3️⃣ Открыли приложение: <b>{app}</b> ({pct(app)})\n4️⃣ Открыли доп. информацию: <b>{opened}</b> ({pct(opened)})\n"
             f"      └ купили: {buyers} · пригласили: {inviters}\n\n"
             f"⭐ <b>Звёзды</b>\n💰 Заработано всего: <b>{ps}</b> ⭐\n🛒 Потрачено на доп. информацию: <b>{ps}</b> ⭐ ({pc} покупок)\nсегодня {st[0]} · 7 дней {st[1]} · 30 дней {st[2]}\n\n"
-            f"📤 <b>Пересылки</b> за 7 дней: слайды <b>{sh.get('slide', 0)}</b> · приглашения <b>{sh.get('invite', 0)}</b>\n\n"
+            f"📤 <b>Пересылки</b> (реально отправленные) за 7 дней: слайды <b>{sh.get('slide', 0)}</b> · приглашения <b>{sh.get('invite', 0)}</b>\n\n"
             f"<i>Этап «выполнили задания» считается с момента этого обновления.</i>")
 
 async def last_purchases_text():
@@ -736,6 +739,11 @@ def register(app):
         return {"url": link}
     @app.get("/health")
     async def health(): return {"ok": True}   # сюда можно слать пинг (UptimeRobot), чтобы бесплатный сервер не засыпал
+    @app.post("/api/shared")
+    async def shared(req: Request, authorization: str = Header()):   # приложение сообщает, что человек РЕАЛЬНО отправил сообщение
+        uid = auth_user(authorization)["id"]; kind = (await req.json()).get("kind")
+        if kind in ("slide", "invite"): await log_share(uid, kind)
+        return {"ok": True}
     @app.post("/api/invite")
     async def invite(authorization: str = Header()):
         uid = auth_user(authorization)["id"]
@@ -749,7 +757,6 @@ def register(app):
         if not r and e and len(no_ce(e)) != len(e):  # премиум-эмодзи в приглашении не приняты -> без них
             r = await call("savePreparedInlineMessage", user_id=uid, result=make(no_ce(e)), allow_user_chats=True, allow_group_chats=True, allow_channel_chats=True)
         if not r: raise HTTPException(502, "Telegram не принял сообщение")
-        await log_share(uid, "invite")
         return {"id": r["id"]}
     @app.post("/webhook")
     async def webhook(req: Request):
