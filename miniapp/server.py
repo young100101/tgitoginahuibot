@@ -129,12 +129,17 @@ def render_anim(tgs_json: bytes, size: int):  # вся анимация -> ОД�
     from rlottie_python import LottieAnimation
     a = LottieAnimation.from_data(tgs_json.decode("utf-8"))
     n = max(1, a.lottie_animation_get_totalframe()); fr = a.lottie_animation_get_framerate() or 30
-    dur = n / fr; F = max(1, min(60, int(dur * 24)))  # ~24 кадра/с, максимум 60
-    cols = 8; rows = -(-F // cols)
+    dur = n / fr
+    if size > 256:  # режим высокой плавности: родная частота кадров (до 60/с), лимит кадров по памяти телефона
+        F = max(1, min(int(dur * min(60, fr)), max(1, 10_000_000 // (size * size))))
+        cols = min(F, max(1, 4096 // size))
+    else:
+        F = max(1, min(60, int(dur * 24))); cols = 8  # ~24 кадра/с, максимум 60
+    rows = -(-F // cols)
     sheet = Image.new("RGBA", (cols * size, rows * size), (0, 0, 0, 0))
     for i in range(F):
         sheet.paste(a.render_pillow_frame(frame_num=min(n - 1, int(i * n / F)), width=size, height=size), ((i % cols) * size, (i // cols) * size))
-    buf = io.BytesIO(); sheet.save(buf, "WEBP", quality=88, method=4)
+    buf = io.BytesIO(); sheet.save(buf, "WEBP", quality=84, method=4)
     return buf.getvalue(), f"{cols},{rows},{F},{int(dur * 1000)}"
 
 
@@ -149,6 +154,18 @@ def render_png(tgs_json: bytes, size: int) -> bytes:  # один кадр век
         best = best or img
         if img.getchannel("A").getextrema()[1] > 0: best = img; break
     buf = io.BytesIO(); best.save(buf, "PNG"); return buf.getvalue()
+
+WARM = [("5354820836442287981", 288)]   # эмодзи, у которых покадровый лист готовим заранее
+async def _warm():
+    for eid, size in WARM:
+        try:
+            body, mime = await get_emoji(eid)
+            if mime == "application/json" and (eid, size) not in ANIM_CACHE:
+                ANIM_CACHE[(eid, size)] = await asyncio.to_thread(render_anim, body, size)
+        except Exception as e: print("WARM ERROR", eid, repr(e))
+
+@app.on_event("startup")
+async def _startup(): asyncio.create_task(_warm())
 
 @app.get("/api/emoji/{eid}")
 async def emoji(eid: str, thumb: int = 0, png: int = 0, anim: int = 0):  # thumb=1 -> неподвижная картинка; png=512 -> кадр в высоком качестве

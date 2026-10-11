@@ -249,7 +249,7 @@ const STILLONLY=new Set(["5454039464357682228","5453900977432188793",,"535482083
 const ANIMID=new Set(["5454039464357682228","5453900977432188793",,"5354820836442287981",,"5438571934210082705","5224648868850863664","5231302159739395058","5444965061749644170","5372800046284674872","5418028873705069979","5397782960512444700"]),AN={};   // эмодзи с оригинальной анимацией, но в виде лёгкого WebP (собирает сервер)
 const animUrl=id=>AN[id]||(AN[id]=fetch(API+"/api/emoji/"+id+"?anim="+(SPR[id]||256)).then(async r=>{const m=(r.headers.get("X-Sheet")||"").split(",").map(Number);if(!r.ok||m.length<4||m.some(isNaN))throw 0;
  const u=URL.createObjectURL(await r.blob()),im=new Image();im.src=u;await (im.decode?im.decode():Promise.resolve());return{u,cols:m[0],rows:m[1],n:m[2],dur:m[3]}}).catch(()=>null));
-const SPR={"5354820836442287981":384};   // эти эмодзи играем покадровым листом (ноль нагрузки на телефон), размер кадра в px
+const SPR={"5354820836442287981":288};   // эти эмодзи играем покадровым листом (ноль нагрузки на телефон), размер кадра в px
 function animate(el,id){if(SPR[id]){animateSprite(el,id);return}
  loadEmoji(id).then(e=>{   // настоящая векторная анимация (lottie): любой размер без потери качества, плавно как в Telegram
  if(!el.isConnected)return;
