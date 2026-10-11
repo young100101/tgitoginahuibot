@@ -8,7 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;font-family:-apple-system,"Segoe UI",Roboto,sans-serif}
-html,body{height:100dvh;background:#111;color:#fff;overflow:hidden}
+html,body{height:100dvh;background:#1580fe;color:#fff;overflow:hidden}
 #app{height:100%;max-width:480px;margin:auto;position:relative;transition:background .4s;display:flex;flex-direction:column;align-items:center;text-align:center;padding:calc(var(--tg-safe-area-inset-top,env(safe-area-inset-top,0px)) + var(--tg-content-safe-area-inset-top,0px) + 14px) 20px calc(var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom,0px)) + 16px)}
 .snow{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .snow i{position:absolute;top:-50px;background:#7db7ff;-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat;opacity:.9;pointer-events:none;will-change:transform;animation:f linear infinite,sw ease-in-out infinite}
@@ -251,7 +251,7 @@ function animate(el,id){loadEmoji(id).then(e=>{   // настоящая вект
   const old=el.querySelector("img"),box=document.createElement("div");
   el.style.position="relative";box.style.cssText="position:absolute;left:0;top:0;width:100%;height:100%;opacity:0";el.appendChild(box);
   const heavy=id=="5224648868850863664"||id=="5444965061749644170"||id=="5231302159739395058";   // мишка сложнее — рисуем на canvas (легче для телефона)
-  const an=lottie.loadAnimation({container:box,renderer:heavy?"canvas":"svg",loop:true,autoplay:true,animationData:JSON.parse(JSON.stringify(e.d)),rendererSettings:heavy?{preserveAspectRatio:"xMidYMid meet",clearCanvas:true,dpr:Math.min(2.5,window.devicePixelRatio||2)}:{preserveAspectRatio:"xMidYMid meet"}});
+  const an=lottie.loadAnimation({container:box,renderer:"svg",loop:true,autoplay:true,animationData:JSON.parse(JSON.stringify(e.d)),rendererSettings:{preserveAspectRatio:"xMidYMid meet"}});
   an.addEventListener("DOMLoaded",()=>{box.style.opacity=1;if(old)old.remove();
    let n=0,t0=0;const probe=t=>{if(!el.isConnected)return;if(!t0)t0=t;n++;   // страховка от лагов: если телефон не тянет (<40 кадров/с), переключаем на лёгкий вариант
     if(t-t0<1600)return requestAnimationFrame(probe);
@@ -331,7 +331,7 @@ function fetchMe(){return ME||(ME=(async()=>{
  rolls();setTimeout(()=>{try{live&&refreshMore()}catch(e){}},900)})())}
 // ===== Стартовый экран: удержи палец — синий круг заполняет экран =====
 function intro(){
- try{if(tg){tg.setHeaderColor("#ffffff");tg.setBackgroundColor("#ffffff")}}catch(e){}
+ document.documentElement.style.background=document.body.style.background="#fff";try{if(tg){tg.setHeaderColor("#ffffff");tg.setBackgroundColor("#ffffff")}}catch(e){}
  const W=innerWidth,H=innerHeight,BASE=Math.round(Math.min(3200,Math.hypot(W,H)*1.2)),D0=Math.round(Math.min(260,W*.64)),s0=D0/BASE;
  const el=document.createElement("div");el.className="intro";
  el.innerHTML=`<div class="it"><h2>Я хочу узнать результаты своего аккаунта</h2><p>Удержи палец в центре экрана</p></div><div class="ihold" style="--b:${BASE}px;--d:${D0}px"><i class="pulse"></i><i class="hc" style="transform:scale(${s0})"></i><div class="fg"><img src="/cards/pepe.webp" alt="" draggable="false"></div></div>`;
@@ -413,7 +413,8 @@ function stars(tint){let h="";for(let n=0;n<18;n++){const k=Math.floor(Math.rand
 function snow(){return`<div class="bgl" style="background:${nb}"></div>`+stars(false)}
 let cur="#5b6cf0",nb=cur,dir="fwd";
 function bg(c){try{if(tg){tg.setHeaderColor(c[0]);tg.setBackgroundColor(c[1])}}catch(e){}
- app.style.background=cur;nb=`linear-gradient(145deg,${c[0]},${c[1]})`;setTimeout(()=>{cur=nb;app.style.background=cur},500)}
+ app.style.background=cur;nb=`linear-gradient(145deg,${c[0]},${c[1]})`;document.documentElement.style.background=document.body.style.background=nb;try{if(tg&&tg.setBottomBarColor)tg.setBottomBarColor(c[1])}catch(e){}
+ setTimeout(()=>{cur=nb;app.style.background=cur},500)}
 const N=x=>`<span class="cnt" data-to="${x}">0</span>`;
 function val(s){const v=D[s.k];if(RND.includes(s.k))return`<span class="vt">${v}</span>`;if(s.k=="prem")return"";if(s.k=="pct")return`<span style="font-size:24px;font-weight:700">Рейтинг</span><span class="bn">${N(D.lvl)}</span><span style="font-size:22px;font-weight:600">Ты в топ ${N(v)}% пользователей</span><br><span style="font-size:22px;font-weight:700;display:inline-block;margin-top:8px">${CE(EM.star,"⭐")} Потрачено звёзд: ${N(D.stars||0)}</span>`;if(s.k=="days")return`<span class="dw"><span class="bn">${N(v)}</span>${CE(EM.days,"⭐").replace('class="ce"','class="ce dce"')}</span><span class="vu">${s.u}</span>`;if(s.k=="gifts"){const n=Math.round(D.value||0),m=n%10,c=n%100;return`<span class="bn">${N(v)}</span><span class="vu">${s.u}</span><span class="gsum">на сумму: ${N(n)} ${m==1&&c!=11?"звезда":m>=2&&m<=4&&(c<12||c>14)?"звезды":"звёзд"}</span>`}return`<span class="bn">${N(v)}</span>`+(s.u?`<span class="vu">${s.u}</span>`:"")}
 function show(){
