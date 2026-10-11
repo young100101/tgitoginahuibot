@@ -27,7 +27,8 @@ h1{font-size:31px;font-weight:850;letter-spacing:-.8px;margin-top:30px;z-index:1
 .emo.low{position:relative;top:48px}
 .emo.low2{position:relative;top:66px}
 .emo.low3{position:relative;top:34px}
-.mid.up .val,.mid.up .tier,.mid.up .pts{position:relative;top:-14px}
+.mid.up .val,.mid.up .tier,.mid.up .pts{position:relative;top:8px}
+.mid.dn .val,.mid.dn .tier,.mid.dn .pts{position:relative;top:18px}
 .emo.big .ce img{image-rendering:auto;filter:drop-shadow(0 10px 18px rgba(0,0,0,.2))}
 .lbl{opacity:.92;font-size:18px;font-weight:600;margin-top:14px}
 .val{font-size:50px;font-weight:850;margin-top:8px;line-height:1.05;text-shadow:0 3px 22px rgba(0,0,0,.12)}
@@ -297,7 +298,7 @@ setTimeout(()=>{try{const ids=new Set(["5454039464357682228",...Object.values(MA
  ids.forEach(id=>{try{(HQ.has(id)||STILLONLY.has(id))?still(id):loadEmoji(id);if(HQ.has(id))loadEmoji(id)}catch(e){}})}catch(e){}},0);   // заранее грузим все премиум-эмодзи, пока человек держит палец
 setTimeout(()=>{try{Object.keys(SPR).forEach(animUrl)}catch(e){}},400);
 setTimeout(()=>{try{const u=new Set();window.__pre=[];Object.values(BGI).forEach(a=>a.forEach(([f])=>{if(f.startsWith("t:")||SV[f])return;u.add(f.startsWith("e:")||f.startsWith("c:")?API+"/api/emoji/"+f.slice(2)+"?png=256":`/cards/${f}.webp`)}));
- u.forEach(x=>{const im=new Image();im.src=x;window.__pre.push(im)})}catch(e){}},50);   // картинки фона слайдов грузим заранее — чтобы на слайде они были сразу   // заранее готовим эти эмодзи, чтобы к слайду уже были на месте
+ u.forEach(x=>{const im=new Image();im.decoding="async";im.src=x;if(im.decode)im.decode().catch(()=>{});window.__pre.push(im)})}catch(e){}},0);   // картинки фона слайдов грузим и декодируем заранее — на слайде они появляются сразу   // картинки фона слайдов грузим заранее — чтобы на слайде они были сразу   // заранее готовим эти эмодзи, чтобы к слайду уже были на месте
 function stillOld(id,z){z=z||128; // неподвижная картинка эмодзи (один кадр) — чтобы падающие не нагружали экран
  return loadEmoji(id).then(e=>new Promise(res=>{
   if(!e)return res(null);
@@ -437,7 +438,7 @@ BGI.nft=mixBG(["e:5983201451227222757","e:5357395115285438516","e:53395641505342
 BGI.online=mixBG(["bolt","bubble","pepe_bg"]);               // молния, диалог, пепе
 const bstars=()=>`<div class="bst">${BST.map(([x,y,w,r,o])=>`<i style="left:${x}%;top:${y}%;width:${w}px;height:${w}px;opacity:${o};transform:rotate(${r}deg);--sm:${STAR}"></i>`).join("")}</div>`;
 const RT=[1.44,1.24,1.31];   // пропорции трёх звёздочек
-function stars(tint){let h="";for(let n=0;n<15;n++){const k=Math.floor(Math.random()*3),q=SP[k],w=(q.w*(.7+Math.random()*.5)).toFixed(1),r=(Math.random()<.5?-1:1)*(90+Math.random()*270);
+function stars(tint){let h="";for(let n=0;n<13;n++){const k=Math.floor(Math.random()*3),q=SP[k],w=(q.w*(.7+Math.random()*.5)).toFixed(1),r=(Math.random()<.5?-1:1)*(90+Math.random()*270);
  const st=`left:${(Math.random()*96).toFixed(1)}%;width:${w}px;--r:${r.toFixed(0)}deg;animation-duration:${(5+Math.random()*7).toFixed(1)}s,${(2+Math.random()*3).toFixed(1)}s;animation-delay:-${(Math.random()*10).toFixed(1)}s,-${(Math.random()*4).toFixed(1)}s`;
  h+=tint?`<i style="${st};height:${(w*RT[k]).toFixed(1)}px;--m:url(${q.u})"></i>`:`<img src="${q.u}" alt="" draggable="false" style="${st}">`}
  return`<div class="snow">${h}</div>`}
@@ -455,7 +456,7 @@ function show(){
  const sub=s.k=="prem"?(D.prem?"Ты попадаешь в 1.5% в телеграмме!":"Ты попадаешь в 98.5% пользователей."):s.s;
  if(window.lottie)lottie.destroy();
  app.innerHTML=snow()+(s.k=="pct"||s.k=="prem"?bstars():"")+bgi(s.k)+`<h1>${s.t}</h1><div class="sub">${sub}</div>
- <div class="mid ${dir}${s.k=="gifts"?" up":""}">${s.k=="days"?"":`<div class="emo${s.k=="gifts"||["slow","nobreak","pinned","nft"].includes(s.k)?" big":""}${s.k=="gifts"?" low":""}${s.k=="maxmsgs"?" nofl":""}${s.k=="pct"?" low2":""}${s.k=="nft"?" low3":""}">${s.k=="nft"?rich(NFTE):rich(e)}</div>`}<div class="val">${val(s)}</div>${name?`<div class="tier">${name}</div>`:""}${s.k=="days"?`<div class="yp">Аккаунт ${regYear(D.days)} года · ${YP[regYear(D.days)]} пользователей</div>`:""}${s.p?`<div class="pts"><div class="pv">+${N(pts(s))} ${pl(pts(s))}</div></div>`:""}</div>
+ <div class="mid ${dir}${s.k=="gifts"?" up":s.k=="pct"?" dn":""}">${s.k=="days"?"":`<div class="emo${s.k=="gifts"||["slow","nobreak","pinned","nft"].includes(s.k)?" big":""}${s.k=="gifts"?" low":""}${s.k=="maxmsgs"?" nofl":""}${s.k=="pct"?" low2":""}${s.k=="nft"?" low3":""}">${s.k=="nft"?rich(NFTE):rich(e)}</div>`}<div class="val">${val(s)}</div>${name?`<div class="tier">${name}</div>`:""}${s.k=="days"?`<div class="yp">Аккаунт ${regYear(D.days)} года · ${YP[regYear(D.days)]} пользователей</div>`:""}${s.p?`<div class="pts"><div class="pv">+${N(pts(s))} ${pl(pts(s))}</div></div>`:""}</div>
  <button type="button" class="share" data-a="s">Поделиться ↗</button><div class="btns">${i>0?`<button type="button" class="back" data-a="b">Назад</button>`:""}<button type="button" class="next" data-a="n">Продолжить</button></div>`;fx(n,0,s.k)}
 function final(){bg(["#22d3ee","#7c3aed"]);app.classList.remove("sl");
  if(window.lottie)lottie.destroy();

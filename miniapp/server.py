@@ -158,7 +158,8 @@ def render_png(tgs_json: bytes, size: int, at: float = -1) -> bytes:  # один
         if img.getchannel("A").getextrema()[1] > 0: best = img; break
     buf = io.BytesIO(); best.save(buf, "PNG"); return buf.getvalue()
 
-WARM = [("5354820836442287981", 288)]   # эмодзи, у которых покадровый лист готовим заранее
+WARM = [("5354820836442287981", 288)]
+WARM_PNG = ["5983201451227222757", "5357395115285438516", "5339564150534200424", "5454039464357682228"]   # картинки фона слайда NFT — готовим заранее   # эмодзи, у которых покадровый лист готовим заранее
 async def _warm():
     for eid, size in WARM:
         try:
@@ -166,6 +167,12 @@ async def _warm():
             if mime == "application/json" and (eid, size) not in ANIM_CACHE:
                 ANIM_CACHE[(eid, size)] = await asyncio.to_thread(render_anim, body, size)
         except Exception as e: print("WARM ERROR", eid, repr(e))
+    for eid in WARM_PNG:
+        try:
+            body, mime = await get_emoji(eid)
+            if mime == "application/json" and (eid, 256, -1.0) not in PNG_CACHE:
+                PNG_CACHE[(eid, 256, -1.0)] = await asyncio.to_thread(render_png, body, 256, -1.0)
+        except Exception as e: print("WARM PNG ERROR", eid, repr(e))
 
 @app.on_event("startup")
 async def _startup(): asyncio.create_task(_warm())
