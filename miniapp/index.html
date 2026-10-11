@@ -196,19 +196,19 @@ const YP={2013:"<0,01%",2014:"~0,03%",2015:"~0,08%",2016:"~0,15%",2017:"~0,3%",2
 const regYear=d=>Math.min(2026,Math.max(2013,new Date(Date.now()-(d||0)*864e5).getFullYear()));
 const yIdx=d=>{const y=regYear(d);return y>=2025?0:y>=2023?1:y>=2020?2:y>=2018?3:y>=2016?4:y>=2014?5:6};
 const S=[
-{k:"days",p:v=>Math.floor(v/10),pr:"1 балл за каждые 10 дней",t:"Твой стаж",s:"Сколько дней ты в Telegram?",u:"дней",f:yIdx,
+{k:"days",L:2,p:v=>Math.floor(v/10),pr:"1 балл за каждые 10 дней",t:"Твой стаж",s:"Сколько дней ты в Telegram?",u:"дней",f:yIdx,
  c:[["#2ba0ff","#0264fd"],["#2ba0ff","#0264fd"],["#2ba0ff","#0264fd"],["#2ba0ff","#0264fd"],["#2ba0ff","#0264fd"],["#2ba0ff","#0264fd"],["#2ba0ff","#0264fd"]],
  d:[["🐣","Новичок"],["😎","Освоившийся"],["💪","Опытный"],["🕰️","Олд"],["🎖️","Ветеран"],["🔥","Легенда"],["👑","Сын Дурова"]]},
-{k:"pct",t:"Рейтинг в Telegram",s:"сколько ты потратил звёзд",u:"",f:v=>v>=50?0:v>=10?1:2,
+{k:"pct",L:1,t:"Рейтинг в Telegram",s:"сколько ты потратил звёзд",u:"",f:v=>v>=50?0:v>=10?1:2,
  c:[["#ff9f43","#ff5f6d"],["#22d3ee","#2563eb"],["#ffd166","#ff7a18"]],
  d:[["👥","Один из многих"],["🚀","Выше большинства"],["💎","Элита"]]},
-{k:"prem",p:v=>v?20:0,pr:"20 баллов за Telegram Premium",t:"Telegram Premium",s:"",u:"",f:v=>+v,
+{k:"prem",L:1,p:v=>v?20:0,pr:"20 баллов за Telegram Premium",t:"Telegram Premium",s:"",u:"",f:v=>+v,
  c:[["#6366f1","#2563eb"],["#c026d3","#f43f8e"]],
- d:[["{e:5231302159739395058|🔒}","У тебя нет Telegram Premium"],["{p}","У тебя есть Telegram Premium"]]},
-{k:"gifts",p:v=>Math.floor(v/5),pr:"1 балл за каждые 5 подарков",t:"Обычные подарки",s:"Сколько их в твоём профиле?",u:"шт.",f:v=>v<=3?0:v<=10?1:2,
+ d:[["{p}","У тебя нет Telegram Premium"],["{p}","У тебя есть Telegram Premium"]]},
+{k:"gifts",L:0,p:v=>Math.floor(v/5),pr:"1 балл за каждые 5 подарков",t:"Обычные подарки",s:"Сколько их в твоём профиле?",u:"шт.",f:v=>v<=3?0:v<=10?1:2,
  c:[["#ff5fa2","#ff2d75"],["#ff4f9a","#d91e72"],["#ff3d81","#b5175b"]],
- d:[["{e:5289761157173775507|}","Скромная полка"],["{e:5289761157173775507|}","Неплохая коллекция"],["{e:5289761157173775507|}","Подарочный магнат"]]},
-{k:"nft",p:v=>v,pr:"1 балл за каждый NFT-подарок",t:"NFT-подарки",s:"Улучшенные подарки в профиле",u:"шт.",f:v=>v<=3?0:v<=10?1:2,
+ d:[["{e:5224648868850863664|🧸}","Скромная полка"],["{e:5224648868850863664|🧸}","Неплохая коллекция"],["{e:5224648868850863664|🧸}","Подарочный магнат"]]},
+{k:"nft",L:0,p:v=>v,pr:"1 балл за каждый NFT-подарок",t:"NFT-подарки",s:"Улучшенные подарки в профиле",u:"шт.",f:v=>v<=3?0:v<=10?1:2,
  c:[["#06b6d4","#2563eb"],["#8b5cf6","#ec4899"],["#fbbf24","#f43f5e"]],
  d:[["🧸","Начинающий коллекционер"],["💠","Серьёзный коллекционер"],["🐉","Легенда рынка"]]},
 {k:"fast",t:"Самый быстрый ответ",s:"Ты что 24/7 в телеграмме?",f:()=>0,c:[["#ffd426","#ffa800"]],d:[["⚡",""]]},
@@ -241,8 +241,8 @@ function put(el,e){ // вставить эмодзи в элемент
   v.muted=true;v.setAttribute("muted","");v.setAttribute("playsinline","");v.setAttribute("webkit-playsinline","");v.loop=true;v.autoplay=true;v.addEventListener("error",fb);v.src=e.u;el.appendChild(v);
   const pr=v.play();if(pr&&pr.catch)pr.catch(fb)}
  else if(e.k=="i"){const m=document.createElement("img");m.src=e.u;el.appendChild(m)}}
-const STILLONLY=new Set(["5231302159739395058","5444965061749644170","5289761157173775507","5983201451227222757","5372800046284674872","5418028873705069979","5397782960512444700"]);   // тяжёлая анимация / нужна статика
-const ANIMID=new Set(["5231302159739395058","5444965061749644170","5372800046284674872","5418028873705069979","5397782960512444700"]),AN={};   // эмодзи с оригинальной анимацией, но в виде лёгкого WebP (собирает сервер)
+const STILLONLY=new Set(["5224648868850863664","5231302159739395058","5444965061749644170","5289761157173775507","5983201451227222757","5372800046284674872","5418028873705069979","5397782960512444700"]);   // тяжёлая анимация / нужна статика
+const ANIMID=new Set(["5224648868850863664","5231302159739395058","5444965061749644170","5372800046284674872","5418028873705069979","5397782960512444700"]),AN={};   // эмодзи с оригинальной анимацией, но в виде лёгкого WebP (собирает сервер)
 const animUrl=id=>AN[id]||(AN[id]=fetch(API+"/api/emoji/"+id+"?anim=256").then(async r=>{const m=(r.headers.get("X-Sheet")||"").split(",").map(Number);if(!r.ok||m.length<4||m.some(isNaN))throw 0;
  const u=URL.createObjectURL(await r.blob()),im=new Image();im.src=u;await (im.decode?im.decode():Promise.resolve());return{u,cols:m[0],rows:m[1],n:m[2],dur:m[3]}}).catch(()=>null));
 function animate(el,id){loadEmoji(id).then(e=>{   // настоящая векторная анимация (lottie): любой размер без потери качества, плавно как в Telegram
@@ -250,7 +250,7 @@ function animate(el,id){loadEmoji(id).then(e=>{   // настоящая вект
  if(e&&e.k=="l"&&window.lottie){try{
   const old=el.querySelector("img"),box=document.createElement("div");
   el.style.position="relative";box.style.cssText="position:absolute;left:0;top:0;width:100%;height:100%;opacity:0";el.appendChild(box);
-  const heavy=id=="5444965061749644170"||id=="5231302159739395058";   // мишка сложнее — рисуем на canvas (легче для телефона)
+  const heavy=id=="5224648868850863664"||id=="5444965061749644170"||id=="5231302159739395058";   // мишка сложнее — рисуем на canvas (легче для телефона)
   const an=lottie.loadAnimation({container:box,renderer:heavy?"canvas":"svg",loop:true,autoplay:true,animationData:JSON.parse(JSON.stringify(e.d)),rendererSettings:heavy?{preserveAspectRatio:"xMidYMid meet",clearCanvas:true,dpr:Math.min(2.5,window.devicePixelRatio||2)}:{preserveAspectRatio:"xMidYMid meet"}});
   an.addEventListener("DOMLoaded",()=>{box.style.opacity=1;if(old)old.remove();
    let n=0,t0=0;const probe=t=>{if(!el.isConnected)return;if(!t0)t0=t;n++;   // страховка от лагов: если телефон не тянет (<40 кадров/с), переключаем на лёгкий вариант
@@ -287,7 +287,7 @@ function stillOld(id,z){z=z||128; // неподвижная картинка э�
      if(sum>0){url=cv.toDataURL("image/png");break}}
     try{an.destroy()}catch(x){}res(url)})
   }catch(x){res(null)}})).catch(()=>null)}
-const HQ=new Set(["5231302159739395058","5444965061749644170","5289761157173775507","5983201451227222757","5372800046284674872","5418028873705069979","5397782960512444700"]);   // эмодзи, которые рисуем в высоком качестве (кадр из векторной анимации)
+const HQ=new Set(["5224648868850863664","5231302159739395058","5444965061749644170","5289761157173775507","5983201451227222757","5372800046284674872","5418028873705069979","5397782960512444700"]);   // эмодзи, которые рисуем в высоком качестве (кадр из векторной анимации)
 const hqPng=id=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),12000);
  return fetch(API+"/api/emoji/"+id+"?png=768",{signal:c.signal}).then(async r=>{clearTimeout(t);if(!r.ok||!(r.headers.get("content-type")||"").startsWith("image"))throw 0;return URL.createObjectURL(await r.blob())})};
 const stillHQ=id=>hqPng(id).catch(()=>thumb(id).then(e=>e.u)).catch(()=>null);   // PNG 512px с сервера; если не вышло — маленькое превью
@@ -362,8 +362,6 @@ function intro(){
 function fx(n,all,key){
  document.querySelectorAll(".cnt").forEach(el=>{const to=+el.dataset.to,t0=performance.now(),D=1300;
   (function f(t){const p=Math.min(1,(t-t0)/D),e=1-Math.pow(1-p,3);el.textContent=Math.round(to*e).toLocaleString("ru");if(p<1)requestAnimationFrame(f)})(t0)});
- if(n==2&&key!="days"&&key!="gifts"&&key!="nft"&&key!="final"){const E=["🎉","✨","⭐","🎊","💫"];for(let k=0;k<26;k++){const c=document.createElement("span");c.className="cf";if(E[k%5]=="⭐")c.innerHTML=CE(EM.star,"⭐");else c.textContent=E[k%5];
-  c.style.cssText=`left:${Math.random()*100}%;animation-delay:${Math.random()*.8}s;animation-duration:${2+Math.random()*2}s;font-size:${16+Math.random()*18}px`;app.appendChild(c);setTimeout(()=>c.remove(),5000)}}
  hydrate();
  if(tg&&tg.HapticFeedback)tg.HapticFeedback.impactOccurred(n==2?"heavy":"light")}
 const SP=[{u:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACcAAAA4CAYAAAB+I+F7AAADfUlEQVR42s2YW2tUVxTHf+tM4uXBapp4S1urYmgNqKjYIlRKoZUqqB/ABx/qg1/Chz74cdqXUhEfVVBQIt6lSlqr0ao1VkVLjDP/PnQt2RwyTOJsJ3vBYc3Zc9jzm7X2uh3IJJJM0jIySpVxrwbwnaSFJcL1AZ8Bi8KS8w6XQPQDI66LdOswsKBEuA+AIeBDv7cS4AJiGbAygaMkuOXAKmCgJMuFDDrQUIlnbtD1UEmWU+JWgNWuWyXBBdRwbb0ItwbUgCQzM3VbJbqCSyAWexoJCy4pISDCMh8Bn/rnFcAnOYIiF9yw5zh5tBYBF7LZddOBtpTg1kgXu2r3W3NFbFetkqQBSTf0v0y7viVpabd9XZXhvH0BrHUrNVxvAL7JVSneZV6oJDUk/ezWeuO66fq4pAX+nPUSrs/1AXdluDOk5WuH/LlGL6Cq+CFJo5Ku1qyl2v24pC0BKKl6X+6rkvWvE7CWZpYAHJO0q/4H5+zudjDJ9yOSjkmabGOxdoAPJf0oac0MezbawVonNwLrgJ3AHuBbL0+R02bjpqZHMcDfwHHgV+Ccmf05m3QQh3YQWAN8DowCO4BNSVEPKJtjipBf6Z+ZAK4Ap4GbwG/APeCFmTXfwknaDux3y2yLwTiR6WT8q7qsKK1kCE/lJXAdOAn8ApwPuEXAUu8sRoGNPr1v8gRbtXHTXKTp+1hizTvAJeAWcM31BPDEzF50OnMfA+uB74GvgC+ToVmzdK2SIzQFXADOAKeAS2Y2MedIrUeOpMWSdkv6KUkfnaI1TTMnJO2V1N/pd2eVYvzhKs3wkvok/SDpboc8F+uPJR2OqlJPHzkTcgq52/PXTIAtv15J2lf7s/Y+S5gltfVIG/dGE3A0sVRvin+cC0kLJZ2tATb9Ou/n1HralaSdhqSDNVeGi4/0rCNpU9qQNCzpXs2d9yWtj0jseSdsZi131wPgbG2GGDOz8XhuvgacyszkiTWt1Zdz7J+r+btS22+shNEwStM4MOn7vQL+yDEa5oJ7AERvdge4WwJcyHPgmX9+Bvwz726N11weFI98+amZTSXr82q5iNC/XD8s6Z1wwMU5+z3X3jnfbD4q0XIhk64flwSnZOx7mUAW9cL6iQfF0xItNwncT+CKstxrP2//lhgQLS9hU8XAJVVgGrjtwzPdVofclpsGLrp7yxNJ/TmHmf8A/piP1Ydvt5MAAAAASUVORK5CYII=",w:14},{u:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACUAAAAuCAYAAACvWdDAAAADCElEQVR42s2Yz0uUQRzGP7O7rmYkWGRBZWZFVnqJIj0FdQ0igrp164/o3KVz0Ll7xy6JQRR16GTQL+0gmWZGRW6W0uq6T4e+A9Owrrr76vt+YZl3Z5aZ532e768dSMAkOUmOhCyX0D4twEDWQBWA/kyACiQrAj2SClliagdwBGiNwKYCyh/eZfIVs8CUC5jqAdqyJN8eoBPYHYFNFVS/ReChLIHaH43pgLIIq9q4y6b3+uXUmHLOCegAjtmUH6tpgXIBO/vsuU9Su3NOzeSqJECdArabZIeBvmb9qhlQ3m/O2lgB2oGhJJy94ZonqVPSuP7Zko0PJOWTbGXWCypvPdRVSRVJVUkrBmpeUr+t57ZEPmNAFnmXgHwg5YqVnCu2nttUxuzN88H3G5IWjKWqseSfv0oatN/lEpPT028bhmCKkm5KKgdAQvPfpyRdqyF7fl3tcwygli9I6pB0WdLjiJVa5v1rUdJdSWcktdTY878zPVBXB2ib1bIBC/OLwPEoHbg1UoZf/wW8BEaA58A7oOScW66ZAI2VA1bhe6xUdANHgd6grhGUkNwGclnVgsHbH+ALMAm8B2aBD/Y8A8w466sHgfPASWtDDlqWjsHIALkNJtkYmLdvwDQwBowCz4BRV0O2ojVrvQZyCDht0rkNsKXgJQDKdvgTAzBubM055yqrOnod/9om6YKkO5K+mxNX6jh6HIW3zdlb1wg011AkShqQNGIHLteJvqqke5K6V4m4XFP/rEOgQXq4XyNPhWniVgRk87J7AKxL0psoL/nxYZAk81tVkAs2Xg+k8p8FSefCF9iy1sU+OyVNRP41HKw3JFdDrYV1AM459wN4FGX5Yd8h2JhKO/w02KsCvCAt86lC0glJJZNuUlJns5ccSfTon62WAbx2zs1Jco1Kl9T91E/go02NpfoP2ZjI2/jJpmezcJfgJZqOQGXiKmjSAE6lfpcQ2BQwnxVQ/vBF6x5/Z0m+EjDR7G1L0kyVjKly6qCCBLkAvAWWovlU5SsDr5oFsxmtTCGp/f4C2cImWoPwwBsAAAAASUVORK5CYII=",w:12},{u:"data:image/png;base64,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",w:26}];  // три звёздочки (маленькая, средняя, большая), PNG без фона
@@ -421,15 +419,15 @@ function val(s){const v=D[s.k];if(RND.includes(s.k))return`<span class="vt">${v}
 function show(){
  if(i>=S.length){final();return}
  app.classList.add("sl");
- const s=S[i],n=s.f(D[s.k]),[e,name]=s.d[n];bg(s.c[n]);
+ const s=S[i],n=s.f(D[s.k]),L=s.L==null?n:s.L,e=s.d[L][0],name=s.d[n][1];bg(s.c[L]);
  const sub=s.k=="prem"?(D.prem?"Ты попадаешь в 1.5% в телеграмме!":"Ты попадаешь в 98.5% пользователей."):s.s;
  if(window.lottie)lottie.destroy();
- app.innerHTML=snow()+(s.k=="pct"||s.k=="prem"?bstars():"")+bgi(s.k=="prem"&&!+D.prem?"prem0":s.k)+`<h1>${s.t}</h1><div class="sub">${sub}</div>
+ app.innerHTML=snow()+(s.k=="pct"||s.k=="prem"?bstars():"")+bgi(s.k)+`<h1>${s.t}</h1><div class="sub">${sub}</div>
  <div class="mid ${dir}">${s.k=="days"?"":`<div class="emo${s.k=="nft"?" stat":""}${s.k=="gifts"||["slow","nobreak","pinned"].includes(s.k)?" big":""}${s.k=="gifts"?" low":""}${s.k=="pct"?" low2":""}">${s.k=="nft"?rich(NFTE):rich(e)}</div>`}<div class="val">${val(s)}</div>${name?`<div class="tier">${name}</div>`:""}${s.k=="days"?`<div class="yp">Аккаунт ${regYear(D.days)} года · ${YP[regYear(D.days)]} пользователей</div>`:""}${s.p?`<div class="pts"><div class="pv">+${N(pts(s))} ${pl(pts(s))}</div></div>`:""}</div>
  <button type="button" class="share" data-a="s">Поделиться ↗</button><div class="btns">${i>0?`<button type="button" class="back" data-a="b">Назад</button>`:""}<button type="button" class="next" data-a="n">Продолжить</button></div>`;fx(n,0,s.k)}
 function final(){bg(["#22d3ee","#7c3aed"]);app.classList.remove("sl");
  if(window.lottie)lottie.destroy();
- const r=S.map(s=>s.d[s.f(D[s.k])]);
+ const r=S.map(s=>{const n=s.f(D[s.k]);return[s.d[s.L==null?n:s.L][0],s.d[n][1]]});
  app.innerHTML=snow()+`<div class="mid fin"><h1 style="margin-top:16px">Итоги</h1><div class="sub" style="margin-bottom:14px">Вот кто ты в Telegram</div><div class="totc"><div class="lbl" style="margin:0">Сумма баллов</div><div class="tot">${rich("🏆")} ${N(total())} ${pl(total())}</div></div><div class="gr">`+
  S.map((s,j)=>{const v=r[j][1]||(typeof D[s.k]=="number"?N(D[s.k])+(s.u?" "+s.u:""):D[s.k]);return`<div class="li fc" style="animation-delay:${j*.08+.2}s">${s.p?`<span class="fpt">+${pts(s)}</span>`:""}<div class="fe">${s.k=="nft"?rich(NFTE):rich(r[j][0])}</div><div class="ft">${s.t}</div><div class="fv">${v}</div></div>`}).join("")+
  `</div></div><button type="button" class="share" data-a="s">Поделиться ↗</button><div class="btns"><button type="button" class="back" data-a="b">Назад</button><button type="button" class="next" data-a="m">Продолжить</button></div>`;fx(2,1,"final")}
