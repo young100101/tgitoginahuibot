@@ -52,8 +52,45 @@ async def tg(client, method, **p):
 
 # Премиум-эмодзи: достаём файл у Telegram и отдаём приложению (TGS -> JSON для lottie)
 EMOJI_IDS = {"5839049953497844833", "5469741319330996757", "5283228279988309088", "5280598054901145762", "5280651583078556009", "5280922999241859582", "5406812184359507637", "5289761157173775507", "5983201451227222757", "5443038326535759644",
-    "5456299600702889290", "5454039464357682228", "5456504676801338603", "5456461744308249091", "5456147077824274112", "5456140674028019486", "5368469400695351161", "5373098778439982772", "5357107601584693888", "5445284980978621387", "5280769763398671636", "5372800046284674872", "5418028873705069979", "5397782960512444700", "5444965061749644170", "5231302159739395058", "5224648868850863664"}
+    "5456299600702889290", "5454039464357682228", "5456504676801338603", "5456461744308249091", "5456147077824274112", "5456140674028019486", "5368469400695351161", "5373098778439982772", "5357107601584693888", "5445284980978621387", "5280769763398671636", "5372800046284674872", "5418028873705069979", "5397782960512444700", "5444965061749644170", "5231302159739395058", "5224648868850863664", "5453900977432188793", "5354820836442287981", "5438571934210082705"}
 EMOJI_CACHE: dict = {}
+RECOLOR = {"5453900977432188793"}   # у этих эмодзи звезду (сине-фиолетово-розовые цвета) перекрашиваем в жёлтый
+
+def _yellow(rgb):
+    import colorsys
+    r, g, b = rgb; h, l, sat = colorsys.rgb_to_hls(r, g, b)
+    if sat > 0.15 and 0.5 <= h <= 0.95:   # синий / фиолетовый / розовый -> жёлтый
+        h = 0.125; sat = min(1.0, sat * 1.1 + 0.25); l = min(0.62, max(0.45, l))
+        r, g, b = colorsys.hls_to_rgb(h, l, sat)
+    return [r, g, b]
+
+def _fix_list(arr, start):
+    if isinstance(arr, list) and len(arr) >= start + 3 and all(isinstance(x, (int, float)) for x in arr[start:start + 3]):
+        arr[start:start + 3] = _yellow(arr[start:start + 3])
+
+def recolor(node):
+    if isinstance(node, dict):
+        ty = node.get("ty")
+        if ty in ("fl", "st") and isinstance(node.get("c"), dict):
+            k = node["c"].get("k")
+            if node["c"].get("a") == 1 and isinstance(k, list):
+                for kf in k:
+                    if isinstance(kf, dict): _fix_list(kf.get("s"), 0); _fix_list(kf.get("e"), 0)
+            else: _fix_list(k, 0)
+        if ty in ("gf", "gs") and isinstance(node.get("g"), dict):
+            p = node["g"].get("p", 0); gk = node["g"].get("k", {})
+            if isinstance(gk, dict):
+                if gk.get("a") == 1 and isinstance(gk.get("k"), list):
+                    for kf in gk["k"]:
+                        if isinstance(kf, dict):
+                            for key in ("s", "e"):
+                                for i in range(p): _fix_list(kf.get(key), i * 4 + 1)
+                else:
+                    for i in range(p): _fix_list(gk.get("k"), i * 4 + 1)
+        for v in node.values(): recolor(v)
+    elif isinstance(node, list):
+        for v in node: recolor(v)
+    return node
 
 async def get_emoji(eid: str, thumb: bool = False):
     key = (eid, thumb)
@@ -66,7 +103,12 @@ async def get_emoji(eid: str, thumb: bool = False):
             if not f: raise RuntimeError("getFile не сработал")
             r = await c.get(f"https://api.telegram.org/file/bot{TOKEN}/{f['file_path']}")
         body, path = r.content, f["file_path"]
-        if path.endswith(".tgs"): EMOJI_CACHE[key] = (gzip.decompress(body), "application/json")
+        if path.endswith(".tgs"):
+            raw = gzip.decompress(body)
+            if eid in RECOLOR:
+                try: raw = json.dumps(recolor(json.loads(raw)), separators=(",", ":")).encode()
+                except Exception as e: print("RECOLOR ERROR", eid, repr(e))
+            EMOJI_CACHE[key] = (raw, "application/json")
         elif path.endswith(".webm"): EMOJI_CACHE[key] = (body, "video/webm")
         elif path.endswith((".jpg", ".jpeg")): EMOJI_CACHE[key] = (body, "image/jpeg")
         else: EMOJI_CACHE[key] = (body, "image/webp")
@@ -164,7 +206,7 @@ async def me(authorization: str = Header()):
         chat = await tg(c, "getChat", chat_id=uid) or {}
         rt = chat.get("rating") or {}  # UserRating: level, rating (число на основе потраченных звёзд)
         lvl, stars = rt.get("level", 0), rt.get("rating", 0)
-    days = days_in_tg(uid); points = days // 10 + gifts // 5 + uniq   # 1 балл за 10 дней, 5 обычных подарков, каждый NFT
+    days = days_in_tg(uid); points = days // 20 + gifts // 3 + uniq * 3 + int(stars or 0) // 1000   # 1 балл за 20 дней, за 3 обычных подарка, 3 за NFT, 1 за каждые 1000 звёзд
     b = globals().get("bot")
     if b and b.pool:
         try: await b.save_profile(u, points)
