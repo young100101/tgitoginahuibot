@@ -98,13 +98,38 @@ def recolor(node):
         for v in node: recolor(v)
     return node
 
+GIFT_FILES: dict = {}   # "gift_<id>" -> файл стикера подарка
+SET_TITLES: dict = {}
+LIM = {"key": None, "t": 0}
+
+async def gift_title(c, set_name):  # название подарка (если Telegram отдаёт название набора стикеров)
+    if not set_name: return None
+    if set_name not in SET_TITLES:
+        r = await tg(c, "getStickerSet", name=set_name); SET_TITLES[set_name] = (r or {}).get("title")
+    return SET_TITLES[set_name]
+
+async def lim_icon(c):  # лимитированный подарок, у которого ещё нет улучшения — для эмодзи в центре слайда
+    if LIM["key"] and time.time() - LIM["t"] < 3600: return LIM["key"]
+    r = await tg(c, "getAvailableGifts")
+    gl = [g for g in (r or {}).get("gifts", []) if g.get("total_count") and g.get("sticker")]
+    pool = [g for g in gl if not g.get("upgrade_star_count")] or gl
+    if not pool: return LIM["key"] or ""
+    g = max(pool, key=lambda x: x.get("star_count", 0)); st = g["sticker"]; key = "gift_" + str(g["id"])
+    GIFT_FILES[key] = {"file": st["file_id"], "thumb": (st.get("thumbnail") or {}).get("file_id")}
+    LIM["key"], LIM["t"] = key, time.time(); return key
+
 async def get_emoji(eid: str, thumb: bool = False):
     key = (eid, thumb)
     if key not in EMOJI_CACHE:
         async with httpx.AsyncClient(timeout=25) as c:
-            st = await tg(c, "getCustomEmojiStickers", custom_emoji_ids=[eid])
-            if not st: raise RuntimeError("Telegram не вернул эмодзи (getCustomEmojiStickers)")
-            fid = st[0]["thumbnail"]["file_id"] if thumb and st[0].get("thumbnail") else st[0]["file_id"]
+            if eid.startswith("gift_"):
+                gf = GIFT_FILES.get(eid)
+                if not gf: raise RuntimeError("неизвестный подарок")
+                fid = gf["thumb"] if thumb and gf.get("thumb") else gf["file"]
+            else:
+                st = await tg(c, "getCustomEmojiStickers", custom_emoji_ids=[eid])
+                if not st: raise RuntimeError("Telegram не вернул эмодзи (getCustomEmojiStickers)")
+                fid = st[0]["thumbnail"]["file_id"] if thumb and st[0].get("thumbnail") else st[0]["file_id"]
             f = await tg(c, "getFile", file_id=fid)
             if not f: raise RuntimeError("getFile не сработал")
             r = await c.get(f"https://api.telegram.org/file/bot{TOKEN}/{f['file_path']}")
@@ -159,6 +184,7 @@ def render_png(tgs_json: bytes, size: int, at: float = -1) -> bytes:  # один
     buf = io.BytesIO(); best.save(buf, "PNG"); return buf.getvalue()
 
 WARM = [("5354820836442287981", 288)]
+WARM_HQ = ["5454039464357682228", "5453900977432188793", "5224648868850863664", "5354820836442287981", "5438571934210082705", "5444965061749644170", "5372800046284674872", "5418028873705069979", "5397782960512444700", "5289761157173775507", "5983201451227222757"]   # крупные картинки (768 px) — чтобы не ждать при первом показе
 WARM_PNG = ["5983201451227222757", "5357395115285438516", "5339564150534200424", "5454039464357682228"]   # картинки фона слайда NFT — готовим заранее   # эмодзи, у которых покадровый лист готовим заранее
 async def _warm():
     for eid, size in WARM:
@@ -173,13 +199,19 @@ async def _warm():
             if mime == "application/json" and (eid, 256, -1.0) not in PNG_CACHE:
                 PNG_CACHE[(eid, 256, -1.0)] = await asyncio.to_thread(render_png, body, 256, -1.0)
         except Exception as e: print("WARM PNG ERROR", eid, repr(e))
+    for eid in WARM_HQ:
+        try:
+            body, mime = await get_emoji(eid)
+            if mime == "application/json" and (eid, 768, -1.0) not in PNG_CACHE:
+                PNG_CACHE[(eid, 768, -1.0)] = await asyncio.to_thread(render_png, body, 768, -1.0)
+        except Exception as e: print("WARM HQ ERROR", eid, repr(e))
 
 @app.on_event("startup")
 async def _startup(): asyncio.create_task(_warm())
 
 @app.get("/api/emoji/{eid}")
 async def emoji(eid: str, thumb: int = 0, png: int = 0, anim: int = 0, at: float = -1):  # thumb=1 -> неподвижная картинка; png=512 -> кадр в высоком качестве
-    if eid not in EMOJI_IDS: raise HTTPException(404)
+    if eid not in EMOJI_IDS and eid not in GIFT_FILES: raise HTTPException(404)
     if anim:
         size = min(max(anim, 64), 384); key = (eid, size)
         try:
@@ -196,7 +228,9 @@ async def emoji(eid: str, thumb: int = 0, png: int = 0, anim: int = 0, at: float
         try:
             if key not in PNG_CACHE:
                 body, mime = await get_emoji(eid)
-                if mime != "application/json": raise RuntimeError("не векторная анимация: " + mime)
+                if mime != "application/json":   # не lottie: отдаём как есть (картинка) или превью
+                    if not mime.startswith("image/"): body, mime = await get_emoji(eid, True)
+                    return Response(content=body, media_type=mime, headers={"Cache-Control": "public, max-age=86400"})
                 PNG_CACHE[key] = await asyncio.to_thread(render_png, body, size, at)
             return Response(content=PNG_CACHE[key], media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
         except Exception as e:
@@ -223,30 +257,43 @@ async def index(): return FileResponse(os.path.join(os.path.dirname(__file__), "
 async def me(authorization: str = Header()):
     u = auth(authorization); uid = u["id"]
     async with httpx.AsyncClient(timeout=20) as c:
-        gifts, uniq, value, off = 0, 0, 0, ""
+        chat_t = asyncio.create_task(tg(c, "getChat", chat_id=uid)); icon_t = asyncio.create_task(lim_icon(c))   # параллельно с подарками
+        gifts, uniq, value, off, lim, groups = 0, 0, 0, "", 0, {}
         while True:  # все подарки профиля
             r = await tg(c, "getUserGifts", user_id=uid, limit=100, offset=off)
             if not r: break
             for g in r["gifts"]:
                 if g["type"] == "unique":
                     uniq += 1; value += FLOORS.get(g["gift"].get("base_name", ""), 0)  # флор-цена с маркета
-                else:  # обычный подарок: считаем только БЕЗ лимита (у лимитированных есть total_count / remaining_count)
+                else:
                     gf = g.get("gift") or {}
-                    if gf.get("total_count") is not None or gf.get("remaining_count") is not None: continue
-                    gifts += 1; value += gf.get("star_count", 0)  # цена подарка в звёздах
+                    if gf.get("total_count") is not None or gf.get("remaining_count") is not None:   # лимитированный, не улучшенный
+                        lim += 1; gid = str(gf.get("id")); st = gf.get("sticker") or {}
+                        grp = groups.setdefault(gid, {"n": 0, "stars": gf.get("star_count", 0), "set": st.get("set_name")}); grp["n"] += 1
+                        if st.get("file_id"): GIFT_FILES["gift_" + gid] = {"file": st["file_id"], "thumb": (st.get("thumbnail") or {}).get("file_id")}
+                        continue
+                    gifts += 1; value += gf.get("star_count", 0)  # обычный подарок без лимита
             off = r.get("next_offset")
             if not off: break
-        chat = await tg(c, "getChat", chat_id=uid) or {}
+        chat = await chat_t or {}
         rt = chat.get("rating") or {}  # UserRating: level, rating (число на основе потраченных звёзд)
         lvl, stars = rt.get("level", 0), rt.get("rating", 0)
         stars = int(round((stars or 0) * 1.15))   # к потраченным звёздам прибавляем 15% (в приложении об этом нигде не пишем)
-    days = days_in_tg(uid); points = days // 20 + gifts // 3 + uniq * 2 + int(stars or 0) // 2000   # 1 балл за 20 дней, за 3 обычных подарка, 3 за NFT, 1 за каждые 1000 звёзд
+        try: icon = await asyncio.wait_for(icon_t, 6)
+        except Exception: icon = ""
+        res = await asyncio.gather(*[asyncio.wait_for(gift_title(c, v["set"]), 4) for v in groups.values()], return_exceptions=True)
+    limlist = sorted(({"k": "gift_" + gid, "n": v["n"], "stars": v["stars"], "name": (t if isinstance(t, str) else "")}
+                      for (gid, v), t in zip(groups.items(), res)), key=lambda x: (-x["n"], -x["stars"]))[:60]
+    days = days_in_tg(uid); points = days // 20 + gifts // 3 + uniq * 2 + int(stars or 0) // 2000   # 1 балл за 20 дней, за 3 обычных подарка, 2 за NFT, 1 за каждые 2000 звёзд
     b = globals().get("bot")
     if b and b.pool:
-        try: await b.save_profile(u, points)
-        except Exception as e: print("PROFILE ERROR", repr(e))
+        async def _save():
+            try: await b.save_profile(u, points)
+            except Exception as ex: print("PROFILE ERROR", repr(ex))
+        asyncio.create_task(_save())   # сохраняем профиль в фоне — не заставляем человека ждать
     return {"id": uid, "days": days, "lvl": lvl, "stars": stars, "pct": pct(lvl),
-            "prem": int(bool(u.get("is_premium"))), "gifts": gifts, "nft": uniq, "value": value, "points": points}
+            "prem": int(bool(u.get("is_premium"))), "gifts": gifts, "nft": uniq, "value": value, "points": points,
+            "limited": lim, "limlist": limlist, "limicon": icon}
 
 BOT_USERNAME = os.environ.get("BOT_USERNAME", "tgitoginahuibot").lstrip("@")
 BOT_LINK = os.environ.get("BOT_LINK") or f"https://t.me/{BOT_USERNAME}?start=share"  # кнопка ведёт на /start бота

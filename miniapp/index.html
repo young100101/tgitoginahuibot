@@ -118,6 +118,8 @@ button:active{transform:scale(.94);transition:transform .1s}
 .unit{font-size:20px;font-weight:700;margin:2px 0 10px}
 .est{font-size:13px;opacity:.8;margin-top:10px}
 .big{font-size:64px;line-height:1.1;margin:6px 0 8px;animation:pop .6s cubic-bezier(.3,1.6,.5,1) both}
+.more{margin-top:16px;padding:11px 26px;border-radius:999px;border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.22);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:#fff;font-weight:700;font-size:16px;font-family:inherit;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.12)}
+.gi{width:34px;height:34px;object-fit:contain;flex:none}
 .lst{max-height:44vh;overflow:auto;margin:14px -6px 10px;padding:0 6px;text-align:left}
 .pod{display:flex;align-items:flex-end;justify-content:center;gap:8px;margin:14px 0 10px}
 .pdc{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;text-align:center}
@@ -228,6 +230,8 @@ const S=[
 {k:"gifts",L:0,p:v=>Math.floor(v/3),pr:"",t:"Обычные подарки",s:"Сколько их в твоём профиле?",u:"шт.",f:v=>v<=3?0:v<=10?1:2,
  c:[["#ff5fa2","#ff2d75"],["#ff4f9a","#d91e72"],["#ff3d81","#b5175b"]],
  d:[["{e:5224648868850863664|🧸}","Скромная полка"],["{e:5224648868850863664|🧸}","Неплохая коллекция"],["{e:5224648868850863664|🧸}","Подарочный магнат"]]},
+{k:"limited",L:0,t:"Не улучшенные подарки",s:"Лимитированные, которые ещё не стали NFT",u:"шт.",f:()=>0,
+ c:[["#2dd4bf","#0f766e"]],d:[["🎁",""]]},
 {k:"nft",L:0,p:v=>v*2,pr:"",t:"NFT-подарки",s:"Улучшенные подарки в профиле",u:"шт.",f:v=>v<=3?0:v<=10?1:2,
  c:[["#06b6d4","#2563eb"],["#8b5cf6","#ec4899"],["#fbbf24","#f43f5e"]],
  d:[["🧸","Начинающий коллекционер"],["💠","Серьёзный коллекционер"],["🐉","Легенда рынка"]]},
@@ -242,8 +246,8 @@ const S=[
 const EM={prem:"5839049953497844833",days:"5469741319330996757",star:"5406812184359507637",gift:"5280598054901145762",fall:["5283228279988309088","5280598054901145762","5280651583078556009","5280922999241859582"],nft:["5456299600702889290","5454039464357682228","5456504676801338603","5456461744308249091","5456147077824274112"]};
 const CE=(id,fb)=>`<span class="ce" data-ce="${id}"><b class="fb">${fb}</b></span>`;
 const MAP={"⭐":"5406812184359507637","⚡":"5456140674028019486","🐌":"5368469400695351161","😈":"5373098778439982772","👑":"5357107601584693888","🚀":"5445284980978621387","🏆":"5280769763398671636"};
-const rich=t=>String(t).replace(/⭐|⚡|🐌|😈|👑|🚀|🏆/g,m=>CE(MAP[m],m)).replace(/\{g\}/g,CE(EM.gift,"🎁")).replace(/\{p\}/g,CE(EM.prem,"⭐")).replace(/\{e:(\d+)\|([^}]*)\}/g,(m,id,fb)=>CE(id,fb));
-const plain=t=>String(t).replace(/\{g\}/g,"🎁").replace(/\{p\}/g,"⭐").replace(/\{e:\d+\|([^}]*)\}/g,"$1");
+const rich=t=>String(t).replace(/⭐|⚡|🐌|😈|👑|🚀|🏆/g,m=>CE(MAP[m],m)).replace(/\{g\}/g,CE(EM.gift,"🎁")).replace(/\{p\}/g,CE(EM.prem,"⭐")).replace(/\{e:(\w+)\|([^}]*)\}/g,(m,id,fb)=>CE(id,fb));
+const plain=t=>String(t).replace(/\{g\}/g,"🎁").replace(/\{p\}/g,"⭐").replace(/\{e:\w+\|([^}]*)\}/g,"$1");
 const EC={};
 const IOS=/iPhone|iPad|iPod/.test(navigator.userAgent),ANDR=/Android/i.test(navigator.userAgent);
 const thumb=id=>fetch(API+"/api/emoji/"+id+"?thumb=1").then(async r=>{if(!r.ok||!(r.headers.get("content-type")||"").startsWith("image"))throw 0;return{k:"i",u:URL.createObjectURL(await r.blob())}});
@@ -295,10 +299,10 @@ function hydrate(){document.querySelectorAll(".ce:not(.ok)").forEach(el=>{el.cla
  else loadEmoji(id).then(e=>put(el,e))})}
 const ST={};
 setTimeout(()=>{try{const ids=new Set(["5454039464357682228",...Object.values(MAP),...Object.values(EM).flat(),...(JSON.stringify(S).match(/\{e:(\d+)\|/g)||[]).map(x=>x.replace(/\D/g,""))]);
- ids.forEach(id=>{try{(HQ.has(id)||STILLONLY.has(id))?still(id):loadEmoji(id);if(HQ.has(id))loadEmoji(id)}catch(e){}})}catch(e){}},0);   // заранее грузим все премиум-эмодзи, пока человек держит палец
+ const go=id=>{try{(HQ.has(id)||STILLONLY.has(id))?still(id):loadEmoji(id);if(HQ.has(id))loadEmoji(id)}catch(e){}};go("5454039464357682228");setTimeout(()=>ids.forEach(go),1200)}catch(e){}},0);   // заранее грузим все премиум-эмодзи, пока человек держит палец
 setTimeout(()=>{try{Object.keys(SPR).forEach(animUrl)}catch(e){}},400);
 setTimeout(()=>{try{const u=new Set();window.__pre=[];Object.values(BGI).forEach(a=>a.forEach(([f])=>{if(f.startsWith("t:")||SV[f])return;u.add(f.startsWith("e:")||f.startsWith("c:")?API+"/api/emoji/"+f.slice(2)+"?png=256":`/cards/${f}.webp`)}));
- u.forEach(x=>{const im=new Image();im.decoding="async";im.src=x;if(im.decode)im.decode().catch(()=>{});window.__pre.push(im)})}catch(e){}},0);   // картинки фона слайдов грузим и декодируем заранее — на слайде они появляются сразу   // картинки фона слайдов грузим заранее — чтобы на слайде они были сразу   // заранее готовим эти эмодзи, чтобы к слайду уже были на месте
+ setTimeout(()=>u.forEach(x=>{const im=new Image();im.decoding="async";im.src=x;if(im.decode)im.decode().catch(()=>{});window.__pre.push(im)}),1800)}catch(e){}},0);   // картинки фона слайдов грузим и декодируем заранее — на слайде они появляются сразу   // картинки фона слайдов грузим заранее — чтобы на слайде они были сразу   // заранее готовим эти эмодзи, чтобы к слайду уже были на месте
 function stillOld(id,z){z=z||128; // неподвижная картинка эмодзи (один кадр) — чтобы падающие не нагружали экран
  return loadEmoji(id).then(e=>new Promise(res=>{
   if(!e)return res(null);
@@ -333,7 +337,7 @@ function fall(key,ids,n,delay,d0,dv,ttl){ // эмодзи сыплются од�
    app.appendChild(c);setTimeout(()=>c.remove(),ttl)}})}
 const pts=s=>s.p?s.p(D[s.k]):0, total=()=>S.reduce((a,s)=>a+pts(s),0);
 const pl=n=>n%10==1&&n%100!=11?"балл":(n%10>=2&&n%10<=4&&(n%100<12||n%100>14))?"балла":"баллов";
-const ORDER=["days","pct","gifts","prem","dialog","nft","fast","online","slow","pinned","nobreak","maxmsgs"];
+const ORDER=["days","pct","gifts","limited","prem","dialog","nft","fast","online","slow","pinned","nobreak","maxmsgs"];
 S.sort((a,b)=>ORDER.indexOf(a.k)-ORDER.indexOf(b.k));
 const RND=["fast","slow","online","dialog","pinned","nobreak","maxmsgs"];
 function rng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
@@ -352,13 +356,14 @@ const API=""; // бэкенд на том же адресе
 const FB=["🎁","✨","🎀","💝"];   // запасные эмодзи, если картинки не загрузились
 const NFTE='{e:5354820836442287981|🎁}';
 const GIFT='<img class="gimg" src="/cards/gift.webp" alt="" draggable="false" decoding="async">';
-const DEMO={stars:3450,days:640,pct:2,lvl:7,prem:1,gifts:5,nft:2,value:1200,id:0};
+const DEMO={limited:4,limlist:[{k:"gift_x",n:3,stars:50,name:"Подарок"},{k:"gift_y",n:1,stars:100,name:""}],limicon:"",stars:3450,days:640,pct:2,lvl:7,prem:1,gifts:5,nft:2,value:1200,id:0};
 const D={};let i=0;const app=document.getElementById("app");
-let ME=null;
+let ME=null,ME_DONE=false;
 function fetchMe(){return ME||(ME=(async()=>{
  try{const r=await fetch(API+"/api/me",{headers:{Authorization:"tma "+(tg?tg.initData:"")}});if(!r.ok)throw 0;Object.assign(D,await r.json())}
  catch(e){Object.assign(D,DEMO)}   // без бэкенда показываем демо-данные
- rolls();setTimeout(()=>{try{live&&refreshMore()}catch(e){}},900)})())}
+ {const ls=S.find(x=>x.k=="limited");if(D.limicon&&ls){const id=D.limicon;HQ.add(id);STILLONLY.add(id);ANIMID.add(id);ls.d[0][0]=`{e:${id}|🎁}`;try{still(id);loadEmoji(id)}catch(e){}}}
+ ME_DONE=true;rolls();setTimeout(()=>{try{live&&refreshMore()}catch(e){}},900)})())}
 // ===== Стартовый экран: удержи палец — синий круг заполняет экран =====
 function intro(){
  document.documentElement.style.background=document.body.style.background="#fff";try{if(tg){tg.setHeaderColor("#ffffff");tg.setBackgroundColor("#ffffff")}}catch(e){}
@@ -382,8 +387,8 @@ function intro(){
   hc.style.transition="transform .55s cubic-bezier(.25,.6,.3,1)";fg.style.transition="transform .55s ease-out,opacity .4s";
   hc.style.transform=`scale(${1.35})`;fg.style.transform="scale(1.3)";fg.style.opacity="0";
   try{tg&&tg.HapticFeedback&&tg.HapticFeedback.notificationOccurred("success")}catch(e){}
-  await fetchMe();
-  i=0;dir="fwd";cur="#1580fe";show();if(tg)tg.BackButton.hide();
+  await Promise.race([fetchMe(),new Promise(r=>setTimeout(r,2500))]);
+  i=0;dir="fwd";cur="#1580fe";show();if(tg)tg.BackButton.hide();if(!ME_DONE)fetchMe().then(()=>{if(i<S.length)show()});
   requestAnimationFrame(()=>requestAnimationFrame(()=>{el.classList.add("out");setTimeout(()=>el.remove(),700)}))}
  el.addEventListener("pointerdown",e=>{if(done)return;e.preventDefault();holding=true;el.classList.add("hold");if(!raf){last=performance.now();raf=requestAnimationFrame(tick)}},{passive:false});
  const up=()=>{if(done)return;holding=false;el.classList.remove("hold");if(!raf&&p>0){last=performance.now();raf=requestAnimationFrame(tick)}};
@@ -410,7 +415,8 @@ const SV={bubble:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
 const LAY=[[7,15,46,-12,.2],[76,18,40,14,.2],[12,47,32,10,.17],[80,52,36,-10,.19],[9,74,38,8,.17],[72,78,44,-14,.21],[46,88,26,12,.14],[45,8,24,-8,.14],[27,33,28,-14,.15],[66,38,28,12,.15],[25,62,30,-10,.15],[64,64,28,10,.15]];
 BGI.dialog=LAY.map(([x,y,w,r,o],i)=>["bubble",x,y,w,i%2?r:-r,o]);
 BGI.fast=LAY.map(([x,y,w,r,o])=>["bolt",x,y,w,r*.6,o]);
-const bgi=k=>BGI[k]?`<div class="bgi">${BGI[k].map(([f,x,y,w,r,o])=>f.startsWith("c:")?`<i class="u" style="left:${x}%;top:${y}%;width:${w}px;height:${w}px;opacity:${Math.min(.3,o+.1)};transform:rotate(${r}deg);background-image:url(${API}/api/emoji/${f.slice(2)}?png=256)"></i>`:f.startsWith("t:")?`<i class="g" style="left:${x}%;top:${y}%;font-size:${Math.round(w*.9)}px;opacity:${o};transform:rotate(${r}deg)">${f.slice(2)}</i>`:`<i style="left:${x}%;top:${y}%;width:${w}px;height:${(w*AR[f]).toFixed(1)}px;opacity:${o};transform:rotate(${r}deg);--sm:url(${SV[f]?`'data:image/svg+xml,${encodeURIComponent(SV[f])}'`:f.startsWith("e:")?API+"/api/emoji/"+f.slice(2)+"?png=256":`/cards/${f}.webp`})"></i>`).join("")}</div>`:"";
+const bgSel=a=>{const c=a.map(it=>({it,d:Math.hypot(it[1]-50,(it[2]-50)*.8)})).sort((p,q)=>p.d-q.d);return c.slice(0,7).map(x=>x.it).concat(c.length>8?[c[c.length-1].it]:[])};   // 7 ближайших к центру + 1 с краю
+const bgi=k=>BGI[k]?`<div class="bgi">${bgSel(BGI[k]).map(([f,x,y,w,r,o])=>f.startsWith("c:")?`<i class="u" style="left:${x}%;top:${y}%;width:${w}px;height:${w}px;opacity:${Math.min(.3,o+.1)};transform:rotate(${r}deg);background-image:url(${API}/api/emoji/${f.slice(2)}?png=256)"></i>`:f.startsWith("t:")?`<i class="g" style="left:${x}%;top:${y}%;font-size:${Math.round(w*.9)}px;opacity:${o};transform:rotate(${r}deg)">${f.slice(2)}</i>`:`<i style="left:${x}%;top:${y}%;width:${w}px;height:${(w*AR[f]).toFixed(1)}px;opacity:${o};transform:rotate(${r}deg);--sm:url(${SV[f]?`'data:image/svg+xml,${encodeURIComponent(SV[f])}'`:f.startsWith("e:")?API+"/api/emoji/"+f.slice(2)+"?png=256":`/cards/${f}.webp`})"></i>`).join("")}</div>`:"";
 const G=(b)=>'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">'+b+'</svg>';
 const ARM='<g stroke="#000" stroke-width="6" stroke-linecap="round" fill="none"><g id="a"><path d="M50 50V8M50 24l-9-9M50 24l9-9"/></g>'+[60,120,180,240,300].map(a=>`<use href="#a" transform="rotate(${a} 50 50)"/>`).join("")+'</g>';
 Object.assign(SV,{
@@ -427,6 +433,7 @@ SV.heart=G('<path d="M50 90C20 68 5 50 5 31a23 23 0 0 1 45-7 23 23 0 0 1 45 7c0 
 SV.lock=G('<rect x="18" y="42" width="64" height="50" rx="11"/><path d="M32 44V32a18 18 0 0 1 36 0v12" fill="none" stroke="#000" stroke-width="9" stroke-linecap="round"/>');
 SV.starb=G('<polygon points="50,6 62,36 94,38 69,58 78,90 50,72 22,90 31,58 6,38 38,36" stroke="#000" stroke-width="6" stroke-linejoin="round"/>');
 AR.lock=1;AR.starb=1;
+SV.giftb=G('<rect x="14" y="44" width="72" height="48" rx="8"/><rect x="8" y="28" width="84" height="20" rx="7"/><path d="M50 28C30 28 20 8 35 7c11 0 15 12 15 21zM50 28c20 0 30-20 15-21-11 0-15 12-15 21z"/>');AR.giftb=1;
 const mixBG=T=>LAY.map(([x,y,w,r,o],j)=>[T[j%T.length],x,y,w,j%2?r:-r,o]);
 BGI.nobreak=mixBG(["snow","hour","snow","bell"]);          // лёд, песочные часы, уведомления выключены
 BGI.slow=mixBG(["t:🐌","zzz","clock"]);                      // улитка, zzz, часы
@@ -435,10 +442,11 @@ BGI.pinned=mixBG(["heart","t:📌","bubble"]);              // сердце, к�
 BGI.prem0=mixBG(["lock","starb","heart"]);                  // замок, звёзды, сердца (когда Premium нет)
 ["5983201451227222757","5357395115285438516","5339564150534200424","5454039464357682228"].forEach(x=>AR["e:"+x]=1);
 BGI.nft=mixBG(["e:5983201451227222757","e:5357395115285438516","e:5339564150534200424","e:5454039464357682228"]);   // прежняя иконка подарка — теперь полупрозрачный фон
+BGI.limited=mixBG(["giftb","starb","giftb","heart"]);
 BGI.online=mixBG(["bolt","bubble","pepe_bg"]);               // молния, диалог, пепе
 const bstars=()=>`<div class="bst">${BST.map(([x,y,w,r,o])=>`<i style="left:${x}%;top:${y}%;width:${w}px;height:${w}px;opacity:${o};transform:rotate(${r}deg);--sm:${STAR}"></i>`).join("")}</div>`;
 const RT=[1.44,1.24,1.31];   // пропорции трёх звёздочек
-function stars(tint){let h="";for(let n=0;n<13;n++){const k=Math.floor(Math.random()*3),q=SP[k],w=(q.w*(.7+Math.random()*.5)).toFixed(1),r=(Math.random()<.5?-1:1)*(90+Math.random()*270);
+function stars(tint){let h="";for(let n=0;n<11;n++){const k=Math.floor(Math.random()*3),q=SP[k],w=(q.w*(.7+Math.random()*.5)).toFixed(1),r=(Math.random()<.5?-1:1)*(90+Math.random()*270);
  const st=`left:${(Math.random()*96).toFixed(1)}%;width:${w}px;--r:${r.toFixed(0)}deg;animation-duration:${(5+Math.random()*7).toFixed(1)}s,${(2+Math.random()*3).toFixed(1)}s;animation-delay:-${(Math.random()*10).toFixed(1)}s,-${(Math.random()*4).toFixed(1)}s`;
  h+=tint?`<i style="${st};height:${(w*RT[k]).toFixed(1)}px;--m:url(${q.u})"></i>`:`<img src="${q.u}" alt="" draggable="false" style="${st}">`}
  return`<div class="snow">${h}</div>`}
@@ -456,7 +464,7 @@ function show(){
  const sub=s.k=="prem"?(D.prem?"Ты попадаешь в 1.5% в телеграмме!":"Ты попадаешь в 98.5% пользователей."):s.s;
  if(window.lottie)lottie.destroy();
  app.innerHTML=snow()+(s.k=="pct"||s.k=="prem"?bstars():"")+bgi(s.k)+`<h1>${s.t}</h1><div class="sub">${sub}</div>
- <div class="mid ${dir}${s.k=="gifts"?" up":s.k=="pct"?" dn":""}">${s.k=="days"?"":`<div class="emo${s.k=="gifts"||["slow","nobreak","pinned","nft"].includes(s.k)?" big":""}${s.k=="gifts"?" low":""}${s.k=="maxmsgs"?" nofl":""}${s.k=="pct"?" low2":""}${s.k=="nft"?" low3":""}">${s.k=="nft"?rich(NFTE):rich(e)}</div>`}<div class="val">${val(s)}</div>${name?`<div class="tier">${name}</div>`:""}${s.k=="days"?`<div class="yp">Аккаунт ${regYear(D.days)} года · ${YP[regYear(D.days)]} пользователей</div>`:""}${s.p?`<div class="pts"><div class="pv">+${N(pts(s))} ${pl(pts(s))}</div></div>`:""}</div>
+ <div class="mid ${dir}${s.k=="gifts"?" up":s.k=="pct"?" dn":""}">${s.k=="days"?"":`<div class="emo${s.k=="gifts"||["slow","nobreak","pinned","nft"].includes(s.k)?" big":""}${s.k=="gifts"?" low":""}${s.k=="maxmsgs"?" nofl":""}${s.k=="pct"?" low2":""}${s.k=="nft"?" low3":""}">${s.k=="nft"?rich(NFTE):rich(e)}</div>`}<div class="val">${val(s)}</div>${name?`<div class="tier">${name}</div>`:""}${s.k=="days"?`<div class="yp">Аккаунт ${regYear(D.days)} года · ${YP[regYear(D.days)]} пользователей</div>`:""}${s.p?`<div class="pts"><div class="pv">+${N(pts(s))} ${pl(pts(s))}</div></div>`:""}${s.k=="limited"?`<button type="button" class="more" data-a="lg">Подробнее</button>`:""}</div>
  <button type="button" class="share" data-a="s">Поделиться ↗</button><div class="btns">${i>0?`<button type="button" class="back" data-a="b">Назад</button>`:""}<button type="button" class="next" data-a="n">Продолжить</button></div>`;fx(n,0,s.k)}
 function final(){bg(["#22d3ee","#7c3aed"]);app.classList.remove("sl");
  if(window.lottie)lottie.destroy();
@@ -474,6 +482,7 @@ function caption(s,n){ // текст под карточкой — про тот
   case"pct":return`${em} Мой рейтинг в Telegram — ${D.lvl}, я в топ ${String(v).replace(".",",")}% пользователей!\n⭐ Потрачено звёзд: ${D.stars||0}`+end;
   case"prem":return`${em} ${nm.replace("У тебя","У меня")}! А у тебя?`+end;
   case"gifts":return`${em} Обычных подарков в моём профиле: ${v} — ${nm}!`+end;
+  case"limited":return`${em} Не улучшенных подарков у меня: ${v}!`+end;
   case"nft":return`${em} NFT-подарков в моём профиле: ${v} — ${nm}!`+end;
   case"fast":return`⚡ Мой самый быстрый ответ — ${h(v)}! Ты что 24/7 в телеграмме?`+end;
   case"slow":return`🐌 Самый долгий ответ — ${v}... Как же долго он ждал ответа 😅`+end;
@@ -547,9 +556,13 @@ function vTop(){if(!TOP)return loading()+`<div class="bt col"><button type="butt
   ${TOP.top.length>3?`<div class="lst">${TOP.top.slice(3).map(p=>`<div class="lr${me.rank==p.rank?" me":""}"><span class="rk">${p.rank}</span>${avatar(p)}<span class="rt"><b>${esc(p.name)}</b></span><span class="pt">${fmt(p.points)}</span></div>`).join("")}</div>`:""}
  <div class="mecard"><div><small>Твоё место</small><b>${me.rank?me.rank+"-е место":"пока нет в рейтинге"}</b>${me.rank?"":"<small>Нажми «Начать» в боте, чтобы попасть в рейтинг</small>"}${out&&last?`<small>До топ-100 ещё ${fmt(Math.max(1,last.points-me.points+1))} ${pl(Math.max(1,last.points-me.points+1))}</small>`:""}</div><span class="pt">${fmt(me.points)}</span></div>
  <div class="bt col"><button type="button" class="b2" data-s="menu">Назад</button></div>`}
+function vLim(){const L=D.limlist||[];
+ return `<h2>🎁 Не улучшенные подарки</h2><p class="mut">Лимитированные подарки, которые ещё не стали NFT</p>${L.length?`<div class="lst">${L.map(g=>`<div class="lr"><img class="gi" src="${API}/api/emoji/${g.k}?png=96" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span class="rt"><b>${esc(g.name||("Подарок за "+g.stars+" ⭐"))}: ${g.n}</b></span></div>`).join("")}</div>`:`<p class="mut">Таких подарков у тебя нет</p>`}<div class="bt col"><button type="button" class="b2" data-s="x">Закрыть</button></div>`}
+function openLim(){openSheet();VIEW="lim";renderSheet()}
 function renderSheet(){
  let h=loading();
  if(FAIL)h=`<div class="ld"><div class="big">😕</div><p class="mut">Не получилось загрузить. Попробуй позже.</p></div><div class="bt col"><button type="button" class="b2" data-s="x">Закрыть</button></div>`;
+ else if(VIEW=="lim")h=vLim();
  else if(MORE)h=VIEW=="inv"?vInv():VIEW=="top"?vTop():VIEW=="opt"?vOpt():VIEW.startsWith("d:")?vDet(VIEW.slice(2)):vMenu();
  SH.innerHTML='<div class="grab"></div>'+h;hydrate();cu()}
 async function refreshMore(){const prev=JSON.stringify(MORE);try{MORE=live?await api("/api/more"):Object.assign({},DM,{points:total(),count:MORE?MORE.count:DM.count});FAIL=false}catch(e){FAIL=!MORE}
@@ -558,7 +571,7 @@ async function refreshMore(){const prev=JSON.stringify(MORE);try{MORE=live?await
 function openSheet(){VIEW="menu";renderSheet();void OV.offsetWidth;document.body.classList.add("sheet");try{window.lottie&&lottie.pause()}catch(e){}
  requestAnimationFrame(()=>{OV.classList.add("on");if(tg)tg.BackButton.show();setTimeout(refreshMore,450)})}
 function closeSheet(){OV.classList.remove("on");document.body.classList.remove("sheet");try{window.lottie&&lottie.play()}catch(e){}if(tg&&i==0)tg.BackButton.hide()}
-function sheetBack(){if(VIEW!="menu"){VIEW=parent();renderSheet()}else closeSheet()}
+function sheetBack(){if(VIEW=="lim")closeSheet();else if(VIEW!="menu"){VIEW=parent();renderSheet()}else closeSheet()}
 let TOPP=null;
 function prefetchTop(){if(!live||TOP||TOPP)return;TOPP=api("/api/top").then(t=>{TOP=t}).catch(()=>{}).finally(()=>{TOPP=null})}
 async function openTop(){VIEW="top";renderSheet();   // если топ уже загружен заранее — показываем сразу, а свежие данные подтягиваем тихо
@@ -586,7 +599,7 @@ OV.addEventListener("click",e=>{
  else if(a=="more"){VIEW=MORE.price>0?"opt":"inv";NOTE="";renderSheet()}else if(a=="inv"){VIEW="inv";renderSheet()}else if(a=="back"){VIEW=parent();renderSheet()}else if(a=="pay")pay();else if(a=="menu0"){}else if(a=="top")openTop();else if(DET[a]){VIEW="d:"+a;renderSheet()}
  else if(a=="send")sendInvite();else if(a=="copy")copyLink()});
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&OV.classList.contains("on")&&live)refreshMore()});
-document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a;a=="n"?go(1):a=="b"?go(-1):a=="m"?openSheet():share()});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a;a=="n"?go(1):a=="b"?go(-1):a=="m"?openSheet():a=="lg"?openLim():share()});
 if(tg)tg.BackButton.onClick(()=>{if(OV.classList.contains("on"))sheetBack();else go(-1)});
 fetchMe().then(()=>refreshMore());   // данные и «доп. инфо» грузим заранее, пока человек держит палец
 intro();
