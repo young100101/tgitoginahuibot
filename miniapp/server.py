@@ -98,7 +98,18 @@ def recolor(node):
         for v in node: recolor(v)
     return node
 
-GIFT_FILES: dict = {}   # "gift_<id>" -> файл стикера подарка
+def gift_key(file_id, thumb=None):  # подписанный ключ: "g_<hex>_<подпись>"
+    data = json.dumps([file_id, thumb or ""]).encode()
+    return "g_" + data.hex() + "_" + hmac.new(TOKEN.encode(), data, hashlib.sha256).hexdigest()[:16]
+
+def gift_dec(eid):
+    try:
+        if not eid.startswith("g_"): return None
+        hx, sig = eid[2:].rsplit("_", 1); data = bytes.fromhex(hx)
+        if not hmac.compare_digest(hmac.new(TOKEN.encode(), data, hashlib.sha256).hexdigest()[:16], sig): return None
+        f, t = json.loads(data); return {"file": f, "thumb": t or None}
+    except Exception: return None
+
 SET_TITLES: dict = {}
 LIM = {"key": None, "t": 0}
 
@@ -114,16 +125,16 @@ async def lim_icon(c):  # лимитированный подарок, у кот
     gl = [g for g in (r or {}).get("gifts", []) if g.get("total_count") and g.get("sticker")]
     pool = [g for g in gl if not g.get("upgrade_star_count")] or gl
     if not pool: return LIM["key"] or ""
-    g = max(pool, key=lambda x: x.get("star_count", 0)); st = g["sticker"]; key = "gift_" + str(g["id"])
-    GIFT_FILES[key] = {"file": st["file_id"], "thumb": (st.get("thumbnail") or {}).get("file_id")}
+    g = max(pool, key=lambda x: x.get("star_count", 0)); st = g["sticker"]
+    key = gift_key(st["file_id"], (st.get("thumbnail") or {}).get("file_id"))
     LIM["key"], LIM["t"] = key, time.time(); return key
 
 async def get_emoji(eid: str, thumb: bool = False):
     key = (eid, thumb)
     if key not in EMOJI_CACHE:
         async with httpx.AsyncClient(timeout=25) as c:
-            if eid.startswith("gift_"):
-                gf = GIFT_FILES.get(eid)
+            if eid.startswith("g_"):
+                gf = gift_dec(eid)
                 if not gf: raise RuntimeError("неизвестный подарок")
                 fid = gf["thumb"] if thumb and gf.get("thumb") else gf["file"]
             else:
@@ -211,7 +222,7 @@ async def _startup(): asyncio.create_task(_warm())
 
 @app.get("/api/emoji/{eid}")
 async def emoji(eid: str, thumb: int = 0, png: int = 0, anim: int = 0, at: float = -1):  # thumb=1 -> неподвижная картинка; png=512 -> кадр в высоком качестве
-    if eid not in EMOJI_IDS and eid not in GIFT_FILES: raise HTTPException(404)
+    if eid not in EMOJI_IDS and not gift_dec(eid): raise HTTPException(404)
     if anim:
         size = min(max(anim, 64), 384); key = (eid, size)
         try:
@@ -270,7 +281,7 @@ async def me(authorization: str = Header()):
                     if gf.get("total_count") is not None or gf.get("remaining_count") is not None:   # лимитированный, не улучшенный
                         lim += 1; gid = str(gf.get("id")); st = gf.get("sticker") or {}
                         grp = groups.setdefault(gid, {"n": 0, "stars": gf.get("star_count", 0), "set": st.get("set_name")}); grp["n"] += 1
-                        if st.get("file_id"): GIFT_FILES["gift_" + gid] = {"file": st["file_id"], "thumb": (st.get("thumbnail") or {}).get("file_id")}
+                        if st.get("file_id") and "key" not in grp: grp["key"] = gift_key(st["file_id"], (st.get("thumbnail") or {}).get("file_id"))
                         continue
                     gifts += 1; value += gf.get("star_count", 0)  # обычный подарок без лимита
             off = r.get("next_offset")
@@ -282,7 +293,7 @@ async def me(authorization: str = Header()):
         try: icon = await asyncio.wait_for(icon_t, 6)
         except Exception: icon = ""
         res = await asyncio.gather(*[asyncio.wait_for(gift_title(c, v["set"]), 4) for v in groups.values()], return_exceptions=True)
-    limlist = sorted(({"k": "gift_" + gid, "n": v["n"], "stars": v["stars"], "name": (t if isinstance(t, str) else "")}
+    limlist = sorted(({"k": v.get("key", ""), "n": v["n"], "stars": v["stars"], "name": (t if isinstance(t, str) else "")}
                       for (gid, v), t in zip(groups.items(), res)), key=lambda x: (-x["n"], -x["stars"]))[:60]
     days = days_in_tg(uid); points = days // 20 + gifts // 3 + uniq * 2 + int(stars or 0) // 2000   # 1 балл за 20 дней, за 3 обычных подарка, 2 за NFT, 1 за каждые 2000 звёзд
     b = globals().get("bot")

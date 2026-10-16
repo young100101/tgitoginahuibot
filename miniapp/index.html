@@ -231,7 +231,7 @@ const S=[
  c:[["#ff5fa2","#ff2d75"],["#ff4f9a","#d91e72"],["#ff3d81","#b5175b"]],
  d:[["{e:5224648868850863664|🧸}","Скромная полка"],["{e:5224648868850863664|🧸}","Неплохая коллекция"],["{e:5224648868850863664|🧸}","Подарочный магнат"]]},
 {k:"limited",L:0,t:"Не улучшенные подарки",s:"Лимитированные, которые ещё не стали NFT",u:"шт.",f:()=>0,
- c:[["#2dd4bf","#0f766e"]],d:[["🎁",""]]},
+ c:[["#2dd4bf","#0f766e"]],d:[["",""]]},
 {k:"nft",L:0,p:v=>v*2,pr:"",t:"NFT-подарки",s:"Улучшенные подарки в профиле",u:"шт.",f:v=>v<=3?0:v<=10?1:2,
  c:[["#06b6d4","#2563eb"],["#8b5cf6","#ec4899"],["#fbbf24","#f43f5e"]],
  d:[["🧸","Начинающий коллекционер"],["💠","Серьёзный коллекционер"],["🐉","Легенда рынка"]]},
@@ -362,7 +362,7 @@ let ME=null,ME_DONE=false;
 function fetchMe(){return ME||(ME=(async()=>{
  try{const r=await fetch(API+"/api/me",{headers:{Authorization:"tma "+(tg?tg.initData:"")}});if(!r.ok)throw 0;Object.assign(D,await r.json())}
  catch(e){Object.assign(D,DEMO)}   // без бэкенда показываем демо-данные
- {const ls=S.find(x=>x.k=="limited");if(D.limicon&&ls){const id=D.limicon;HQ.add(id);STILLONLY.add(id);ANIMID.add(id);ls.d[0][0]=`{e:${id}|🎁}`;try{still(id);loadEmoji(id)}catch(e){}}}
+ {const ls=S.find(x=>x.k=="limited");if(D.limicon&&ls){const id=D.limicon;HQ.add(id);STILLONLY.add(id);ANIMID.add(id);ls.d[0][0]=`{e:${id}|}`;try{still(id);loadEmoji(id)}catch(e){}}}
  ME_DONE=true;rolls();setTimeout(()=>{try{live&&refreshMore()}catch(e){}},900)})())}
 // ===== Стартовый экран: удержи палец — синий круг заполняет экран =====
 function intro(){
@@ -557,7 +557,7 @@ function vTop(){if(!TOP)return loading()+`<div class="bt col"><button type="butt
  <div class="mecard"><div><small>Твоё место</small><b>${me.rank?me.rank+"-е место":"пока нет в рейтинге"}</b>${me.rank?"":"<small>Нажми «Начать» в боте, чтобы попасть в рейтинг</small>"}${out&&last?`<small>До топ-100 ещё ${fmt(Math.max(1,last.points-me.points+1))} ${pl(Math.max(1,last.points-me.points+1))}</small>`:""}</div><span class="pt">${fmt(me.points)}</span></div>
  <div class="bt col"><button type="button" class="b2" data-s="menu">Назад</button></div>`}
 function vLim(){const L=D.limlist||[];
- return `<h2>🎁 Не улучшенные подарки</h2><p class="mut">Лимитированные подарки, которые ещё не стали NFT</p>${L.length?`<div class="lst">${L.map(g=>`<div class="lr"><img class="gi" src="${API}/api/emoji/${g.k}?png=96" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span class="rt"><b>${esc(g.name||("Подарок за "+g.stars+" ⭐"))}: ${g.n}</b></span></div>`).join("")}</div>`:`<p class="mut">Таких подарков у тебя нет</p>`}<div class="bt col"><button type="button" class="b2" data-s="x">Закрыть</button></div>`}
+ return `<h2>Не улучшенные подарки</h2><p class="mut">Лимитированные подарки, которые ещё не стали NFT</p>${L.length?`<div class="lst">${L.map(g=>`<div class="lr">${g.k?`<img class="gi" src="${API}/api/emoji/${g.k}?png=96" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`:`<span class="gi"></span>`}<span class="rt"><b>${esc(g.name||("Подарок за "+g.stars+" ⭐"))}: ${g.n}</b></span></div>`).join("")}</div>`:`<p class="mut">Таких подарков у тебя нет</p>`}<div class="bt col"><button type="button" class="b2" data-s="x">Закрыть</button></div>`}
 function openLim(){openSheet();VIEW="lim";renderSheet()}
 function renderSheet(){
  let h=loading();
