@@ -206,6 +206,11 @@ body.sheet .fp,body.sheet .cf,body.sheet .emo,body.sheet .tier::after{animation-
 .fpt{position:absolute;top:7px;right:8px;font-size:11px;font-weight:800;padding:2px 7px;border-radius:10px;background:rgba(255,255,255,.92);color:#a21caf}
 @keyframes pls{from{transform:scale(1);opacity:.9}to{transform:scale(1.45);opacity:0}}
 @keyframes bob{50%{transform:translateY(-7px) rotate(-2.5deg)}}
+/* ===== Меню тем ===== */
+.menu{display:flex;flex-direction:column;gap:12px;width:100%;z-index:2;position:relative}
+.mb{width:100%;display:flex;flex-direction:column;align-items:center;gap:3px;padding:18px 16px;border-radius:22px;background:#fff;color:#111;box-shadow:0 10px 26px rgba(0,0,0,.14);animation:up .5s both}
+.mb b{font-size:19px;font-weight:800}
+.mb small{font-size:13px;font-weight:600;color:#6b7280}
 </style></head><body><div id="app"></div>
 <script>
 const tg=window.Telegram&&Telegram.WebApp;if(tg){tg.ready();tg.expand();
@@ -329,7 +334,7 @@ const still=id=>ST[id]||(ST[id]=HQ.has(id)?stillHQ(id):thumb(id).then(e=>e.u).ca
 function fall(key,ids,n,delay,d0,dv,ttl){ // эмодзи сыплются один раз, сами не анимированы
  const my=i;
  Promise.all(ids.map(still)).then(us=>{
-  if(i!=my||S[i].k!=key)return;
+  if(i!=my||!SL[i]||SL[i].k!=key)return;
   for(let k=0;k<n;k++){
    const c=document.createElement("span"),u=us[k%ids.length];c.className="fp";
    c.style.cssText=`left:${Math.random()*92}%;animation-delay:${Math.random()*delay}s;animation-duration:${d0+Math.random()*dv}s;width:${30+Math.random()*16}px;height:${30+Math.random()*16}px`;
@@ -388,7 +393,7 @@ function intro(){
   hc.style.transform=`scale(${1.35})`;fg.style.transform="scale(1.3)";fg.style.opacity="0";
   try{tg&&tg.HapticFeedback&&tg.HapticFeedback.notificationOccurred("success")}catch(e){}
   await Promise.race([fetchMe(),new Promise(r=>setTimeout(r,2500))]);
-  i=0;dir="fwd";cur="#1580fe";show();if(tg)tg.BackButton.hide();if(!ME_DONE)fetchMe().then(()=>{if(i<S.length)show()});
+  cur="#1580fe";showMenu("fwd");if(!ME_DONE)fetchMe().then(()=>{if(SCR=="slides")show()});
   requestAnimationFrame(()=>requestAnimationFrame(()=>{el.classList.add("out");setTimeout(()=>el.remove(),700)}))}
  el.addEventListener("pointerdown",e=>{if(done)return;e.preventDefault();holding=true;el.classList.add("hold");if(!raf){last=performance.now();raf=requestAnimationFrame(tick)}},{passive:false});
  const up=()=>{if(done)return;holding=false;el.classList.remove("hold");if(!raf&&p>0){last=performance.now();raf=requestAnimationFrame(tick)}};
@@ -458,22 +463,36 @@ function bg(c){try{if(tg){tg.setHeaderColor(c[0]);tg.setBackgroundColor(c[1])}}c
 const N=(x,dec)=>`<span class="cnt" data-to="${x}"${dec?` data-dec="1"`:""}>0</span>`;
 function val(s){const v=D[s.k];if(RND.includes(s.k))return`<span class="vt">${v}</span>`;if(s.k=="prem")return"";if(s.k=="pct")return`<span style="font-size:24px;font-weight:700">Рейтинг</span><span class="bn">${N(D.lvl)}</span><span style="font-size:22px;font-weight:600">Ты в топ ${N(v,1)}% пользователей</span><br><span style="font-size:22px;font-weight:700;display:inline-block;margin-top:8px">${CE(EM.star,"⭐")} Потрачено звёзд: ${N(D.stars||0)}</span>`;if(s.k=="days")return`<span class="dw"><span class="bn">${N(v)}</span>${CE(EM.days,"⭐").replace('class="ce"','class="ce dce"')}</span><span class="vu">${s.u}</span>`;if(s.k=="gifts"){const n=Math.round(D.value||0),m=n%10,c=n%100;return`<span class="bn">${N(v)}</span><span class="vu">${s.u}</span><span class="gsum">на сумму: ${N(n)} ${m==1&&c!=11?"звезда":m>=2&&m<=4&&(c<12||c>14)?"звезды":"звёзд"}</span>`}return`<span class="bn">${N(v)}</span>`+(s.u?`<span class="vu">${s.u}</span>`:"")}
 function show(){
- if(i>=S.length){final();return}
+ if(i>=SL.length){final();return}
  app.classList.add("sl");
- const s=S[i],n=s.f(D[s.k]),L=s.L==null?n:s.L,e=s.d[L][0],name=s.d[n][1];bg(s.c[L]);
+ const s=SL[i],n=s.f(D[s.k]),L=s.L==null?n:s.L,e=s.d[L][0],name=s.d[n][1];bg(s.c[L]);
  const sub=s.k=="prem"?(D.prem?"Ты попадаешь в 1.5% в телеграмме!":"Ты попадаешь в 98.5% пользователей."):s.s;
  if(window.lottie)lottie.destroy();
  app.innerHTML=snow()+(s.k=="pct"||s.k=="prem"?bstars():"")+bgi(s.k)+`<h1>${s.t}</h1><div class="sub">${sub}</div>
  <div class="mid ${dir}${s.k=="gifts"?" up":s.k=="pct"?" dn":""}">${s.k=="days"?"":`<div class="emo${s.k=="gifts"||["slow","nobreak","pinned","nft"].includes(s.k)?" big":""}${s.k=="gifts"?" low":""}${s.k=="maxmsgs"?" nofl":""}${s.k=="pct"?" low2":""}${s.k=="nft"?" low3":""}">${s.k=="nft"?rich(NFTE):rich(e)}</div>`}<div class="val">${val(s)}</div>${name?`<div class="tier">${name}</div>`:""}${s.k=="days"?`<div class="yp">Аккаунт ${regYear(D.days)} года · ${YP[regYear(D.days)]} пользователей</div>`:""}${s.p?`<div class="pts"><div class="pv">+${N(pts(s))} ${pl(pts(s))}</div></div>`:""}${s.k=="limited"?`<button type="button" class="more" data-a="lg">Подробнее</button>`:""}</div>
- <button type="button" class="share" data-a="s">Поделиться ↗</button><div class="btns">${i>0?`<button type="button" class="back" data-a="b">Назад</button>`:""}<button type="button" class="next" data-a="n">Продолжить</button></div>`;fx(n,0,s.k)}
+ <button type="button" class="share" data-a="s">Поделиться ↗</button><div class="btns"><button type="button" class="back" data-a="b">Назад</button><button type="button" class="next" data-a="n">Продолжить</button></div>`;fx(n,0,s.k)}
 function final(){bg(["#22d3ee","#7c3aed"]);app.classList.remove("sl");
  if(window.lottie)lottie.destroy();
- const r=S.map(s=>{const n=s.f(D[s.k]);return[s.d[s.L==null?n:s.L][0],s.d[n][1]]});
- app.innerHTML=snow()+`<div class="mid fin"><h1 style="margin-top:16px">Итоги</h1><div class="sub" style="margin-bottom:14px">Вот кто ты в Telegram</div><div class="totc"><div class="lbl" style="margin:0">Сумма баллов</div><div class="tot">${rich("🏆")} ${N(total())} ${pl(total())}</div></div><div class="gr">`+
- S.map((s,j)=>{const v=r[j][1]||(s.k=="pct"?"Рейтинг "+D.lvl:typeof D[s.k]=="number"?N(D[s.k])+(s.u?" "+s.u:""):D[s.k]);return`<div class="li fc" style="animation-delay:${j*.08+.2}s">${s.p?`<span class="fpt">+${pts(s)}</span>`:""}<div class="fe">${s.k=="nft"?rich(NFTE):rich(r[j][0])}</div><div class="ft">${s.t}</div><div class="fv">${v}</div></div>`}).join("")+
- `</div></div><button type="button" class="share" data-a="s">Поделиться ↗</button><div class="btns"><button type="button" class="back" data-a="b">Назад</button><button type="button" class="next" data-a="m" style="flex:1.7;font-size:14px;white-space:nowrap;padding-left:6px;padding-right:6px">Узнать больше инфо</button></div>`;fx(2,1,"final")}
+ const r=SL.map(s=>{const n=s.f(D[s.k]);return[s.d[s.L==null?n:s.L][0],s.d[n][1]]});
+ app.innerHTML=snow()+`<div class="mid fin"><h1 style="margin-top:16px">Итоги</h1><div class="sub" style="margin-bottom:14px">${GROUPS[GRP].fs}</div>${SL.some(s=>s.p)?`<div class="totc"><div class="lbl" style="margin:0">Сумма баллов</div><div class="tot">${rich("🏆")} ${N(total())} ${pl(total())}</div></div>`:""}<div class="gr">`+
+ SL.map((s,j)=>{const v=r[j][1]||(s.k=="pct"?"Рейтинг "+D.lvl:typeof D[s.k]=="number"?N(D[s.k])+(s.u?" "+s.u:""):D[s.k]);return`<div class="li fc" style="animation-delay:${j*.08+.2}s">${s.p?`<span class="fpt">+${pts(s)}</span>`:""}<div class="fe">${s.k=="nft"?rich(NFTE):rich(r[j][0])}</div><div class="ft">${s.t}</div><div class="fv">${v}</div></div>`}).join("")+
+ `</div></div><button type="button" class="share" data-a="s">Поделиться ↗</button><div class="btns"><button type="button" class="back" data-a="menu">В меню</button><button type="button" class="next" data-a="m" style="flex:1.7;font-size:14px;white-space:nowrap;padding-left:6px;padding-right:6px">Узнать больше инфо</button></div>`;fx(2,1,"final")}
 dir="fwd";
-function go(d){dir=d>0?"fwd":"bk";i=Math.min(S.length,Math.max(0,i+d));show();if(tg)i>0?tg.BackButton.show():tg.BackButton.hide()}
+// ===== Меню тем =====
+const GROUPS={
+ reg:{t:"Обычная тематика",m:"Диалоги, ответы и активность",fs:"Как ты общаешься в Telegram",keys:["dialog","fast","slow","nobreak","pinned","online","maxmsgs"]},
+ nft:{t:"NFT тематика",m:"Стаж, рейтинг, подарки и Premium",fs:"Что у тебя в профиле Telegram",keys:["days","pct","gifts","limited","nft","prem"]}};
+let SCR="intro",GRP=null,SL=S;   // SCR: intro | menu | slides | give; SL — слайды выбранной темы
+const syncBB=()=>{if(!tg)return;try{(SCR=="slides"||SCR=="give")?tg.BackButton.show():tg.BackButton.hide()}catch(e){}};
+function showMenu(dr){SCR="menu";GRP=null;i=0;dir=dr||"fwd";app.classList.remove("sl");
+ if(window.lottie)lottie.destroy();bg(["#2ba0ff","#0264fd"]);
+ const it=[["g:reg",GROUPS.reg.t,GROUPS.reg.m],["g:nft",GROUPS.nft.t,GROUPS.nft.m],["give","Розыгрыши","Скоро появятся"],["top","Лидерборд","Топ-100 по баллам"]];
+ app.innerHTML=snow()+`<h1>Выбери тему</h1><div class="sub">Что хочешь узнать о себе?</div><div class="mid ${dir}"><div class="menu">${it.map(([a,t,m],j)=>`<button type="button" class="mb" style="animation-delay:${.1+j*.07}s" data-a="${a}"><b>${t}</b><small>${m}</small></button>`).join("")}</div></div>`;syncBB()}
+function showGive(){SCR="give";dir="fwd";app.classList.remove("sl");
+ if(window.lottie)lottie.destroy();bg(["#2ba0ff","#0264fd"]);
+ app.innerHTML=snow()+`<h1>Розыгрыши</h1><div class="mid fwd"></div><div class="btns"><button type="button" class="back" data-a="menu">Назад</button></div>`;syncBB()}
+function openGroup(k){GRP=k;SL=GROUPS[k].keys.map(x=>S.find(s=>s.k==x));i=0;dir="fwd";SCR="slides";show();syncBB()}
+function go(d){dir=d>0?"fwd":"bk";if(i+d<0){showMenu("bk");return}i=Math.min(SL.length,i+d);show();syncBB()}
 const BOTSTART=BOT.replace(/\/[^\/]*$/,"")+"?start=share";   // ссылка на /start бота
 function caption(s,n){ // текст под карточкой — про тот слайд, где нажали «Поделиться»
  const nm=s.d[n][1],v=D[s.k],em=plain(s.d[n][0]),h=x=>String(x).replace("&lt;","<"),end="\n\nУзнай свои результаты 👇";
@@ -497,8 +516,8 @@ function shareMsg(id,kind){   // считаем «пересылку», толь
   ok=()=>{off();try{fetch(API+"/api/shared",{method:"POST",headers:{Authorization:"tma "+tg.initData,"Content-Type":"application/json"},body:JSON.stringify({kind})})}catch(e){}},bad=()=>off();
  tg.onEvent("shareMessageSent",ok);tg.onEvent("shareMessageFailed",bad);tg.shareMessage(id)}
 async function share(){
- const fin=i>=S.length,s=fin?null:S[i],n=fin?0:s.f(D[s.k]);
- const text=fin?`🏆 Мои итоги в Telegram — ${total()} ${pl(total())}!\nУзнай свои результаты 👇`:caption(s,n);
+ const fin=i>=SL.length,s=fin?null:SL[i],n=fin?0:s.f(D[s.k]);
+ const text=fin?(SL.some(x=>x.p)?`🏆 Мои итоги в Telegram — ${total()} ${pl(total())}!\nУзнай свои результаты 👇`:`📊 Мои итоги в Telegram: ${GROUPS[GRP].t}!\nУзнай свои результаты 👇`):caption(s,n);
  try{if(!tg||!tg.shareMessage||!tg.isVersionAtLeast("8.0"))throw 0;
   const r=await fetch(API+"/api/share",{method:"POST",headers:{Authorization:"tma "+tg.initData,"Content-Type":"application/json"},body:JSON.stringify({slide:fin?"final":s.k,tier:n,text})});
   if(!r.ok)throw 0;const {id}=await r.json();shareMsg(id,"slide")}
@@ -508,7 +527,7 @@ async function share(){
 const OV=document.createElement("div");OV.id="ov";OV.className="ov";OV.innerHTML='<div class="sh" id="sh"></div>';document.body.appendChild(OV);
 if(tg&&tg.colorScheme=="dark")OV.dataset.th="dark";
 const SH=document.getElementById("sh"),live=!!(tg&&tg.initData);
-let VIEW="menu",MORE=null,TOP=null,FAIL=false,COPIED=false,NOTE="";
+let TOPD=false,VIEW="menu",MORE=null,TOP=null,FAIL=false,COPIED=false,NOTE="";
 const parent=()=>VIEW=="inv"&&MORE&&MORE.price>0&&!MORE.unlocked?"opt":"menu";
 const esc=t=>String(t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmt=n=>Number(n).toLocaleString("ru");
@@ -549,13 +568,13 @@ function vOpt(){const m=MORE,left=Math.max(0,m.need-m.count);
  <button type="button" class="row" style="animation-delay:.08s" data-s="pay"><span class="ic" style="background:linear-gradient(135deg,#ffb347,#ff7a18)">${rich("⭐")}</span><span class="rt"><b>Оплатить ${fmt(m.price)} ${rich("⭐")}</b><small>Откроется сразу, без приглашений</small></span><span class="chev">›</span></button></div>
  ${NOTE?`<p class="note">${NOTE}</p>`:""}<div class="bt col"><button type="button" class="b2" data-s="menu">Назад</button></div>`}
 const medal=r=>r==1?"🥇":r==2?"🥈":r==3?"🥉":r;
-function vTop(){if(!TOP)return loading()+`<div class="bt col"><button type="button" class="b2" data-s="menu">Назад</button></div>`;
+function vTop(){if(!TOP)return loading()+`<div class="bt col"><button type="button" class="b2" data-s="${TOPD?"x":"menu"}">Назад</button></div>`;
  const me=TOP.me,last=TOP.top[TOP.top.length-1],out=me.rank&&me.rank>TOP.top.length;
  return `<h2>🏆 Таблица лидеров</h2><p class="mut">Топ-100 по баллам за аккаунт</p>
  ${(()=>{const t=TOP.top,pd=(p,k)=>p?`<div class="pdc p${k}${me.rank==p.rank?" me":""}">${k==1?`<div class="crw">👑</div>`:""}${avatar(p)}<span class="pdn">${esc(p.name)}</span><span class="pdp">${fmt(p.points)}</span><div class="pdb">${k}</div></div>`:"";return`<div class="pod">${pd(t[1],2)}${pd(t[0],1)}${pd(t[2],3)}</div>`})()}
   ${TOP.top.length>3?`<div class="lst">${TOP.top.slice(3).map(p=>`<div class="lr${me.rank==p.rank?" me":""}"><span class="rk">${p.rank}</span>${avatar(p)}<span class="rt"><b>${esc(p.name)}</b></span><span class="pt">${fmt(p.points)}</span></div>`).join("")}</div>`:""}
  <div class="mecard"><div><small>Твоё место</small><b>${me.rank?me.rank+"-е место":"пока нет в рейтинге"}</b>${me.rank?"":"<small>Нажми «Начать» в боте, чтобы попасть в рейтинг</small>"}${out&&last?`<small>До топ-100 ещё ${fmt(Math.max(1,last.points-me.points+1))} ${pl(Math.max(1,last.points-me.points+1))}</small>`:""}</div><span class="pt">${fmt(me.points)}</span></div>
- <div class="bt col"><button type="button" class="b2" data-s="menu">Назад</button></div>`}
+ <div class="bt col"><button type="button" class="b2" data-s="${TOPD?"x":"menu"}">Назад</button></div>`}
 function vLim(){const L=D.limlist||[];
  return `<h2>Не улучшенные подарки</h2><p class="mut">Лимитированные подарки, которые ещё не стали NFT</p>${L.length?`<div class="lst">${L.map(g=>`<div class="lr">${g.k?`<img class="gi" src="${API}/api/emoji/${g.k}?png=96" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`:`<span class="gi"></span>`}<span class="rt"><b>${esc(g.name||("Подарок за "+g.stars+" ⭐"))}: ${g.n}</b></span></div>`).join("")}</div>`:`<p class="mut">Таких подарков у тебя нет</p>`}<div class="bt col"><button type="button" class="b2" data-s="x">Закрыть</button></div>`}
 function openLim(){openSheet();VIEW="lim";renderSheet()}
@@ -568,15 +587,16 @@ function renderSheet(){
 async function refreshMore(){const prev=JSON.stringify(MORE);try{MORE=live?await api("/api/more"):Object.assign({},DM,{points:total(),count:MORE?MORE.count:DM.count});FAIL=false}catch(e){FAIL=!MORE}
  if(live&&MORE&&MORE.unlocked)prefetchTop();
  if(OV.classList.contains("on")&&(FAIL||JSON.stringify(MORE)!==prev))renderSheet()}   // перерисовываем, только если данные изменились — без мигания
-function openSheet(){VIEW="menu";renderSheet();void OV.offsetWidth;document.body.classList.add("sheet");try{window.lottie&&lottie.pause()}catch(e){}
+function openSheet(){TOPD=false;VIEW="menu";renderSheet();void OV.offsetWidth;document.body.classList.add("sheet");try{window.lottie&&lottie.pause()}catch(e){}
  requestAnimationFrame(()=>{OV.classList.add("on");if(tg)tg.BackButton.show();setTimeout(refreshMore,450)})}
-function closeSheet(){OV.classList.remove("on");document.body.classList.remove("sheet");try{window.lottie&&lottie.play()}catch(e){}if(tg&&i==0)tg.BackButton.hide()}
-function sheetBack(){if(VIEW=="lim")closeSheet();else if(VIEW!="menu"){VIEW=parent();renderSheet()}else closeSheet()}
+function closeSheet(){OV.classList.remove("on");document.body.classList.remove("sheet");try{window.lottie&&lottie.play()}catch(e){}syncBB()}
+function sheetBack(){if(VIEW=="lim"||(VIEW=="top"&&TOPD))closeSheet();else if(VIEW!="menu"){VIEW=parent();renderSheet()}else closeSheet()}
 let TOPP=null;
 function prefetchTop(){if(!live||TOP||TOPP)return;TOPP=api("/api/top").then(t=>{TOP=t}).catch(()=>{}).finally(()=>{TOPP=null})}
 async function openTop(){VIEW="top";renderSheet();   // если топ уже загружен заранее — показываем сразу, а свежие данные подтягиваем тихо
  try{const t=live?await api("/api/top"):demoTop(),ch=JSON.stringify(t)!==JSON.stringify(TOP);TOP=t;if(VIEW=="top"&&ch)renderSheet()}
- catch(e){if(e==403){await refreshMore();VIEW=MORE&&MORE.price>0?"opt":"inv"}else FAIL=true;renderSheet()}}
+ catch(e){if(e==403){TOPD=false;await refreshMore();VIEW=MORE&&MORE.price>0?"opt":"inv"}else FAIL=true;renderSheet()}}
+function openLeaderboard(){openSheet();TOPD=true;openTop()}
 async function pay(){NOTE="";
  if(!live){NOTE="Оплата работает только внутри Telegram";renderSheet();return}
  try{const {url}=await api("/api/pay",{method:"POST"});
@@ -599,8 +619,8 @@ OV.addEventListener("click",e=>{
  else if(a=="more"){VIEW=MORE.price>0?"opt":"inv";NOTE="";renderSheet()}else if(a=="inv"){VIEW="inv";renderSheet()}else if(a=="back"){VIEW=parent();renderSheet()}else if(a=="pay")pay();else if(a=="menu0"){}else if(a=="top")openTop();else if(DET[a]){VIEW="d:"+a;renderSheet()}
  else if(a=="send")sendInvite();else if(a=="copy")copyLink()});
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&OV.classList.contains("on")&&live)refreshMore()});
-document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a;a=="n"?go(1):a=="b"?go(-1):a=="m"?openSheet():a=="lg"?openLim():share()});
-if(tg)tg.BackButton.onClick(()=>{if(OV.classList.contains("on"))sheetBack();else go(-1)});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a;if(a.startsWith("g:"))openGroup(a.slice(2));else if(a=="give")showGive();else if(a=="top")openLeaderboard();else if(a=="menu")showMenu("bk");else a=="n"?go(1):a=="b"?go(-1):a=="m"?openSheet():a=="lg"?openLim():share()});
+if(tg)tg.BackButton.onClick(()=>{if(OV.classList.contains("on"))sheetBack();else if(SCR=="give")showMenu("bk");else if(SCR=="slides")go(-1)});
 fetchMe().then(()=>refreshMore());   // данные и «доп. инфо» грузим заранее, пока человек держит палец
 intro();
 </script></body></html>
