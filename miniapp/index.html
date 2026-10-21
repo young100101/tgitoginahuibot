@@ -209,6 +209,10 @@ body.sheet .fp,body.sheet .cf,body.sheet .emo,body.sheet .tier::after{animation-
 /* ===== Меню тем ===== */
 .menu{display:flex;flex-direction:column;gap:12px;width:100%;z-index:2;position:relative}
 .mb{width:100%;display:flex;flex-direction:column;align-items:center;gap:3px;padding:18px 16px;border-radius:22px;background:#fff;color:#111;box-shadow:0 10px 26px rgba(0,0,0,.14);animation:up .5s both}
+.mb{overflow:hidden}
+.mb b,.mb small{position:relative;z-index:1}
+.mbg{position:absolute;inset:0;pointer-events:none}
+.mbg i{position:absolute;font-style:normal;line-height:1;filter:grayscale(1) contrast(.9);opacity:.55}
 .mb b{font-size:19px;font-weight:800}
 .mb small{font-size:13px;font-weight:600;color:#6b7280}
 </style></head><body><div id="app"></div>
@@ -486,8 +490,9 @@ let SCR="intro",GRP=null,SL=S;   // SCR: intro | menu | slides | give; SL — с
 const syncBB=()=>{if(!tg)return;try{(SCR=="slides"||SCR=="give")?tg.BackButton.show():tg.BackButton.hide()}catch(e){}};
 function showMenu(dr){SCR="menu";GRP=null;i=0;dir=dr||"fwd";app.classList.remove("sl");
  if(window.lottie)lottie.destroy();bg(["#2ba0ff","#0264fd"]);
- const it=[["g:reg",GROUPS.reg.t,GROUPS.reg.m],["g:nft",GROUPS.nft.t,GROUPS.nft.m],["give","Розыгрыши","Скоро появятся"],["top","Лидерборд","Топ-100 по баллам"]];
- app.innerHTML=snow()+`<h1>Выбери тему</h1><div class="sub">Что хочешь узнать о себе?</div><div class="mid ${dir}"><div class="menu">${it.map(([a,t,m],j)=>`<button type="button" class="mb" style="animation-delay:${.1+j*.07}s" data-a="${a}"><b>${t}</b><small>${m}</small></button>`).join("")}</div></div>`;syncBB()}
+ const it=[["g:reg",GROUPS.reg.t,GROUPS.reg.m,["💬","⚡","📌","🕐","🔥","💭"]],["g:nft",GROUPS.nft.t,GROUPS.nft.m,["🎁","💎","⭐","🧸","👑","✨"]],["give","Розыгрыши","Скоро появятся",["🎉","🎟️","🎊","🏆","🎁","⭐"]],["top","Лидерборд","Топ-100 по баллам",["🏆","👑","🥇","📈","⭐","🥈"]]];
+ const MP=[[3,12,34,-14],[15,50,26,12],[26,8,22,10],[70,10,24,-10],[80,46,34,14],[91,8,24,8]];
+ app.innerHTML=snow()+`<h1>Выбери тему</h1><div class="sub">Что хочешь узнать о себе?</div><div class="mid ${dir}"><div class="menu">${it.map(([a,t,m,em],j)=>`<button type="button" class="mb" style="animation-delay:${.1+j*.07}s" data-a="${a}"><span class="mbg">${em.map((e,k)=>`<i style="left:${MP[k][0]}%;top:${MP[k][1]}%;font-size:${MP[k][2]}px;transform:rotate(${MP[k][3]}deg)">${e}</i>`).join("")}</span><b>${t}</b><small>${m}</small></button>`).join("")}</div></div>`;syncBB()}
 function showGive(){SCR="give";dir="fwd";app.classList.remove("sl");
  if(window.lottie)lottie.destroy();bg(["#2ba0ff","#0264fd"]);
  app.innerHTML=snow()+`<h1>Розыгрыши</h1><div class="mid fwd"></div><div class="btns"><button type="button" class="back" data-a="menu">Назад</button></div>`;syncBB()}
