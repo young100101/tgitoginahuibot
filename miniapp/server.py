@@ -323,3 +323,7 @@ async def share(req: Request, authorization: str = Header()):
                      allow_user_chats=True, allow_group_chats=True, allow_channel_chats=True)
     if not r: raise HTTPException(502, "Telegram не принял сообщение, смотри логи (TG ERROR savePreparedInlineMessage)")
     return {"id": r["id"]}
+
+if os.environ.get("DATABASE_URL"):   # розыгрыши работают поверх базы бота
+    import giveaways
+    giveaways.register(app, auth=auth, token=TOKEN, render_png=render_png, app_url=APP_URL)
