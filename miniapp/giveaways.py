@@ -248,7 +248,7 @@ def register(app, auth, token, render_png, app_url):
             ws = await winners_of(c, gid) if g["status"] == "finished" else []
         out = short(g, parts, tickets); pr = load_prizes(g["prizes"]); out["prizes"] = pr
         out.update(now=int(time.time()), tickets=tickets, mine=int(mine), joined=joined, ref=f"https://t.me/{B().BOT_USERNAME}?start=gw_{gid}_{uid}",
-                   winners=[{"name": w["name"] or "Без имени", "username": w["username"], "prize": pr[w["prize_idx"]]["name"]} for w in ws])
+                   winners=[{"name": w["name"] or "Без имени", "username": w["username"], "prize": pr[w["prize_idx"]]["name"], "slug": pr[w["prize_idx"]]["slug"]} for w in ws])
         return out
 
     @app.get("/api/gw/{gid}")

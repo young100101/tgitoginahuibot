@@ -209,23 +209,25 @@ body.sheet .fp,body.sheet .cf,body.sheet .emo,body.sheet .tier::after{animation-
 /* ===== Меню тем ===== */
 .menu{display:flex;flex-direction:column;gap:12px;width:100%;z-index:2;position:relative}
 .mb{width:100%;display:flex;flex-direction:column;align-items:center;gap:3px;padding:18px 16px;border-radius:22px;background:#fff;color:#111;box-shadow:0 10px 26px rgba(0,0,0,.14);animation:up .5s both}
-.gwl{width:100%;display:flex;flex-direction:column;gap:12px;padding:4px 0 10px;z-index:2;position:relative}
-.gc{background:#fff;color:#111;border-radius:24px;padding:16px 14px 14px;box-shadow:0 10px 26px rgba(0,0,0,.14);text-align:center;animation:up .5s both}
-.gc h3{font-size:15px;font-weight:700;color:#6b7280;margin-bottom:12px}
-.gpr{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 8px}
-.gp{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
-.gp img,.gp .gwe{width:76px;height:76px;object-fit:contain;font-size:54px;line-height:76px}
-.gpn{max-width:100%;font-size:12px;font-weight:700;padding:5px 9px;border-radius:999px;background:#f1f2f5;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.gmore{margin-top:12px;font-size:14px;font-weight:800;color:#0264fd}
-.gst{display:flex;justify-content:space-around;border-top:1px solid #e5e7eb;margin-top:12px;padding-top:12px}
-.gst b{display:block;font-size:24px;font-weight:800}.gst small{font-size:13px;color:#6b7280;font-weight:600}
-.gtm{margin-top:12px;font-size:15px;font-weight:800;background:#f1f2f5;border-radius:14px;padding:10px}
-.gc .gb{margin-top:12px;width:100%;background:#1580fe;color:#fff;border-radius:16px;padding:15px}
-.gc .gb.g2{background:#eef1f6;color:#111}
-.gwn{font-size:13px;color:#6b7280;font-weight:600;margin-top:10px}
-.gwi{display:flex;justify-content:space-between;gap:8px;text-align:left;padding:9px 0;border-top:1px solid #eef0f3;font-size:15px;font-weight:700}
-.gwi:first-of-type{border-top:0}.gwi span{color:#6b7280;font-weight:600;text-align:right}
-.gempty{color:rgba(255,255,255,.85);font-weight:700;text-align:center;margin-top:40px}
+.gwl{width:100%;display:flex;flex-direction:column;gap:14px;padding:4px 0 12px;z-index:2;position:relative;text-align:center}
+.gc{background:linear-gradient(180deg,#323339,#2a2b30);color:#fff;border-radius:28px;padding:18px 16px 16px;box-shadow:0 8px 24px rgba(0,0,0,.35);animation:up .5s both}
+.gc h3{font-size:16px;font-weight:700;color:#8e8e93;margin-bottom:16px}
+.gpr{display:grid;grid-template-columns:repeat(3,1fr);gap:16px 10px}
+.gp{display:flex;flex-direction:column;align-items:center;min-width:0}
+.gp img,.gp .gwe{width:92px;height:92px;object-fit:contain;margin-bottom:-26px;position:relative;z-index:1;font-size:62px;line-height:92px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.35))}
+.gpn{position:relative;z-index:2;width:100%;font-size:12.5px;font-weight:700;padding:10px 8px;border-radius:999px;background:rgba(255,255,255,.1);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .4s}
+.gmore{margin-top:16px;font-size:14px;font-weight:700;color:#8ab4ff}
+.gst{display:flex;justify-content:space-around;border-top:1px solid rgba(255,255,255,.1);margin-top:16px;padding-top:16px}
+.gst b{display:block;font-size:28px;font-weight:700}.gst small{font-size:15px;color:#8e8e93;font-weight:500}
+.gtm{margin-top:14px;font-size:15px;font-weight:700;background:rgba(255,255,255,.08);border-radius:16px;padding:11px}
+.gc .gb{margin-top:14px;width:100%;background:rgba(255,255,255,.2);color:#fff;border-radius:22px;padding:18px;font-size:19px;font-weight:700}
+.gc .gb.pr{background:#1580fe}
+.gwn{font-size:13.5px;color:#8e8e93;font-weight:500;margin-top:12px}
+.gwi{display:flex;align-items:center;gap:12px;text-align:left;padding:10px 0}
+.gav{width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#5b8cff,#b45cff);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;flex:none}
+.gwi .gx{flex:1;min-width:0}.gwi .gx b{display:block;font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
+.gwi .gx span{font-size:15px;color:#8e8e93}.gwi img{width:46px;height:46px;object-fit:contain;flex:none}
+.gempty{color:rgba(255,255,255,.7);font-weight:600;text-align:center;margin-top:40px}
 .mb{overflow:hidden}
 .mb b,.mb small{position:relative;z-index:1}
 .mbg{position:absolute;inset:0;pointer-events:none}
@@ -518,24 +520,29 @@ function gwTick(){document.querySelectorAll(".gt[data-end]").forEach(el=>{let l=
  if(l<=0){el.textContent="⏳ Завершается…";return}const d=Math.floor(l/86400),h=Math.floor(l%86400/3600),m=Math.floor(l%3600/60),z=l%60,p=v=>String(v).padStart(2,"0");
  el.textContent="⏳ До конца: "+(d?d+"д ":"")+p(h)+":"+p(m)+":"+p(z)})}
 function gwStart(){gwStop();gwTick();GWT=setInterval(gwTick,1000)}
-const gwImg=p=>`<div class="gp"><img src="${API}/api/gw/img/${encodeURIComponent(p.slug)}.png" alt="" loading="lazy" onerror="this.outerHTML='<span class=gwe>🎁</span>'"><span class="gpn">${gesc(p.name)}</span></div>`;
+function gwGlow(img){try{const c=document.createElement("canvas");c.width=c.height=24;const x=c.getContext("2d");x.drawImage(img,0,0,24,24);const d=x.getImageData(0,0,24,24).data;let r=0,g=0,b=0,n=0;
+ for(let i=0;i<d.length;i+=4)if(d[i+3]>200){r+=d[i];g+=d[i+1];b+=d[i+2];n++}
+ if(n>8){const chip=img.parentNode.querySelector(".gpn");chip.style.background=`radial-gradient(ellipse at 50% 0%,rgba(${r/n|0},${g/n|0},${b/n|0},.6),rgba(255,255,255,.08) 80%)`}}catch(e){}}
+const gwUrl=p=>`${API}/api/gw/img/${encodeURIComponent(p.slug)}.png`;
+const gwImg=p=>`<div class="gp"><img src="${gwUrl(p)}" alt="" loading="lazy" onload="gwGlow(this)" onerror="this.outerHTML='<span class=gwe>🎁</span>'"><span class="gpn">${gesc(p.name)}</span></div>`;
 const gwLeft=g=>g.status=="finished"?`<div class="gtm">🏁 Розыгрыш завершён</div>`:g.end_type=="time"?`<div class="gtm gt" data-end="${g.end_ts}">⏳</div>`:`<div class="gtm">🎟 Осталось билетов: ${g.tickets_left}</div>`;
-function gwShell(title,sub,back){gwStop();dir="fwd";app.classList.remove("sl");if(window.lottie)lottie.destroy();bg(["#2ba0ff","#0264fd"]);
+const gwStats=(a,b)=>`<div class="gst"><div><b>${a}</b><small>Призы</small></div><div><b>${b}</b><small>Участники</small></div></div>`;
+function gwShell(title,sub,back){gwStop();dir="fwd";app.classList.remove("sl");if(window.lottie)lottie.destroy();bg(["#1b1c20","#2b2c31"]);
  app.innerHTML=snow()+`<h1>${title}</h1>${sub?`<div class="sub">${sub}</div>`:""}<div class="mid fin" id="gwm"><div class="gempty">Загрузка…</div></div><div class="btns"><button type="button" class="back" data-a="${back}">Назад</button></div>`;syncBB()}
-async function showGive(){SCR="give";gwShell("Розыгрыши","Участвуй и выигрывай NFT-подарки бесплатно","menu");
+async function showGive(){SCR="give";gwShell("Розыгрыши","Выигрывайте подарки абсолютно бесплатно!","menu");
  try{const r=await api("/api/gw/list");if(SCR!="give")return;GWSK=r.now*1000-Date.now();
-  const el=document.getElementById("gwm");
-  el.innerHTML=r.items.length?`<div class="gwl">${r.items.map((g,j)=>`<div class="gc" style="animation-delay:${.05+j*.06}s"><div class="gpr">${g.prizes.map(gwImg).join("")}</div>${g.total_prizes>3?`<div class="gmore">ещё ${g.total_prizes-3} ${g.total_prizes-3==1?"приз":(g.total_prizes-3<5?"приза":"призов")}!</div>`:""}
-   <div class="gst"><div><b>${g.total_prizes}</b><small>Призы</small></div><div><b>${g.participants}</b><small>Участники</small></div></div>${gwLeft(g)}
+  const el=document.getElementById("gwm"),rest=n=>n==1?"приз":(n<5?"приза":"призов");
+  el.innerHTML=r.items.length?`<div class="gwl">${r.items.map((g,j)=>`<div class="gc" style="animation-delay:${.05+j*.06}s"><div class="gpr">${g.prizes.map(gwImg).join("")}</div>${g.total_prizes>3?`<div class="gmore">ещё ${g.total_prizes-3} ${rest(g.total_prizes-3)}!</div>`:""}
+   ${gwStats(g.total_prizes,g.participants)}${gwLeft(g)}
    <button type="button" class="gb" data-a="gwo:${g.id}">${g.status=="finished"?"Результаты":"Участвовать"}</button></div>`).join("")}</div>`:`<div class="gempty">Пока нет розыгрышей</div>`;
   gwStart()}catch(e){if(SCR=="give")document.getElementById("gwm").innerHTML=`<div class="gempty">Не удалось загрузить розыгрыши</div>`}}
-function gwDetail(g){GWD=g;GWSK=g.now*1000-Date.now();const fin=g.status=="finished",pl=n=>n==1?"билет":(n<5?"билета":"билетов");
+function gwDetail(g){GWD=g;GWSK=g.now*1000-Date.now();const fin=g.status=="finished";
  document.getElementById("gwm").innerHTML=`<div class="gwl"><div class="gc"><h3>Призы</h3><div class="gpr">${g.prizes.map(gwImg).join("")}</div></div>
-  <div class="gc"><div class="gst" style="border:0;margin:0;padding:0"><div><b>${g.prizes.length}</b><small>Призы</small></div><div><b>${g.participants}</b><small>Участники</small></div></div>${gwLeft(g)}
+  <div class="gc">${gwStats(g.prizes.length,g.participants).replace('class="gst"','class="gst" style="border:0;margin:0;padding:0"')}${gwLeft(g)}
   ${fin?"":`<div class="gwn">${g.joined?`Твои билеты: ${g.mine}`:"Нажми «Участвовать», чтобы получить билет"}</div>
-  ${g.joined?`<button type="button" class="gb" data-a="gwi:${g.id}">Пригласить друга +1 билет</button>`:`<button type="button" class="gb" data-a="gwj:${g.id}">Участвовать</button>`}
-  <div class="gwn">+1 билет за каждого друга, который впервые зашёл в бота по твоей ссылке и вступил в розыгрыш</div>`}</div>
-  ${fin?`<div class="gc"><h3>Победители</h3>${g.winners.length?g.winners.map(w=>`<div class="gwi">${w.username?`<a href="https://t.me/${gesc(w.username)}" style="color:#0264fd" data-lnk="1">${gesc(w.name)}</a>`:gesc(w.name)}<span>${gesc(w.prize)}</span></div>`).join(""):`<div class="gwn">Победителей нет</div>`}</div>`:""}</div>`;gwStart()}
+  ${g.joined?`<button type="button" class="gb pr" data-a="gwi:${g.id}">Пригласить друга +1 билет</button>`:`<button type="button" class="gb pr" data-a="gwj:${g.id}">Участвовать</button>`}
+  <div class="gwn">+1 билет за каждого друга, который впервые зашёл в бота по твоей ссылке и выполнил задание</div>`}</div>
+  ${fin?`<div class="gc"><h3>Победители</h3>${g.winners.length?g.winners.map(w=>`<div class="gwi"><div class="gav">${gesc(([...(w.name||"?")][0]||"?").toUpperCase())}</div><div class="gx"><b>${w.username?`<a href="https://t.me/${gesc(w.username)}" style="color:#fff" data-lnk="1">${gesc(w.name)}</a>`:gesc(w.name)}</b><span>${gesc(w.prize)}</span></div>${w.slug?`<img src="${gwUrl(w)}" alt="" onerror="this.remove()">`:""}</div>`).join(""):`<div class="gwn">Победителей нет</div>`}</div>`:""}</div>`;gwStart()}
 async function openGw(id){SCR="gwd";gwShell("Розыгрыш","","gwback");
  try{const g=await api("/api/gw/"+id);if(SCR=="gwd")gwDetail(g)}catch(e){if(SCR=="gwd")document.getElementById("gwm").innerHTML=`<div class="gempty">Розыгрыш недоступен</div>`}}
 async function gwJoin(id){try{const g=await api("/api/gw/"+id+"/join",{method:"POST"});if(tg&&tg.HapticFeedback)tg.HapticFeedback.notificationOccurred("success");if(SCR=="gwd")gwDetail(g)}
