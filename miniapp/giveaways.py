@@ -277,7 +277,8 @@ def register(app, auth, token, render_png, app_url):
                 print("GW: загружено существующих пользователей:", len(rows))
             except Exception as e: print("GW SEED ERROR", repr(e))
         asyncio.create_task(scheduler())
-    app.add_event_handler("startup", lambda: asyncio.create_task(_boot()))
+    @app.on_event("startup")
+    async def _gw_startup(): asyncio.create_task(_boot())
 
     def need_db():
         if not pool(): raise HTTPException(503, "база не готова")
