@@ -28,6 +28,27 @@ CREATE TABLE IF NOT EXISTS gw_winners(gw_id INT NOT NULL, prize_idx INT NOT NULL
 CREATE TABLE IF NOT EXISTS gw_refs(invitee BIGINT PRIMARY KEY, gw_id INT NOT NULL, inviter BIGINT NOT NULL, credited BOOLEAN DEFAULT FALSE);
 """
 
+BG_RE = re.compile(r"back|bg|backdrop|background|pattern", re.I)
+
+def _static(o):   # в слое нет анимированных свойств
+    if isinstance(o, dict):
+        if o.get("a") == 1 or "refId" in o: return False
+        return all(_static(v) for v in o.values())
+    if isinstance(o, list): return all(_static(v) for v in o)
+    return True
+
+def strip_backdrop(raw: bytes) -> bytes:
+    """Убирает из анимации NFT-подарка фон и узор, оставляет только модель."""
+    d = json.loads(raw); layers = d.get("layers") or []
+    keep = [l for l in layers if not BG_RE.search(str(l.get("nm", "")))]
+    if len(keep) == len(layers):      # у слоёв нет говорящих имён: фон — статичные слои в самом низу
+        i = len(layers)
+        while i > 1 and _static(layers[i - 1]): i -= 1
+        keep = layers[:i]
+    if keep and len(keep) < len(layers):
+        d["layers"] = keep; print("GW: фон убран, слоёв было", len(layers), "стало", len(keep))
+    return json.dumps(d).encode()
+
 def B(): return sys.modules["bot"]
 def P(): return B().pool
 
@@ -234,9 +255,31 @@ def register(app, auth, token, render_png, app_url):
                 async with httpx.AsyncClient(timeout=20) as c:
                     r = await c.get(f"https://nft.fragment.com/gift/{k.replace('_', '')}.lottie.json")   # только модель, без фона
                 r.raise_for_status()
-                IMG_CACHE[k] = await asyncio.to_thread(CFG["render_png"], r.content, 256)
+                IMG_CACHE[k] = await asyncio.to_thread(lambda: CFG["render_png"](strip_backdrop(r.content), 256))
             except Exception as e: print("GW IMG ERROR", slug, repr(e)); raise HTTPException(404)
         return Response(IMG_CACHE[k], media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
+
+    @app.get("/api/gw/dbg/{slug}")
+    async def gw_dbg(slug: str):   # список слоёв анимации подарка — на случай, если фон не убрался
+        if not re.match(r"^[A-Za-z0-9_]+-\d+$", slug): raise HTTPException(404)
+        async with httpx.AsyncClient(timeout=20) as c:
+            r = await c.get(f"https://nft.fragment.com/gift/{slug.lower().replace('_', '')}.lottie.json")
+        d = r.json()
+        return {"w": d.get("w"), "h": d.get("h"), "layers": [{"i": i, "nm": l.get("nm"), "ty": l.get("ty"), "ref": l.get("refId"), "static": _static(l)} for i, l in enumerate(d.get("layers", []))]}
+
+    @app.post("/api/gw/{gid}/invite")
+    async def gw_invite(gid: int, authorization: str = Header()):
+        """Готовое сообщение для пересылки — с кнопкой «Участвовать» внутри."""
+        uid = auth(authorization)["id"]
+        if not await P().fetchval("SELECT 1 FROM gw WHERE id=$1 AND start_at<=now()", gid): raise HTTPException(404)
+        link = f"https://t.me/{B().BOT_USERNAME}?start=gw_{gid}_{uid}"
+        res = {"type": "article", "id": f"gw{gid}u{uid}", "title": "Розыгрыш",
+               "input_message_content": {"message_text": "🎁 <b>Розыгрыш NFT-подарков!</b>\n\nУчаствуй и выигрывай подарки абсолютно бесплатно 👇", "parse_mode": "HTML",
+                                         "link_preview_options": {"is_disabled": True}},
+               "reply_markup": {"inline_keyboard": [[{"text": "🎁 Участвовать", "url": link}]]}}
+        r = await B().call("savePreparedInlineMessage", user_id=uid, result=res, allow_user_chats=True, allow_group_chats=True, allow_channel_chats=True)
+        if not r: raise HTTPException(502, "Telegram не принял сообщение")
+        return {"id": r["id"]}
 
     async def detail(gid, uid):
         async with P().acquire() as c:

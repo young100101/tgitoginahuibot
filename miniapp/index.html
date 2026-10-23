@@ -212,16 +212,16 @@ body.sheet .fp,body.sheet .cf,body.sheet .emo,body.sheet .tier::after{animation-
 .gwl{width:100%;display:flex;flex-direction:column;gap:14px;padding:4px 0 12px;z-index:2;position:relative;text-align:center}
 .gc{background:linear-gradient(180deg,#323339,#2a2b30);color:#fff;border-radius:28px;padding:18px 16px 16px;box-shadow:0 8px 24px rgba(0,0,0,.35);animation:up .5s both}
 .gc h3{font-size:16px;font-weight:700;color:#8e8e93;margin-bottom:16px}
-.gpr{display:grid;grid-template-columns:repeat(3,1fr);gap:16px 10px}
+.gpr{display:flex;flex-wrap:wrap;justify-content:center;gap:12px 0}
+.gpr .gp{width:33.333%}.gpr.g2{justify-content:space-evenly}.gpr.g2 .gp{width:34%}.gpr.g1 .gp{width:60%}
 .gp{display:flex;flex-direction:column;align-items:center;min-width:0}
-.gp img,.gp .gwe{width:92px;height:92px;object-fit:contain;margin-bottom:-26px;position:relative;z-index:1;font-size:62px;line-height:92px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.35))}
-.gpn{position:relative;z-index:2;width:100%;font-size:12.5px;font-weight:700;padding:10px 8px;border-radius:999px;background:rgba(255,255,255,.1);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .4s}
-.gmore{margin-top:16px;font-size:14px;font-weight:700;color:#8ab4ff}
+.gp img,.gp .gwe{width:100%;max-width:104px;aspect-ratio:1;object-fit:contain;font-size:64px;line-height:100px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.35))}
+.gpr.g1 .gp img,.gpr.g1 .gp .gwe{max-width:140px}
+.gmore{width:max-content;max-width:100%;margin:16px auto 0;font-size:14px;font-weight:700;color:#fff;background:rgba(255,255,255,.12);border-radius:999px;padding:10px 20px;cursor:pointer}
 .gst{display:flex;justify-content:space-around;border-top:1px solid rgba(255,255,255,.1);margin-top:16px;padding-top:16px}
 .gst b{display:block;font-size:28px;font-weight:700}.gst small{font-size:15px;color:#8e8e93;font-weight:500}
 .gtm{margin-top:14px;font-size:15px;font-weight:700;background:rgba(255,255,255,.08);border-radius:16px;padding:11px}
 .gc .gb{margin-top:14px;width:100%;background:rgba(255,255,255,.2);color:#fff;border-radius:22px;padding:18px;font-size:19px;font-weight:700}
-.gc .gb.pr{background:#1580fe}
 .gwn{font-size:13.5px;color:#8e8e93;font-weight:500;margin-top:12px}
 .gwi{display:flex;align-items:center;gap:12px;text-align:left;padding:10px 0}
 .gav{width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#5b8cff,#b45cff);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;flex:none}
@@ -520,11 +520,9 @@ function gwTick(){document.querySelectorAll(".gt[data-end]").forEach(el=>{let l=
  if(l<=0){el.textContent="⏳ Завершается…";return}const d=Math.floor(l/86400),h=Math.floor(l%86400/3600),m=Math.floor(l%3600/60),z=l%60,p=v=>String(v).padStart(2,"0");
  el.textContent="⏳ До конца: "+(d?d+"д ":"")+p(h)+":"+p(m)+":"+p(z)})}
 function gwStart(){gwStop();gwTick();GWT=setInterval(gwTick,1000)}
-function gwGlow(img){try{const c=document.createElement("canvas");c.width=c.height=24;const x=c.getContext("2d");x.drawImage(img,0,0,24,24);const d=x.getImageData(0,0,24,24).data;let r=0,g=0,b=0,n=0;
- for(let i=0;i<d.length;i+=4)if(d[i+3]>200){r+=d[i];g+=d[i+1];b+=d[i+2];n++}
- if(n>8){const chip=img.parentNode.querySelector(".gpn");chip.style.background=`radial-gradient(ellipse at 50% 0%,rgba(${r/n|0},${g/n|0},${b/n|0},.6),rgba(255,255,255,.08) 80%)`}}catch(e){}}
 const gwUrl=p=>`${API}/api/gw/img/${encodeURIComponent(p.slug)}.png`;
-const gwImg=p=>`<div class="gp"><img src="${gwUrl(p)}" alt="" loading="lazy" onload="gwGlow(this)" onerror="this.outerHTML='<span class=gwe>🎁</span>'"><span class="gpn">${gesc(p.name)}</span></div>`;
+const gwImg=p=>`<div class="gp"><img src="${gwUrl(p)}" alt="" loading="lazy" onerror="this.outerHTML='<span class=gwe>🎁</span>'"></div>`;
+const gwGrid=l=>`<div class="gpr g${Math.min(l.length,3)}">${l.map(gwImg).join("")}</div>`;
 const gwLeft=g=>g.status=="finished"?`<div class="gtm">🏁 Розыгрыш завершён</div>`:g.end_type=="time"?`<div class="gtm gt" data-end="${g.end_ts}">⏳</div>`:`<div class="gtm">🎟 Осталось билетов: ${g.tickets_left}</div>`;
 const gwStats=(a,b)=>`<div class="gst"><div><b>${a}</b><small>Призы</small></div><div><b>${b}</b><small>Участники</small></div></div>`;
 function gwShell(title,sub,back){gwStop();dir="fwd";app.classList.remove("sl");if(window.lottie)lottie.destroy();bg(["#1b1c20","#2b2c31"]);
@@ -532,23 +530,25 @@ function gwShell(title,sub,back){gwStop();dir="fwd";app.classList.remove("sl");i
 async function showGive(){SCR="give";gwShell("Розыгрыши","Выигрывайте подарки абсолютно бесплатно!","menu");
  try{const r=await api("/api/gw/list");if(SCR!="give")return;GWSK=r.now*1000-Date.now();
   const el=document.getElementById("gwm"),rest=n=>n==1?"приз":(n<5?"приза":"призов");
-  el.innerHTML=r.items.length?`<div class="gwl">${r.items.map((g,j)=>`<div class="gc" style="animation-delay:${.05+j*.06}s"><div class="gpr">${g.prizes.map(gwImg).join("")}</div>${g.total_prizes>3?`<div class="gmore">ещё ${g.total_prizes-3} ${rest(g.total_prizes-3)}!</div>`:""}
+  el.innerHTML=r.items.length?`<div class="gwl">${r.items.map((g,j)=>`<div class="gc" style="animation-delay:${.05+j*.06}s">${gwGrid(g.prizes)}${g.total_prizes>3?`<div class="gmore" data-a="gwo:${g.id}">ещё ${g.total_prizes-3} ${rest(g.total_prizes-3)}!</div>`:""}
    ${gwStats(g.total_prizes,g.participants)}${gwLeft(g)}
    <button type="button" class="gb" data-a="gwo:${g.id}">${g.status=="finished"?"Результаты":"Участвовать"}</button></div>`).join("")}</div>`:`<div class="gempty">Пока нет розыгрышей</div>`;
   gwStart()}catch(e){if(SCR=="give")document.getElementById("gwm").innerHTML=`<div class="gempty">Не удалось загрузить розыгрыши</div>`}}
 function gwDetail(g){GWD=g;GWSK=g.now*1000-Date.now();const fin=g.status=="finished";
- document.getElementById("gwm").innerHTML=`<div class="gwl"><div class="gc"><h3>Призы</h3><div class="gpr">${g.prizes.map(gwImg).join("")}</div></div>
+ document.getElementById("gwm").innerHTML=`<div class="gwl"><div class="gc"><h3>Призы</h3>${gwGrid(g.prizes)}</div>
   <div class="gc">${gwStats(g.prizes.length,g.participants).replace('class="gst"','class="gst" style="border:0;margin:0;padding:0"')}${gwLeft(g)}
   ${fin?"":`<div class="gwn">${g.joined?`Твои билеты: ${g.mine}`:"Нажми «Участвовать», чтобы получить билет"}</div>
-  ${g.joined?`<button type="button" class="gb pr" data-a="gwi:${g.id}">Пригласить друга +1 билет</button>`:`<button type="button" class="gb pr" data-a="gwj:${g.id}">Участвовать</button>`}
+  ${g.joined?`<button type="button" class="gb" data-a="gwi:${g.id}">Пригласить друга +1 билет</button>`:`<button type="button" class="gb" data-a="gwj:${g.id}">Участвовать</button>`}
   <div class="gwn">+1 билет за каждого друга, который впервые зашёл в бота по твоей ссылке и выполнил задание</div>`}</div>
   ${fin?`<div class="gc"><h3>Победители</h3>${g.winners.length?g.winners.map(w=>`<div class="gwi"><div class="gav">${gesc(([...(w.name||"?")][0]||"?").toUpperCase())}</div><div class="gx"><b>${w.username?`<a href="https://t.me/${gesc(w.username)}" style="color:#fff" data-lnk="1">${gesc(w.name)}</a>`:gesc(w.name)}</b><span>${gesc(w.prize)}</span></div>${w.slug?`<img src="${gwUrl(w)}" alt="" onerror="this.remove()">`:""}</div>`).join(""):`<div class="gwn">Победителей нет</div>`}</div>`:""}</div>`;gwStart()}
 async function openGw(id){SCR="gwd";gwShell("Розыгрыш","","gwback");
  try{const g=await api("/api/gw/"+id);if(SCR=="gwd")gwDetail(g)}catch(e){if(SCR=="gwd")document.getElementById("gwm").innerHTML=`<div class="gempty">Розыгрыш недоступен</div>`}}
 async function gwJoin(id){try{const g=await api("/api/gw/"+id+"/join",{method:"POST"});if(tg&&tg.HapticFeedback)tg.HapticFeedback.notificationOccurred("success");if(SCR=="gwd")gwDetail(g)}
  catch(e){try{if(tg)tg.showAlert("Не получилось вступить — возможно, розыгрыш уже завершён")}catch(_){}}}
-function gwInvite(){if(!GWD)return;const u="https://t.me/share/url?url="+encodeURIComponent(GWD.ref)+"&text="+encodeURIComponent("Участвуй в розыгрыше NFT-подарков 🎁");
- try{tg.openTelegramLink(u)}catch(e){window.open(u,"_blank")}}
+async function gwInvite(){if(!GWD)return;
+ try{if(!live||!tg.shareMessage||!tg.isVersionAtLeast("8.0"))throw 0;const {id}=await api("/api/gw/"+GWD.id+"/invite",{method:"POST"});shareMsg(id,"gw")}
+ catch(e){const u="https://t.me/share/url?url="+encodeURIComponent(GWD.ref)+"&text="+encodeURIComponent("Участвуй в розыгрыше NFT-подарков 🎁");
+  try{tg.openTelegramLink(u)}catch(_){window.open(u,"_blank")}}}
 function openGroup(k){gwStop();GRP=k;SL=GROUPS[k].keys.map(x=>S.find(s=>s.k==x));i=0;dir="fwd";SCR="slides";show();syncBB()}
 function go(d){dir=d>0?"fwd":"bk";if(i+d<0){showMenu("bk");return}i=Math.min(SL.length,i+d);show();syncBB()}
 const BOTSTART=BOT.replace(/\/[^\/]*$/,"")+"?start=share";   // ссылка на /start бота
