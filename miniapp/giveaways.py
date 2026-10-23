@@ -40,6 +40,8 @@ def _static(o):   # в слое нет анимированных свойств
 def strip_backdrop(raw: bytes) -> bytes:
     """Убирает из анимации NFT-подарка фон и узор, оставляет только модель."""
     d = json.loads(raw); layers = d.get("layers") or []
+    only = [l for l in layers if str(l.get("nm", "")).strip().lower() == "gift"]   # у подарков Telegram модель лежит в слое «Gift», остальное — фон, узор, иконка
+    if only: d["layers"] = only; return json.dumps(d).encode()
     keep = [l for l in layers if not BG_RE.search(str(l.get("nm", "")))]
     if len(keep) == len(layers):      # у слоёв нет говорящих имён: фон — статичные слои в самом низу
         i = len(layers)
