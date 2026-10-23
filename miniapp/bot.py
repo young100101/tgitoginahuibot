@@ -106,6 +106,7 @@ async def qualify(uid):  # приглашённый выполнил услов�
     if inv:
         n = await pool.fetchval("SELECT count(*) FROM referrals WHERE inviter=$1 AND qualified", inv); need = await get_need()
         await send(inv, f"🎉 Друг присоединился по твоей ссылке! Приглашено: <b>{n}</b> из <b>{need}</b>" + ("\n✅ Дополнительная информация открыта!" if n >= need else ""))
+    import giveaways; await giveaways.on_qualified(uid)   # +1 билет в розыгрыше пригласившему
 
 async def call(method, **p):
     r = await http.post(f"{API}/{method}", json=p); j = r.json()
@@ -151,6 +152,7 @@ async def _startup():
         ssl=None if u.hostname in ("localhost", "127.0.0.1") else "require")
     await pool.execute(SCHEMA)
     await pool.execute("UPDATE tasks SET sort=id WHERE sort=0")
+    import giveaways; await giveaways.init()   # розыгрыши
     me = await call("getMe")
     if not me: raise RuntimeError("getMe не сработал: проверь BOT_TOKEN")
     BOT_ID = me["id"]
@@ -203,10 +205,11 @@ PANEL = kb([pb("Рассылка", "bc", "5260268501515377807"), pb("Задан�
            [pb("Добавить задание", "add", "5274008024585871702"), pb("Стат. ссылок", "ls", "5260730055880876557")],
            [pb("Доступ к доп. инфо", "refs", "5258362837411045098"), pb("Отчёт", "rp", "5258362837411045098")],
            [pb("Статистика", "st", "5258391025281408576")],
-           [pb("Уникальные ссылки", "ul", "5260730055880876557")])
+           [pb("Уникальные ссылки", "ul", "5260730055880876557")],
+           [pb("🎁 Розыгрыши", "gw")])
 PANEL_PLAIN = kb([cb("📢 Рассылка", "bc"), cb("📋 Задания", "tk")], [cb("➕ Добавить задание", "add"), cb("🔗 Стат. ссылок", "ls")],
                  [cb("👥 Доступ к доп. инфо", "refs"), cb("📬 Отчёт", "rp")], [cb("📊 Статистика", "st")],
-                 [cb("🔗 Уникальные ссылки", "ul")])   # запасной вариант, если премиум-эмодзи не приняты
+                 [cb("🔗 Уникальные ссылки", "ul")], [cb("🎁 Розыгрыши", "gw")])   # запасной вариант, если премиум-эмодзи не приняты
 ADMIN_HELLO = "<b>Привет! Это админ панель, здесь ты можешь управлять своим ботом!</b> "
 
 async def resolve_chat(msg):
@@ -501,6 +504,7 @@ async def on_message(msg):
         payload = text.split(maxsplit=1)[1] if " " in text else ""
         if new and payload.startswith("ref_") and payload[4:].isdigit() and int(payload[4:]) != uid:  # реферал только за нового пользователя
             await pool.execute("INSERT INTO referrals(invitee,inviter) VALUES($1,$2) ON CONFLICT DO NOTHING", uid, int(payload[4:]))
+        import giveaways; await giveaways.on_start(uid, payload, new)   # приглашение в розыгрыш
         if payload.startswith("src_"):  # переход по уникальной ссылке -> считаем уникального человека
             lid = await pool.fetchval("SELECT id FROM links WHERE lower(name)=lower($1)", payload[4:])
             if lid:
@@ -512,6 +516,8 @@ async def on_message(msg):
         await delete(cid, msg["message_id"]); await tt_menu({"cid": cid, "mid": None, "photo": False})
     elif uid in ADMINS and text == "/admin":
         STATE.pop(uid, None); await delete(cid, msg["message_id"]); await panel({"cid": cid, "mid": None})
+    elif uid in ADMINS and str(STATE.get(uid, {}).get("step", "")).startswith("gw_") and not text.startswith("/"):
+        import giveaways; await giveaways.admin_msg(msg, uid, cid, text)
     elif uid in ADMINS and STATE.get(uid, {}).get("step") == "lnkname":
         await delete(cid, msg["message_id"]); name = text.strip()
         if not LINK_RE.fullmatch(name): await bad(uid, cid, "Название — только английские буквы, цифры, _ или - (до 40 символов), без пробелов."); return
@@ -604,6 +610,8 @@ async def on_cb(q):
     if data == "cancel":
         STATE.pop(uid, None); await bc_cleanup(cid, st); await panel(T, "Отменено.")
     elif data == "adm": STATE.pop(uid, None); await panel(T)
+    elif data == "gw" or data.startswith("gw:"):
+        import giveaways; await giveaways.admin_cb(T, uid, data, st)
     elif data == "bc": await ask(T, uid, "bc_msg", "📢 Пришли сообщение для рассылки: текст, фото, GIF или видео, можно с форматированием (жирный, курсив, ссылки и т.д.). Одним сообщением.")
     elif data == "bcadd" and st.get("step") == "bc_menu": await bc_ask(T, st, "bc_url", "Пришли ссылку, куда будет вести кнопка.")
     elif data.startswith("col:") and st.get("step") == "bc_color":

@@ -414,7 +414,7 @@ function intro(){
   hc.style.transform=`scale(${1.35})`;fg.style.transform="scale(1.3)";fg.style.opacity="0";
   try{tg&&tg.HapticFeedback&&tg.HapticFeedback.notificationOccurred("success")}catch(e){}
   await Promise.race([fetchMe(),new Promise(r=>setTimeout(r,2500))]);
-  cur="#1580fe";showMenu("fwd");{const m=/^gw(\d+)_/.exec(START);if(m)setTimeout(()=>{if(SCR=="menu")openGw(+m[1])},350)}if(!ME_DONE)fetchMe().then(()=>{if(SCR=="slides")show()});
+  cur="#1580fe";showMenu("fwd");if(!ME_DONE)fetchMe().then(()=>{if(SCR=="slides")show()});
   requestAnimationFrame(()=>requestAnimationFrame(()=>{el.classList.add("out");setTimeout(()=>el.remove(),700)}))}
  el.addEventListener("pointerdown",e=>{if(done)return;e.preventDefault();holding=true;el.classList.add("hold");if(!raf){last=performance.now();raf=requestAnimationFrame(tick)}},{passive:false});
  const up=()=>{if(done)return;holding=false;el.classList.remove("hold");if(!raf&&p>0){last=performance.now();raf=requestAnimationFrame(tick)}};
@@ -674,7 +674,5 @@ document.addEventListener("click",e=>{const lk=e.target.closest("a[data-lnk]");i
  const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a;if(a.startsWith("g:"))openGroup(a.slice(2));else if(a=="give")showGive();else if(a=="gwback")showGive();else if(a.startsWith("gwo:"))openGw(+a.slice(4));else if(a.startsWith("gwj:"))gwJoin(+a.slice(4));else if(a.startsWith("gwi:"))gwInvite();else if(a=="top")openLeaderboard();else if(a=="menu")showMenu("bk");else a=="n"?go(1):a=="b"?go(-1):a=="m"?openSheet():a=="lg"?openLim():share()});
 if(tg)tg.BackButton.onClick(()=>{if(OV.classList.contains("on"))sheetBack();else if(SCR=="gwd")showGive();else if(SCR=="give")showMenu("bk");else if(SCR=="slides")go(-1)});
 fetchMe().then(()=>refreshMore());   // данные и «доп. инфо» грузим заранее, пока человек держит палец
-const START=(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.start_param)||"";
-if(live)api("/api/gw/open",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({param:START})}).catch(()=>{});
 intro();
 </script></body></html>
