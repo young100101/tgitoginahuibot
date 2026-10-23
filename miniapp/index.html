@@ -212,15 +212,17 @@ body.sheet .fp,body.sheet .cf,body.sheet .emo,body.sheet .tier::after{animation-
 .gwl{width:100%;display:flex;flex-direction:column;gap:14px;padding:4px 0 12px;z-index:2;position:relative;text-align:center}
 .gc{background:linear-gradient(180deg,#323339,#2a2b30);color:#fff;border-radius:28px;padding:18px 16px 16px;box-shadow:0 8px 24px rgba(0,0,0,.35);animation:up .5s both}
 .gc h3{font-size:16px;font-weight:700;color:#8e8e93;margin-bottom:16px}
-.gpr{display:flex;flex-wrap:wrap;justify-content:center;gap:12px 0}
+.gpr{display:flex;flex-wrap:wrap;justify-content:center;gap:18px 0}
 .gpr .gp{width:33.333%}.gpr.g2{justify-content:space-evenly}.gpr.g2 .gp{width:34%}.gpr.g1 .gp{width:60%}
 .gp{display:flex;flex-direction:column;align-items:center;min-width:0}
-.gp img,.gp .gwe{width:100%;max-width:104px;aspect-ratio:1;object-fit:contain;font-size:64px;line-height:100px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.35))}
-.gpr.g1 .gp img,.gpr.g1 .gp .gwe{max-width:140px}
+.gp img,.gp .gwe{width:124px;height:124px;max-width:none;object-fit:contain;font-size:78px;line-height:124px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.35))}
+.gpr.g1 .gp img,.gpr.g1 .gp .gwe{width:176px;height:176px;line-height:176px;font-size:110px}
 .gmore{width:max-content;max-width:100%;margin:16px auto 0;font-size:14px;font-weight:700;color:#fff;background:rgba(255,255,255,.12);border-radius:999px;padding:10px 20px;cursor:pointer}
 .gst{display:flex;justify-content:space-around;border-top:1px solid rgba(255,255,255,.1);margin-top:16px;padding-top:16px}
 .gst b{display:block;font-size:28px;font-weight:700}.gst small{font-size:15px;color:#8e8e93;font-weight:500}
-.gtm{margin-top:14px;font-size:15px;font-weight:700;background:rgba(255,255,255,.08);border-radius:16px;padding:11px}
+.gtm{margin-top:14px;background:rgba(255,255,255,.08);border-radius:18px;padding:12px 10px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.gtm small{font-size:14px;color:#8e8e93;font-weight:600}
+.gtm b{font-size:34px;font-weight:800;line-height:1.15;font-variant-numeric:tabular-nums;letter-spacing:.5px}
 .gc .gb{margin-top:14px;width:100%;background:rgba(255,255,255,.2);color:#fff;border-radius:22px;padding:18px;font-size:19px;font-weight:700}
 .gwn{font-size:13.5px;color:#8e8e93;font-weight:500;margin-top:12px}
 .gwi{display:flex;align-items:center;gap:12px;text-align:left;padding:10px 0}
@@ -517,13 +519,13 @@ let GWT=null,GWSK=0,GWD=null;
 const gesc=x=>String(x==null?"":x).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const gwStop=()=>{if(GWT){clearInterval(GWT);GWT=null}};
 function gwTick(){document.querySelectorAll(".gt[data-end]").forEach(el=>{let l=Math.floor(+el.dataset.end-(Date.now()+GWSK)/1000);
- if(l<=0){el.textContent="⏳ Завершается…";return}const d=Math.floor(l/86400),h=Math.floor(l%86400/3600),m=Math.floor(l%3600/60),z=l%60,p=v=>String(v).padStart(2,"0");
- el.textContent="⏳ До конца: "+(d?d+"д ":"")+p(h)+":"+p(m)+":"+p(z)})}
+ if(l<=0){el.textContent="Завершается…";return}const d=Math.floor(l/86400),h=Math.floor(l%86400/3600),m=Math.floor(l%3600/60),z=l%60,p=v=>String(v).padStart(2,"0");
+ el.textContent=(d?d+"д ":"")+p(h)+":"+p(m)+":"+p(z)})}
 function gwStart(){gwStop();gwTick();GWT=setInterval(gwTick,1000)}
 const gwUrl=p=>`${API}/api/gw/img/${encodeURIComponent(p.slug)}.png?v=4`;   // v — сброс старых картинок с фоном в кэше Telegram
 const gwImg=p=>`<div class="gp"><img src="${gwUrl(p)}" alt="" loading="lazy" onerror="this.outerHTML='<span class=gwe>🎁</span>'"></div>`;
 const gwGrid=l=>`<div class="gpr g${Math.min(l.length,3)}">${l.map(gwImg).join("")}</div>`;
-const gwLeft=g=>g.status=="finished"?`<div class="gtm">🏁 Розыгрыш завершён</div>`:g.end_type=="time"?`<div class="gtm gt" data-end="${g.end_ts}">⏳</div>`:`<div class="gtm">🎟 Осталось билетов: ${g.tickets_left}</div>`;
+const gwLeft=g=>g.status=="finished"?`<div class="gtm"><b style="font-size:20px">🏁 Розыгрыш завершён</b></div>`:g.end_type=="time"?`<div class="gtm"><b class="gt" data-end="${g.end_ts}">…</b></div>`:`<div class="gtm"><small>🎟 Осталось билетов</small><b>${g.tickets_left}</b></div>`;
 const gwStats=(a,b)=>`<div class="gst"><div><b>${a}</b><small>Призы</small></div><div><b>${b}</b><small>Участники</small></div></div>`;
 function gwShell(title,sub,back){gwStop();dir="fwd";app.classList.remove("sl");if(window.lottie)lottie.destroy();bg(["#1b1c20","#2b2c31"]);
  app.innerHTML=snow()+`<h1>${title}</h1>${sub?`<div class="sub">${sub}</div>`:""}<div class="mid fin" id="gwm"><div class="gempty">Загрузка…</div></div><div class="btns"><button type="button" class="back" data-a="${back}">Назад</button></div>`;syncBB()}
