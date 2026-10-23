@@ -520,7 +520,7 @@ function gwTick(){document.querySelectorAll(".gt[data-end]").forEach(el=>{let l=
  if(l<=0){el.textContent="⏳ Завершается…";return}const d=Math.floor(l/86400),h=Math.floor(l%86400/3600),m=Math.floor(l%3600/60),z=l%60,p=v=>String(v).padStart(2,"0");
  el.textContent="⏳ До конца: "+(d?d+"д ":"")+p(h)+":"+p(m)+":"+p(z)})}
 function gwStart(){gwStop();gwTick();GWT=setInterval(gwTick,1000)}
-const gwUrl=p=>`${API}/api/gw/img/${encodeURIComponent(p.slug)}.png`;
+const gwUrl=p=>`${API}/api/gw/img/${encodeURIComponent(p.slug)}.png?v=4`;   // v — сброс старых картинок с фоном в кэше Telegram
 const gwImg=p=>`<div class="gp"><img src="${gwUrl(p)}" alt="" loading="lazy" onerror="this.outerHTML='<span class=gwe>🎁</span>'"></div>`;
 const gwGrid=l=>`<div class="gpr g${Math.min(l.length,3)}">${l.map(gwImg).join("")}</div>`;
 const gwLeft=g=>g.status=="finished"?`<div class="gtm">🏁 Розыгрыш завершён</div>`:g.end_type=="time"?`<div class="gtm gt" data-end="${g.end_ts}">⏳</div>`:`<div class="gtm">🎟 Осталось билетов: ${g.tickets_left}</div>`;

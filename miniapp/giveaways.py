@@ -41,7 +41,13 @@ def strip_backdrop(raw: bytes) -> bytes:
     """Убирает из анимации NFT-подарка фон и узор, оставляет только модель."""
     d = json.loads(raw); layers = d.get("layers") or []
     only = [l for l in layers if str(l.get("nm", "")).strip().lower() == "gift"]   # у подарков Telegram модель лежит в слое «Gift», остальное — фон, узор, иконка
-    if only: d["layers"] = only; return json.dumps(d).encode()
+    if only: d["layers"] = only
+    for a in d.get("assets") or []:      # фон может лежать и внутри вложенной композиции модели
+        ls = a.get("layers")
+        if ls:
+            k = [l for l in ls if not BG_RE.search(str(l.get("nm", "")))]
+            if k and len(k) < len(ls): a["layers"] = k
+    if only: return json.dumps(d).encode()
     keep = [l for l in layers if not BG_RE.search(str(l.get("nm", "")))]
     if len(keep) == len(layers):      # у слоёв нет говорящих имён: фон — статичные слои в самом низу
         i = len(layers)
@@ -50,6 +56,18 @@ def strip_backdrop(raw: bytes) -> bytes:
     if keep and len(keep) < len(layers):
         d["layers"] = keep; print("GW: фон убран, слоёв было", len(layers), "стало", len(keep))
     return json.dumps(d).encode()
+
+def render_model(raw: bytes, size=256) -> bytes:
+    """PNG только с моделью подарка. Если фон всё равно остался (углы непрозрачные) — вырезаем его заливкой от углов."""
+    import io
+    from PIL import Image, ImageDraw
+    png = CFG["render_png"](strip_backdrop(raw), size)
+    im = Image.open(io.BytesIO(png)).convert("RGBA"); w, h = im.size
+    if im.getpixel((2, 2))[3] > 200:
+        for xy in ((2, 2), (w - 3, 2), (2, h - 3), (w - 3, h - 3)):
+            if im.getpixel(xy)[3] > 200: ImageDraw.floodfill(im, xy, (0, 0, 0, 0), thresh=70)
+        buf = io.BytesIO(); im.save(buf, "PNG"); return buf.getvalue()
+    return png
 
 def B(): return sys.modules["bot"]
 def P(): return B().pool
@@ -257,9 +275,9 @@ def register(app, auth, token, render_png, app_url):
                 async with httpx.AsyncClient(timeout=20) as c:
                     r = await c.get(f"https://nft.fragment.com/gift/{k.replace('_', '')}.lottie.json")   # только модель, без фона
                 r.raise_for_status()
-                IMG_CACHE[k] = await asyncio.to_thread(lambda: CFG["render_png"](strip_backdrop(r.content), 256))
+                IMG_CACHE[k] = await asyncio.to_thread(render_model, r.content)
             except Exception as e: print("GW IMG ERROR", slug, repr(e)); raise HTTPException(404)
-        return Response(IMG_CACHE[k], media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
+        return Response(IMG_CACHE[k], media_type="image/png", headers={"Cache-Control": "public, max-age=300"})
 
     @app.get("/api/gw/dbg/{slug}")
     async def gw_dbg(slug: str):   # список слоёв анимации подарка — на случай, если фон не убрался
@@ -267,7 +285,8 @@ def register(app, auth, token, render_png, app_url):
         async with httpx.AsyncClient(timeout=20) as c:
             r = await c.get(f"https://nft.fragment.com/gift/{slug.lower().replace('_', '')}.lottie.json")
         d = r.json()
-        return {"w": d.get("w"), "h": d.get("h"), "layers": [{"i": i, "nm": l.get("nm"), "ty": l.get("ty"), "ref": l.get("refId"), "static": _static(l)} for i, l in enumerate(d.get("layers", []))]}
+        return {"w": d.get("w"), "h": d.get("h"), "layers": [{"i": i, "nm": l.get("nm"), "ty": l.get("ty"), "ref": l.get("refId"), "static": _static(l)} for i, l in enumerate(d.get("layers", []))],
+                "assets": [{"id": a.get("id"), "layers": [{"nm": l.get("nm"), "ty": l.get("ty")} for l in a.get("layers", [])]} for a in d.get("assets", []) if a.get("layers")]}
 
     @app.post("/api/gw/{gid}/invite")
     async def gw_invite(gid: int, authorization: str = Header()):
