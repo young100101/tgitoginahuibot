@@ -11,6 +11,7 @@ MSK = timezone(timedelta(hours=3))
 NFT_RE = re.compile(r"^(?:https?://)?t\.me/nft/([A-Za-z0-9_]+-\d+)/?$")
 DT_RE = re.compile(r"^\s*(\d{1,2})\.(\d{1,2})\.(\d{4})\s+(\d{1,2})[:.](\d{2})\s*$")
 IMG_CACHE: dict = {}
+AVA_CACHE: dict = {}
 CFG: dict = {}
 WIN_TEXT = "🎉 <b>Поздравляем! Ты выиграл в розыгрыше.</b>\nТвой приз: {prize}\n\nСкоро с тобой свяжутся для выдачи."
 
@@ -94,10 +95,29 @@ async def counts(c, gid):
     r = await c.fetchrow("SELECT count(*) FILTER (WHERE kind='join') AS parts, count(*) AS tickets FROM gw_tickets WHERE gw_id=$1", gid)
     return int(r["parts"]), int(r["tickets"])
 
+async def fetch_img(slug):
+    k = slug.lower()
+    if k not in IMG_CACHE:
+        async with httpx.AsyncClient(timeout=20) as c:
+            r = await c.get(f"https://nft.fragment.com/gift/{k.replace('_', '')}.lottie.json")   # только модель, без фона
+        r.raise_for_status()
+        IMG_CACHE[k] = await asyncio.to_thread(render_model, r.content)
+    return IMG_CACHE[k]
+
+async def warm():
+    """Заранее готовим картинки призов, чтобы в мини-аппе они открывались мгновенно."""
+    try:
+        for r in await P().fetch("SELECT prizes FROM gw WHERE status='active' OR finished_at>now()-interval '3 days'"):
+            for p in load_prizes(r["prizes"]):
+                try: await fetch_img(p["slug"])
+                except Exception as e: print("GW WARM ERROR", p["slug"], repr(e))
+    except Exception as e: print("GW WARM ERROR", repr(e))
+
 async def init():
     """Вызывается из bot._startup после создания пула."""
     await P().execute(SCHEMA)
-    t = asyncio.create_task(scheduler()); B().BG.add(t); t.add_done_callback(B().BG.discard)
+    for coro in (scheduler(), warm()):
+        t = asyncio.create_task(coro); B().BG.add(t); t.add_done_callback(B().BG.discard)
 
 # ───────────────────────── друзья и билеты ─────────────────────────
 async def on_start(uid, payload, new):
@@ -197,6 +217,7 @@ async def admin_cb(T, uid, data, st):
         d = st["d"]; b.STATE.pop(uid, None)
         gid = await P().fetchval("""INSERT INTO gw(name,prizes,start_at,end_type,end_at,end_tickets,created_by) VALUES($1,$2::jsonb,$3,$4,$5,$6,$7) RETURNING id""",
                                  d["name"], json.dumps(d["prizes"]), d["start_at"], d["end_type"], d.get("end_at"), d.get("end_tickets"), uid)
+        asyncio.create_task(warm())
         await b.scr(T, f"✅ Розыгрыш №{gid} создан. В боте он появится <b>{fmt(d['start_at'])} МСК</b>.", kb([cb("🎁 Розыгрыши", "gw")], [cb("⬅️ Меню", "adm")]))
     elif a[1:2] == ["h"]:
         page = int(a[2]); rows = await P().fetch("SELECT id,name,status FROM gw ORDER BY id DESC LIMIT 11 OFFSET $1", page * 10)
@@ -269,15 +290,9 @@ def register(app, auth, token, render_png, app_url):
     @app.get("/api/gw/img/{slug}.png")
     async def gw_img(slug: str):
         if not re.match(r"^[A-Za-z0-9_]+-\d+$", slug): raise HTTPException(404)
-        k = slug.lower()
-        if k not in IMG_CACHE:
-            try:
-                async with httpx.AsyncClient(timeout=20) as c:
-                    r = await c.get(f"https://nft.fragment.com/gift/{k.replace('_', '')}.lottie.json")   # только модель, без фона
-                r.raise_for_status()
-                IMG_CACHE[k] = await asyncio.to_thread(render_model, r.content)
-            except Exception as e: print("GW IMG ERROR", slug, repr(e)); raise HTTPException(404)
-        return Response(IMG_CACHE[k], media_type="image/png", headers={"Cache-Control": "public, max-age=300"})
+        try: png = await fetch_img(slug)
+        except Exception as e: print("GW IMG ERROR", slug, repr(e)); raise HTTPException(404)
+        return Response(png, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
 
     @app.get("/api/gw/dbg/{slug}")
     async def gw_dbg(slug: str):   # список слоёв анимации подарка — на случай, если фон не убрался
@@ -302,6 +317,22 @@ def register(app, auth, token, render_png, app_url):
         if not r: raise HTTPException(502, "Telegram не принял сообщение")
         return {"id": r["id"]}
 
+    @app.get("/api/gw/ava/{uid}.jpg")
+    async def gw_ava(uid: int):
+        """Аватарка победителя (только для тех, кто хоть раз выигрывал)."""
+        if uid not in AVA_CACHE:
+            if not await P().fetchval("SELECT 1 FROM gw_winners WHERE uid=$1 LIMIT 1", uid): raise HTTPException(404)
+            data = None
+            try:
+                r = await B().call("getUserProfilePhotos", user_id=uid, limit=1)
+                if r and r.get("photos"):
+                    sizes = r["photos"][0]; f = await B().call("getFile", file_id=sizes[min(1, len(sizes) - 1)]["file_id"])
+                    if f: data = (await B().http.get(f"https://api.telegram.org/file/bot{B().TOKEN}/{f['file_path']}")).content
+            except Exception as e: print("GW AVA ERROR", uid, repr(e))
+            AVA_CACHE[uid] = data
+        if not AVA_CACHE[uid]: raise HTTPException(404)
+        return Response(AVA_CACHE[uid], media_type="image/jpeg", headers={"Cache-Control": "public, max-age=86400"})
+
     async def detail(gid, uid):
         async with P().acquire() as c:
             g = await c.fetchrow("SELECT * FROM gw WHERE id=$1 AND start_at<=now()", gid)
@@ -312,7 +343,7 @@ def register(app, auth, token, render_png, app_url):
             ws = await winners_of(c, gid) if g["status"] == "finished" else []
         out = short(g, parts, tickets); pr = load_prizes(g["prizes"]); out["prizes"] = pr
         out.update(now=int(time.time()), tickets=tickets, mine=int(mine), joined=joined, ref=f"https://t.me/{B().BOT_USERNAME}?start=gw_{gid}_{uid}",
-                   winners=[{"name": w["name"] or "Без имени", "username": w["username"], "prize": pr[w["prize_idx"]]["name"], "slug": pr[w["prize_idx"]]["slug"]} for w in ws])
+                   winners=[{"uid": w["uid"], "name": w["name"] or "Без имени", "prize": pr[w["prize_idx"]]["name"], "slug": pr[w["prize_idx"]]["slug"]} for w in ws])
         return out
 
     @app.get("/api/gw/{gid}")

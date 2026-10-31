@@ -229,6 +229,7 @@ body.sheet .fp,body.sheet .cf,body.sheet .emo,body.sheet .tier::after{animation-
 .gav{width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#5b8cff,#b45cff);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;flex:none}
 .gwi .gx{flex:1;min-width:0}.gwi .gx b{display:block;font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
 .gwi .gx span{font-size:15px;color:#8e8e93}.gwi img{width:46px;height:46px;object-fit:contain;flex:none}
+.gwi .gav{position:relative;overflow:hidden}.gwi .gav img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%}
 .gempty{color:rgba(255,255,255,.7);font-weight:600;text-align:center;margin-top:40px}
 .mb{overflow:hidden}
 .mb b,.mb small{position:relative;z-index:1}
@@ -418,7 +419,7 @@ function intro(){
   hc.style.transform=`scale(${1.35})`;fg.style.transform="scale(1.3)";fg.style.opacity="0";
   try{tg&&tg.HapticFeedback&&tg.HapticFeedback.notificationOccurred("success")}catch(e){}
   await Promise.race([fetchMe(),new Promise(r=>setTimeout(r,2500))]);
-  cur="#1580fe";showMenu("fwd");if(!ME_DONE)fetchMe().then(()=>{if(SCR=="slides")show()});
+  cur="#1580fe";showMenu("fwd");gwPrefetch();if(!ME_DONE)fetchMe().then(()=>{if(SCR=="slides")show()});
   requestAnimationFrame(()=>requestAnimationFrame(()=>{el.classList.add("out");setTimeout(()=>el.remove(),700)}))}
  el.addEventListener("pointerdown",e=>{if(done)return;e.preventDefault();holding=true;el.classList.add("hold");if(!raf){last=performance.now();raf=requestAnimationFrame(tick)}},{passive:false});
  const up=()=>{if(done)return;holding=false;el.classList.remove("hold");if(!raf&&p>0){last=performance.now();raf=requestAnimationFrame(tick)}};
@@ -523,29 +524,37 @@ function gwTick(){document.querySelectorAll(".gt[data-end]").forEach(el=>{let l=
  el.textContent=(d?d+"д ":"")+p(h)+":"+p(m)+":"+p(z)})}
 function gwStart(){gwStop();gwTick();GWT=setInterval(gwTick,1000)}
 const gwUrl=p=>`${API}/api/gw/img/${encodeURIComponent(p.slug)}.png?v=4`;   // v — сброс старых картинок с фоном в кэше Telegram
-const gwImg=p=>`<div class="gp"><img src="${gwUrl(p)}" alt="" loading="lazy" onerror="this.outerHTML='<span class=gwe>🎁</span>'"></div>`;
+const gwImg=p=>`<div class="gp"><img src="${gwUrl(p)}" alt="" decoding="async" onerror="this.outerHTML='<span class=gwe>🎁</span>'"></div>`;
 const gwGrid=l=>`<div class="gpr g${Math.min(l.length,3)}">${l.map(gwImg).join("")}</div>`;
 const gwLeft=g=>g.status=="finished"?`<div class="gtm"><b style="font-size:20px">🏁 Розыгрыш завершён</b></div>`:g.end_type=="time"?`<div class="gtm"><b class="gt" data-end="${g.end_ts}">…</b></div>`:`<div class="gtm"><small>🎟 Осталось билетов</small><b>${g.tickets_left}</b></div>`;
 const gwStats=(a,b)=>`<div class="gst"><div><b>${a}</b><small>Призы</small></div><div><b>${b}</b><small>Участники</small></div></div>`;
 function gwShell(title,sub,back){gwStop();dir="fwd";app.classList.remove("sl");if(window.lottie)lottie.destroy();bg(["#1b1c20","#2b2c31"]);
- app.innerHTML=snow()+`<h1>${title}</h1>${sub?`<div class="sub">${sub}</div>`:""}<div class="mid fin" id="gwm"><div class="gempty">Загрузка…</div></div><div class="btns"><button type="button" class="back" data-a="${back}">Назад</button></div>`;syncBB()}
-async function showGive(){SCR="give";gwShell("Розыгрыши","Выигрывайте подарки абсолютно бесплатно!","menu");
- try{const r=await api("/api/gw/list");if(SCR!="give")return;GWSK=r.now*1000-Date.now();
-  const el=document.getElementById("gwm"),rest=n=>n==1?"приз":(n<5?"приза":"призов");
-  el.innerHTML=r.items.length?`<div class="gwl">${r.items.map((g,j)=>`<div class="gc" style="animation-delay:${.05+j*.06}s">${gwGrid(g.prizes)}${g.total_prizes>3?`<div class="gmore" data-a="gwo:${g.id}">ещё ${g.total_prizes-3} ${rest(g.total_prizes-3)}!</div>`:""}
+ app.innerHTML=snow()+`<div class="mid fin"><h1 style="margin-top:16px">${title}</h1>${sub?`<div class="sub" style="margin-bottom:14px">${sub}</div>`:`<div style="height:12px"></div>`}<div id="gwb" style="width:100%"><div class="gempty">Загрузка…</div></div></div><div class="btns"><button type="button" class="back" data-a="${back}">Назад</button></div>`;syncBB()}
+let GWL=null,GWDC={};
+const gwKey=o=>JSON.stringify(o,(k,v)=>k=="now"?0:v);
+function gwRenderList(r){GWSK=r.now*1000-Date.now();const el=document.getElementById("gwb"),rest=n=>n==1?"приз":(n<5?"приза":"призов");
+ el.innerHTML=r.items.length?`<div class="gwl">${r.items.map((g,j)=>`<div class="gc" style="animation-delay:${.05+j*.06}s">${gwGrid(g.prizes)}${g.total_prizes>3?`<div class="gmore" data-a="gwo:${g.id}">ещё ${g.total_prizes-3} ${rest(g.total_prizes-3)}!</div>`:""}
    ${gwStats(g.total_prizes,g.participants)}${gwLeft(g)}
-   <button type="button" class="gb" data-a="gwo:${g.id}">${g.status=="finished"?"Результаты":"Участвовать"}</button></div>`).join("")}</div>`:`<div class="gempty">Пока нет розыгрышей</div>`;
-  gwStart()}catch(e){if(SCR=="give")document.getElementById("gwm").innerHTML=`<div class="gempty">Не удалось загрузить розыгрыши</div>`}}
+   <button type="button" class="gb" data-a="gwo:${g.id}">${g.status=="finished"?"Результаты":"Участвовать"}</button></div>`).join("")}</div>`:`<div class="gempty">Пока нет розыгрышей</div>`;gwStart()}
+async function showGive(){SCR="give";gwShell("Розыгрыши","Выигрывайте подарки абсолютно бесплатно!","menu");
+ if(GWL)gwRenderList(GWL);
+ try{const r=await api("/api/gw/list");if(SCR!="give")return;const same=GWL&&gwKey(GWL)==gwKey(r);GWL=r;if(!same)gwRenderList(r);else GWSK=r.now*1000-Date.now()}
+ catch(e){if(SCR=="give"&&!GWL)document.getElementById("gwb").innerHTML=`<div class="gempty">Не удалось загрузить розыгрыши</div>`}}
+async function gwPrefetch(){if(!live)return;try{const r=await api("/api/gw/list");GWL=r;
+ for(const g of r.items){g.prizes.forEach(p=>{new Image().src=gwUrl(p)});
+  api("/api/gw/"+g.id).then(d=>{GWDC[g.id]=d;d.prizes.forEach(p=>{new Image().src=gwUrl(p)});(d.winners||[]).forEach(w=>{new Image().src=`${API}/api/gw/ava/${w.uid}.jpg`})}).catch(()=>{})}}catch(e){}}
 function gwDetail(g){GWD=g;GWSK=g.now*1000-Date.now();const fin=g.status=="finished";
- document.getElementById("gwm").innerHTML=`<div class="gwl"><div class="gc"><h3>Призы</h3>${gwGrid(g.prizes)}</div>
+ document.getElementById("gwb").innerHTML=`<div class="gwl"><div class="gc"><h3>Призы</h3>${gwGrid(g.prizes)}</div>
   <div class="gc">${gwStats(g.prizes.length,g.participants).replace('class="gst"','class="gst" style="border:0;margin:0;padding:0"')}${gwLeft(g)}
   ${fin?"":`<div class="gwn">${g.joined?`Твои билеты: ${g.mine}`:"Нажми «Участвовать», чтобы получить билет"}</div>
   ${g.joined?`<button type="button" class="gb" data-a="gwi:${g.id}">Пригласить друга +1 билет</button>`:`<button type="button" class="gb" data-a="gwj:${g.id}">Участвовать</button>`}
   <div class="gwn">+1 билет за каждого друга, который впервые зашёл в бота по твоей ссылке и выполнил задание</div>`}</div>
-  ${fin?`<div class="gc"><h3>Победители</h3>${g.winners.length?g.winners.map(w=>`<div class="gwi"><div class="gav">${gesc(([...(w.name||"?")][0]||"?").toUpperCase())}</div><div class="gx"><b>${w.username?`<a href="https://t.me/${gesc(w.username)}" style="color:#fff" data-lnk="1">${gesc(w.name)}</a>`:gesc(w.name)}</b><span>${gesc(w.prize)}</span></div>${w.slug?`<img src="${gwUrl(w)}" alt="" onerror="this.remove()">`:""}</div>`).join(""):`<div class="gwn">Победителей нет</div>`}</div>`:""}</div>`;gwStart()}
+  ${fin?`<div class="gc"><h3>Победители</h3>${g.winners.length?g.winners.map(w=>`<div class="gwi"><div class="gav">${gesc(([...(w.name||"?")][0]||"?").toUpperCase())}<img src="${API}/api/gw/ava/${w.uid}.jpg" alt="" onerror="this.remove()"></div><div class="gx"><b>${gesc(w.name)}</b><span>${gesc(w.prize)}</span></div>${w.slug?`<img src="${gwUrl(w)}" alt="" onerror="this.remove()">`:""}</div>`).join(""):`<div class="gwn">Победителей нет</div>`}</div>`:""}</div>`;gwStart()}
 async function openGw(id){SCR="gwd";gwShell("Розыгрыш","","gwback");
- try{const g=await api("/api/gw/"+id);if(SCR=="gwd")gwDetail(g)}catch(e){if(SCR=="gwd")document.getElementById("gwm").innerHTML=`<div class="gempty">Розыгрыш недоступен</div>`}}
-async function gwJoin(id){try{const g=await api("/api/gw/"+id+"/join",{method:"POST"});if(tg&&tg.HapticFeedback)tg.HapticFeedback.notificationOccurred("success");if(SCR=="gwd")gwDetail(g)}
+ if(GWDC[id])gwDetail(GWDC[id]);
+ try{const g=await api("/api/gw/"+id);if(SCR!="gwd")return;const same=GWDC[id]&&gwKey(GWDC[id])==gwKey(g);GWDC[id]=g;if(!same)gwDetail(g);else GWSK=g.now*1000-Date.now()}
+ catch(e){if(SCR=="gwd"&&!GWDC[id])document.getElementById("gwb").innerHTML=`<div class="gempty">Розыгрыш недоступен</div>`}}
+async function gwJoin(id){try{const g=await api("/api/gw/"+id+"/join",{method:"POST"});GWDC[id]=g;GWL=null;if(tg&&tg.HapticFeedback)tg.HapticFeedback.notificationOccurred("success");if(SCR=="gwd")gwDetail(g)}
  catch(e){try{if(tg)tg.showAlert("Не получилось вступить — возможно, розыгрыш уже завершён")}catch(_){}}}
 async function gwInvite(){if(!GWD)return;
  try{if(!live||!tg.shareMessage||!tg.isVersionAtLeast("8.0"))throw 0;const {id}=await api("/api/gw/"+GWD.id+"/invite",{method:"POST"});shareMsg(id,"gw")}
@@ -636,7 +645,7 @@ function vTop(){if(!TOP)return loading()+`<div class="bt col"><button type="butt
  <div class="mecard"><div><small>Твоё место</small><b>${me.rank?me.rank+"-е место":"пока нет в рейтинге"}</b>${me.rank?"":"<small>Нажми «Начать» в боте, чтобы попасть в рейтинг</small>"}${out&&last?`<small>До топ-100 ещё ${fmt(Math.max(1,last.points-me.points+1))} ${pl(Math.max(1,last.points-me.points+1))}</small>`:""}</div><span class="pt">${fmt(me.points)}</span></div>
  <div class="bt col"><button type="button" class="b2" data-s="${TOPD?"x":"menu"}">Назад</button></div>`}
 function vLim(){const L=D.limlist||[];
- return `<h2>Не улучшенные подарки</h2><p class="mut">Лимитированные подарки, которые ещё не стали NFT</p>${L.length?`<div class="lst">${L.map(g=>`<div class="lr">${g.k?`<img class="gi" src="${API}/api/emoji/${g.k}?png=96" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`:`<span class="gi"></span>`}<span class="rt"><b>${esc(g.name||("Подарок за "+g.stars+" ⭐"))}: ${g.n}</b></span></div>`).join("")}</div>`:`<p class="mut">Таких подарков у тебя нет</p>`}<div class="bt col"><button type="button" class="b2" data-s="x">Закрыть</button></div>`}
+ return `<h2>Не улучшенные подарки</h2><p class="mut">Лимитированные подарки, которые ещё не стали NFT</p>${L.length?`<div class="lst">${L.map(g=>`<div class="lr">${g.k?`<img class="gi" src="${API}/api/emoji/${g.k}?png=96" alt="" decoding="async" onerror="this.style.visibility='hidden'">`:`<span class="gi"></span>`}<span class="rt"><b>${esc(g.name||("Подарок за "+g.stars+" ⭐"))}: ${g.n}</b></span></div>`).join("")}</div>`:`<p class="mut">Таких подарков у тебя нет</p>`}<div class="bt col"><button type="button" class="b2" data-s="x">Закрыть</button></div>`}
 function openLim(){openSheet();VIEW="lim";renderSheet()}
 function renderSheet(){
  let h=loading();
