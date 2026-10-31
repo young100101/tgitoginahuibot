@@ -210,7 +210,7 @@ body.sheet .fp,body.sheet .cf,body.sheet .emo,body.sheet .tier::after{animation-
 .menu{display:flex;flex-direction:column;gap:12px;width:100%;z-index:2;position:relative}
 .mb{width:100%;display:flex;flex-direction:column;align-items:center;gap:3px;padding:18px 16px;border-radius:22px;background:#fff;color:#111;box-shadow:0 10px 26px rgba(0,0,0,.14);animation:up .5s both}
 .gwl{width:100%;display:flex;flex-direction:column;gap:14px;padding:4px 0 12px;z-index:2;position:relative;text-align:center}
-.gc{background:linear-gradient(180deg,#323339,#2a2b30);color:#fff;border-radius:28px;padding:18px 16px 16px;box-shadow:0 8px 24px rgba(0,0,0,.35);animation:up .5s both}
+.gc{background:linear-gradient(180deg,#4d4e56,#41424a);color:#fff;border-radius:28px;padding:18px 16px 16px;box-shadow:0 8px 24px rgba(0,0,0,.35);animation:up .5s both}
 .gc h3{font-size:16px;font-weight:700;color:#8e8e93;margin-bottom:16px}
 .gpr{display:flex;flex-wrap:wrap;justify-content:center;gap:18px 0}
 .gpr .gp{width:33.333%}.gpr.g2{justify-content:space-evenly}.gpr.g2 .gp{width:34%}.gpr.g1 .gp{width:60%}
@@ -526,7 +526,7 @@ function gwStart(){gwStop();gwTick();GWT=setInterval(gwTick,1000)}
 const gwUrl=p=>`${API}/api/gw/img/${encodeURIComponent(p.slug)}.png?v=4`;   // v — сброс старых картинок с фоном в кэше Telegram
 const gwImg=p=>`<div class="gp"><img src="${gwUrl(p)}" alt="" decoding="async" onerror="this.outerHTML='<span class=gwe>🎁</span>'"></div>`;
 const gwGrid=l=>`<div class="gpr g${Math.min(l.length,3)}">${l.map(gwImg).join("")}</div>`;
-const gwLeft=g=>g.status=="finished"?`<div class="gtm"><b style="font-size:20px">🏁 Розыгрыш завершён</b></div>`:g.end_type=="time"?`<div class="gtm"><b class="gt" data-end="${g.end_ts}">…</b></div>`:`<div class="gtm"><small>🎟 Осталось билетов</small><b>${g.tickets_left}</b></div>`;
+const gwLeft=g=>g.status=="finished"?`<div class="gtm"><b style="font-size:20px">Розыгрыш завершён</b></div>`:g.end_type=="time"?`<div class="gtm"><b class="gt" data-end="${g.end_ts}">…</b></div>`:`<div class="gtm"><small>🎟 Осталось билетов</small><b>${g.tickets_left}</b></div>`;
 const gwStats=(a,b)=>`<div class="gst"><div><b>${a}</b><small>Призы</small></div><div><b>${b}</b><small>Участники</small></div></div>`;
 function gwShell(title,sub,back){gwStop();dir="fwd";app.classList.remove("sl");if(window.lottie)lottie.destroy();bg(["#1b1c20","#2b2c31"]);
  app.innerHTML=snow()+`<div class="mid fin"><h1 style="margin-top:16px">${title}</h1>${sub?`<div class="sub" style="margin-bottom:14px">${sub}</div>`:`<div style="height:12px"></div>`}<div id="gwb" style="width:100%"><div class="gempty">Загрузка…</div></div></div><div class="btns"><button type="button" class="back" data-a="${back}">Назад</button></div>`;syncBB()}
